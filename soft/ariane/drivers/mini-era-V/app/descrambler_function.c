@@ -1,0 +1,1 @@
+../../mini-era/app/descrambler_function.c
