@@ -177,7 +177,7 @@ uint8_t* do_decoding(int in_cbps, int in_ntraceback, const unsigned char* in_dep
   uint8_t*       l_decoded = d_decoded;
 #endif
 
-  VERBOSE({
+  DO_VERBOSE({
       printf("\nVBS: in_cbps        = %u\n", in_cbps);
       printf("VBS: in_ntraceback  = %u\n", in_ntraceback);
       printf("VBS: in_n_data_bits = %u\n", in_n_data_bits);
@@ -540,7 +540,7 @@ uint8_t* do_decoding(int in_cbps, int in_ntraceback, const unsigned char* in_dep
     in_count++;
   }
 
-  /* VERBOSE({ */
+  /* DO_VERBOSE({ */
   /*     printf("\nVBS: FINAL l_decoded = [\n"); */
   /*     for (int ti = 0; ti < (MAX_ENCODED_BITS * 3 / 4); ti ++) { */
   /* 	///if (ti > 0) { printf(", "); } */
@@ -639,7 +639,7 @@ uint8_t* decode(ofdm_param *ofdm, frame_param *frame, uint8_t *in, int* n_dec_ch
 
   uint8_t *depunctured = depuncture(in);
 
-  VERBOSE({
+  DO_VERBOSE({
       printf("VBS: depunctured = [\n");
       for (int ti = 0; ti < MAX_ENCODED_BITS; ti ++) {
 	if (ti > 0) { printf(", "); }
