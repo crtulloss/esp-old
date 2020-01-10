@@ -1,0 +1,1 @@
+../../it-mini-era2/app/descrambler_function.c
