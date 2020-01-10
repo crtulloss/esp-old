@@ -1,0 +1,13 @@
+echo "THESE ARE THE V=0 SINGLE SHORT MESSAGE RUNS"
+echo ""
+echo "./it-fcmain.exe -t traces/tt02_0100.new"
+./it-fcmain.exe -t traces/tt02_0100.new
+echo ""
+echo "/applications/test/it-cmain2V.exe -t traces/tt02_0100.new "
+/applications/test/it-cmain2V.exe -t traces/tt02_0100.new 
+echo ""
+echo "/applications/test/it-cmain2F.exe -t traces/tt02_0100.new "
+/applications/test/it-cmain2F.exe -t traces/tt02_0100.new 
+echo ""
+echo "/applications/test/it-cmain2VF.exe -t traces/tt02_0100.new "
+/applications/test/it-cmain2VF.exe -t traces/tt02_0100.new 
