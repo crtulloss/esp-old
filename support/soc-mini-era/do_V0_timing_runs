@@ -1,4 +1,4 @@
-echo "THESE ARE THE V=0 SINGLE SHORT MESSAGE RUNS"
+echo "THESE ARE THE 100 STEP V=0 SINGLE SHORT MESSAGE RUNS"
 echo ""
 echo "./it-fcmain.exe -t traces/tt02_0100.new"
 ./it-fcmain.exe -t traces/tt02_0100.new

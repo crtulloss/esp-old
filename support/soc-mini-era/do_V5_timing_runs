@@ -1,5 +1,5 @@
 echo ""
-echo "THESE ARE THE V=5 MULTIPLE LONG MESSAGE RUNS"
+echo "THESE ARE THE 100 STEP V=5 MULTIPLE LONG MESSAGE RUNS"
 echo ""
 echo "./it-fcmain.exe -t traces/tt02_0100.new -v 5"
 ./it-fcmain.exe -t traces/tt02_0100.new -v 5
