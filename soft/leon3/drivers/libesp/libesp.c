@@ -28,6 +28,8 @@ void *accelerator_thread( void *ptr )
 		break;
 	case vitdecoder :
 		rc = ioctl(info->fd, VITDECODER_IOC_ACCESS, info->desc.vitdecoder_desc);
+	case fftaccelerator :
+		rc = ioctl(info->fd, FFTACCELERATOR_IOC_ACCESS, info->desc.fftaccelerator_desc);
 		break;
 	case fft :
 		rc = ioctl(info->fd, FFT_IOC_ACCESS, info->desc.fft_desc);
@@ -93,6 +95,8 @@ static void esp_config(esp_thread_info_t cfg[], unsigned nacc)
 			break;
 		case vitdecoder :
 			esp_prepare(&info->desc.vitdecoder_desc.esp);
+		case fftaccelerator :
+			esp_prepare(&info->desc.fftaccelerator_desc.esp);
 			break;
 		case fft :
 			esp_prepare(&info->desc.fft_desc.esp);

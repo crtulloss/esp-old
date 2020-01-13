@@ -33,6 +33,7 @@
 // <<--esp-include-->>
 #include "vitdodec.h"
 #include "vitdecoder.h"
+#include "FFTAccelerator.h"
 #include "fft.h"
 #include "adder.h"
 #include "CounterAccelerator.h"
@@ -49,6 +50,7 @@ enum esp_accelerator_type {
 	// <<--esp-enum-->>
 	vitdodec,
 	vitdecoder,
+	fftaccelerator,
 	fft,
 	adder,
 	CounterAccelerator,
@@ -64,6 +66,7 @@ union esp_accelerator_descriptor {
 	// <<--esp-descriptor-->>
 	struct vitdodec_access vitdodec_desc;
 	struct vitdecoder_access vitdecoder_desc;
+	struct fftaccelerator_access fftaccelerator_desc;
 	struct fft_access fft_desc;
 	struct adder_access adder_desc;
 	struct CounterAccelerator_access CounterAccelerator_desc;
