@@ -109,6 +109,7 @@ float calculate_peak_dist_from_fmcw(float* data)
  #ifdef INT_TIME
   gettimeofday(&calc_start, NULL);
  #endif
+
 #ifdef HW_FFT
   // preprocess with bitreverse (fast in software anyway)
   fft_bit_reverse(data, fftHW_len, fftHW_log_len);
@@ -119,6 +120,7 @@ float calculate_peak_dist_from_fmcw(float* data)
 
   gettimeofday(&fft_cvtin_start, NULL);
  #endif
+
   // convert input to fixed point
   for (int j = 0; j < 2 * fftHW_len; j++) {
     fftHW_lmem[j] = double_to_fixed64((double) data[j], 42);
@@ -145,7 +147,7 @@ float calculate_peak_dist_from_fmcw(float* data)
   fft_cvtout_sec  += fft_cvtout_stop.tv_sec  - fft_cvtout_start.tv_sec;
   fft_cvtout_usec += fft_cvtout_stop.tv_usec - fft_cvtout_start.tv_usec;
  #endif
-#else // FFT_IN_HW
+#else // if HW_FFT
  #ifdef INT_TIME
   gettimeofday(&fft_start, NULL);
  #endif
@@ -155,7 +157,7 @@ float calculate_peak_dist_from_fmcw(float* data)
   fft_sec  += fft_stop.tv_sec  - fft_start.tv_sec;
   fft_usec += fft_stop.tv_usec - fft_start.tv_usec;
  #endif
-#endif // FFT_IN_HW
+#endif // if HW_FFT
 
 #ifdef INT_TIME
   gettimeofday(&calc_stop, NULL);

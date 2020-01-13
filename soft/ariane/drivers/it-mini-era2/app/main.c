@@ -34,6 +34,9 @@ extern uint64_t calc_usec;
 extern uint64_t fft_sec;
 extern uint64_t fft_usec;
 
+extern uint64_t bitrev_sec;
+extern uint64_t bitrev_usec;
+
 extern uint64_t fft_br_sec;
 extern uint64_t fft_br_usec;
 
@@ -420,12 +423,17 @@ int main(int argc, char *argv[])
   printf("\n");
   uint64_t fft_tot = (uint64_t) (calc_sec)  * 1000000 + (uint64_t) (calc_usec);
   printf("  fft-total   run time    %lu usec\n", fft_tot);
+ #ifdef HW_FFT
   uint64_t fft_br    = (uint64_t) (fft_br_sec)  * 1000000 + (uint64_t) (fft_br_usec);
   printf("  bitrev      run time    %lu usec\n", fft_br);
+ #else 
+  uint64_t bitrev    = (uint64_t) (bitrev_sec)  * 1000000 + (uint64_t) (bitrev_usec);
+  printf("  bit-reverse run time    %lu usec\n", bitrev);
+ #endif
   uint64_t fft_cvtin    = (uint64_t) (fft_cvtin_sec)  * 1000000 + (uint64_t) (fft_cvtin_usec);
   printf("  fft_cvtin   run time    %lu usec\n", fft_cvtin);
-  uint64_t fft    = (uint64_t) (fft_sec)  * 1000000 + (uint64_t) (fft_usec);
-  printf("  fft-comp    run time    %lu usec\n", fft);
+  uint64_t fft_comp    = (uint64_t) (fft_sec)  * 1000000 + (uint64_t) (fft_usec);
+  printf("  fft-comp    run time    %lu usec\n", fft_comp);
   uint64_t fft_cvtout    = (uint64_t) (fft_cvtout_sec)  * 1000000 + (uint64_t) (fft_cvtout_usec);
   printf("  fft_cvtout  run time    %lu usec\n", fft_cvtout);
   uint64_t cdfmcw    = (uint64_t) (cdfmcw_sec)  * 1000000 + (uint64_t) (cdfmcw_usec);
