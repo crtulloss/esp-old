@@ -38,7 +38,7 @@ uint64_t cdfmcw_usec = 0LL;
 #ifdef HW_FFT
 #include "contig.h"
 #include "fixed_point.h"
-#include "mini-era.h"
+#include "mini-era2.h"
 
 //#define FFT_DEVNAME  "/dev/fft.0"
 
@@ -111,8 +111,10 @@ float calculate_peak_dist_from_fmcw(float* data)
  #endif
 
 #ifdef HW_FFT
+#ifndef HW_FFT_BITREV
   // preprocess with bitreverse (fast in software anyway)
   fft_bit_reverse(data, fftHW_len, fftHW_log_len);
+#endif
  #ifdef INT_TIME
   gettimeofday(&fft_br_stop, NULL);
   fft_br_sec  += fft_br_stop.tv_sec  - calc_start.tv_sec;
@@ -123,7 +125,7 @@ float calculate_peak_dist_from_fmcw(float* data)
 
   // convert input to fixed point
   for (int j = 0; j < 2 * fftHW_len; j++) {
-    fftHW_lmem[j] = double_to_fixed64((double) data[j], 42);
+    fftHW_lmem[j] = float2fx((double) data[j], 42);
   }
  #ifdef INT_TIME
   gettimeofday(&fft_cvtin_stop, NULL);
@@ -140,7 +142,7 @@ float calculate_peak_dist_from_fmcw(float* data)
   gettimeofday(&fft_cvtout_start, NULL);
  #endif
   for (int j = 0; j < 2 * fftHW_len; j++) {
-    data[j] = (float)fixed64_to_double(fftHW_lmem[j], 42);
+    data[j] = (float)fx2float(fftHW_lmem[j], 42);
   }
  #ifdef INT_TIME
   gettimeofday(&fft_cvtout_stop, NULL);

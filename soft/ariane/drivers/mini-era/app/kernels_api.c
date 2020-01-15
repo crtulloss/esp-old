@@ -238,7 +238,7 @@ status_t init_rad_kernel(char* dict_fn)
 	  exit(EXIT_FAILURE);
   }
 
-  size_t fftHW_input_size = fftHW_len * sizeof(int64_t);
+  size_t fftHW_input_size = (1 << fftHW_log_len) * 2 * sizeof(int64_t);
 
   printf("Allocate hardware buffer of size %zu\n", fftHW_input_size);
   fftHW_lmem = contig_alloc(fftHW_input_size, &fftHW_mem);
@@ -253,7 +253,12 @@ status_t init_rad_kernel(char* dict_fn)
   fftHW_desc.esp.p2p_nsrcs = 0;
   fftHW_desc.esp.contig = contig_to_khandle(fftHW_mem);
 
-  fftHW_desc.len  = fftHW_len;
+#ifdef HW_FFT_BITREV
+  fftHW_desc.do_bitrev  = FFTHW_DO_BITREV;
+#else
+  fftHW_desc.do_bitrev  = FFTHW_NO_BITREV;
+#endif
+  //fftHW_desc.len  = fftHW_len;
   fftHW_desc.log_len   = fftHW_log_len;
   fftHW_desc.src_offset = 0;
   fftHW_desc.dst_offset = 0;

@@ -197,6 +197,8 @@ static void init_vit_parameters()
 // These are FFT Harware Accelerator Variables, etc.
 #define FFT_DEVNAME  "/dev/fft.0"
 
+//int32_t fftHW_do_bitrev = FFTHW_DO_BITREV;
+//int32_t fftHW_no_bitrev = FFTHW_NO_BITREV;
 int32_t fftHW_len = FFTHW_LEN;
 int32_t fftHW_log_len = FFTHW_LOG_LEN;
 
@@ -316,13 +318,18 @@ status_t init_rad_kernel(char* dict_fn)
   fftHW_desc.esp.coherence = ACC_COH_NONE;
   fftHW_desc.esp.p2p_store = 0;
   fftHW_desc.esp.p2p_nsrcs = 0;
+  //fftHW_desc.esp.p2p_srcs = {"", "", "", ""};
   fftHW_desc.esp.contig = contig_to_khandle(fftHW_mem);
 
-  fftHW_desc.len  = fftHW_len;
+#ifdef HW_FFT_BITREV
+  fftHW_desc.do_bitrev  = FFTHW_DO_BITREV;
+#else
+  fftHW_desc.do_bitrev  = FFTHW_NO_BITREV;
+#endif
+  //fftHW_desc.len  = fftHW_len;
   fftHW_desc.log_len   = fftHW_log_len;
   fftHW_desc.src_offset = 0;
   fftHW_desc.dst_offset = 0;
-
 #endif
 
   return success;

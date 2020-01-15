@@ -318,7 +318,13 @@ status_t init_rad_kernel(char* dict_fn)
   fftHW_desc.esp.p2p_nsrcs = 0;
   fftHW_desc.esp.contig = contig_to_khandle(fftHW_mem);
 
-  fftHW_desc.len  = fftHW_len;
+
+#ifdef HW_FFT_BITREV
+  fftHW_desc.do_bitrev  = FFTHW_DO_BITREV;
+#else
+  fftHW_desc.do_bitrev  = FFTHW_NO_BITREV;
+#endif
+  //fftHW_desc.len  = fftHW_len;
   fftHW_desc.log_len   = fftHW_log_len;
   fftHW_desc.src_offset = 0;
   fftHW_desc.dst_offset = 0;
