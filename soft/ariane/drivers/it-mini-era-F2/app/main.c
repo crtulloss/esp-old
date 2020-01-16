@@ -1,1 +1,0 @@
-../../it-mini-era2/app/main.c

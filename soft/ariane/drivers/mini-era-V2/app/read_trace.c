@@ -1,1 +1,0 @@
-../../mini-era2/app/read_trace.c
