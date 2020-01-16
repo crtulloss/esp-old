@@ -1,11 +1,11 @@
-do_V0_timing_runs
-do_V1_timing_runs
-do_V5_timing_runs
+./do_V0_timing_runs
+./do_V1_timing_runs
+./do_V5_timing_runs
 
 echo ""
 echo ""
 echo ""
 
-do_V0_timing_runs_200
-do_V1_timing_runs_200
-do_V5_timing_runs_200
+./do_V0_timing_runs_200
+./do_V1_timing_runs_200
+./do_V5_timing_runs_200

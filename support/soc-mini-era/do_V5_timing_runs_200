@@ -10,6 +10,12 @@ echo ""
 echo "/applications/test/it-cmain2F.exe  -t traces/tt02_0200.new -v 5"
 /applications/test/it-cmain2F.exe  -t traces/tt02_0200.new -v 5
 echo ""
+echo "/applications/test/it-cmain2Fbr.exe  -t traces/tt02_0200.new -v 5"
+/applications/test/it-cmain2Fbr.exe  -t traces/tt02_0200.new -v 5
+echo ""
 echo "/applications/test/it-cmain2VF.exe  -t traces/tt02_0200.new -v 5"
 /applications/test/it-cmain2VF.exe  -t traces/tt02_0200.new -v 5
+echo ""
+echo "/applications/test/it-cmain2VFbr.exe  -t traces/tt02_0200.new -v 5"
+/applications/test/it-cmain2VFbr.exe  -t traces/tt02_0200.new -v 5
 echo ""
