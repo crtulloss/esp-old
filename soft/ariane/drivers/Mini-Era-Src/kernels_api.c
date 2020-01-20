@@ -195,7 +195,11 @@ static void init_vit_parameters()
 
 #ifdef HW_FFT
 // These are FFT Harware Accelerator Variables, etc.
-#define FFT_DEVNAME  "/dev/fft.0"
+#if (USE_FFT_FX64)
+ #define FFT_DEVNAME  "/dev/fft.0"
+#else
+ #define FFT_DEVNAME  "/dev/fft.1"
+#endif
 
 //int32_t fftHW_do_bitrev = FFTHW_DO_BITREV;
 //int32_t fftHW_no_bitrev = FFTHW_NO_BITREV;
@@ -221,10 +225,12 @@ struct fftHW_access fftHW_desc;
 
 const float FFT_ERR_TH = 0.05;
 
-#ifdef FFT32bit
-typedef int32_t fftHW_token_t;
-#else // FFT64bit
+#if (USE_FFT_FX64)
 typedef int64_t fftHW_token_t;
+typedef double  fftHW_indata_t;
+#elif (USE_FFT_FX32)
+typedef int32_t fftHW_token_t;
+typedef float   fftHW_indata_t;
 #endif
 
 /* User-defined code */
@@ -680,6 +686,7 @@ void post_execute_rad_kernel(distance_t tr_dist, distance_t dist)
 {
   // Get an error estimate (Root-Squared?)
   radar_total_calc++;
+  /*
   if (tr_dist == INFINITY) {
     if (dist < 500.0) { // 100000.0) {
       DEBUG(printf("%f vs %f => INF_PCT_ERR\n", tr_dist, dist));
@@ -694,20 +701,30 @@ void post_execute_rad_kernel(distance_t tr_dist, distance_t dist)
     } else {
       radar_zero_noerr++;
     }
-  } else {
-    float error   = (tr_dist - dist);
+  } else */
+  {
+    float error;
+    if ((tr_dist >= 500.0) && (dist > 10000.0)) {
+      error = 0.0;
+    } else {
+      error = (tr_dist - dist);
+    }
     DEBUG(float abs_err = fabs(error));
     float pct_err = error/dist;
     DEBUG(printf("%f vs %f : ERROR : %f   ABS_ERR : %f PCT_ERR : %f\n", tr_dist, dist, error, abs_err, pct_err));
     if (pct_err == 0.0) {
       hist_pct_errs[0]++;
     } else if (pct_err < 0.01) {
+      //printf("RADAR_LT001_ERR : %f vs %f : ERROR : %f   PCT_ERR : %f\n", tr_dist, dist, error, pct_err);
       hist_pct_errs[1]++;
     } else if (pct_err < 0.1) {
+      //printf("RADAR_LT010_ERR : %f vs %f : ERROR : %f   PCT_ERR : %f\n", tr_dist, dist, error, pct_err);
       hist_pct_errs[2]++;
     } else if (pct_err < 1.00) {
+      //printf("RADAR_LT100_ERR : %f vs %f : ERROR : %f   PCT_ERR : %f\n", tr_dist, dist, error, pct_err);
       hist_pct_errs[3]++;
     } else {
+      //printf("RADAR_GT100_ERR : %f vs %f : ERROR : %f   PCT_ERR : %f\n", tr_dist, dist, error, pct_err);
       hist_pct_errs[4]++;
     }
   }
@@ -994,11 +1011,13 @@ void closeout_rad_kernel()
   for (int i = 0; i < 5; i++) {
     printf("%7s | %9u \n", hist_pct_err_label[i], hist_pct_errs[i]);
   }
-  printf("%7s | %9u \n", "Inf_Err", radar_inf_errs);
-  printf("%7s | %9u \n", "Inf_OK", radar_inf_noerr);
-  printf("%7s | %9u \n", "Inf_Err", radar_zero_errs);
-  printf("%7s | %9u \n", "ZeroOk", radar_zero_noerr);
-  printf("%7s | %9u \n", "Total", radar_total_calc);
+  /*
+    printf("%7s | %9u \n", "Inf_Err", radar_inf_errs);
+    printf("%7s | %9u \n", "Inf_OK", radar_inf_noerr);
+    printf("%7s | %9u \n", "Inf_Err", radar_zero_errs);
+    printf("%7s | %9u \n", "ZeroOk", radar_zero_noerr);
+    printf("%7s | %9u \n", "Total", radar_total_calc);
+  */
 }
 
 void closeout_vit_kernel()

@@ -56,9 +56,12 @@ extern uint64_t depunc_sec;
 extern uint64_t depunc_usec;
 #endif
 
-char * cv_dict  = "traces/objects_dictionary.dfn";
-char * rad_dict = "traces/radar_dictionary.dfn";
-char * vit_dict = "traces/vit_dictionary.dfn";
+char cv_dict[256]; 
+char rad_dict[256];
+char vit_dict[256];
+//char * cv_dict  = "traces/objects_dictionary.dfn";
+//char * rad_dict = "traces/radar_dictionary.dfn";
+//char * vit_dict = "traces/vit_dictionary.dfn";
 
 bool_t all_obstacle_lanes_mode = false;
 unsigned time_step;
@@ -99,10 +102,14 @@ int main(int argc, char *argv[])
 #endif
   int opt; 
       
+  rad_dict[0] = '\0';
+  vit_dict[0] = '\0';
+  cv_dict[0] = '\0';
+
   // put ':' in the starting of the 
   // string so that program can  
   // distinguish between '?' and ':'
-  while((opt = getopt(argc, argv, ":hAot:v:s:r:W:")) != -1) {  
+  while((opt = getopt(argc, argv, ":hAot:v:s:r:W:R:V:C:")) != -1) {  
     switch(opt) {  
     case 'h':
       print_usage(argv[0]);
@@ -112,6 +119,15 @@ int main(int argc, char *argv[])
       break;
     case 'o':
       output_viz_trace = true;
+      break;
+    case 'R':
+      snprintf(rad_dict, 255, "%s", optarg);
+      break;
+    case 'C':
+      snprintf(cv_dict, 255, "%s", optarg);
+      break;
+    case 'V':
+      snprintf(vit_dict, 255, "%s", optarg);
       break;
     case 's':
 #ifdef USE_SIM_ENVIRON
@@ -148,14 +164,29 @@ int main(int argc, char *argv[])
     break;
     }  
   }  
-      
+
   // optind is for the extra arguments 
   // which are not parsed 
   for(; optind < argc; optind++){      
     printf("extra arguments: %s\n", argv[optind]);  
   } 
-  
-  
+
+
+  if (rad_dict[0] == '\0') {
+    sprintf(rad_dict, "traces/radar_dictionary.dfn");
+  }
+  if (vit_dict[0] == '\0') {
+    sprintf(vit_dict, "traces/vit_dictionary.dfn");
+  }
+  if (cv_dict[0] == '\0') {
+    sprintf(cv_dict, "traces/objects_dictionary.dfn");
+  }
+
+  printf("\nDictionaries:\n");
+  printf("   CV/CNN : %s\n", cv_dict);
+  printf("   Radar  : %s\n", rad_dict);
+  printf("   Viterbi: %s\n", vit_dict);
+
   /* We plan to use three separate trace files to drive the three different kernels
    * that are part of mini-ERA (CV, radar, Viterbi). All these three trace files
    * are required to have the same base name, using the file extension to indicate
@@ -175,6 +206,7 @@ int main(int argc, char *argv[])
 
   char cv_py_file[] = "../cv/keras_cnn/lenet.py";
 
+  printf("Doing initialization tasks...\n");
 #ifndef USE_SIM_ENVIRON
   /* Trace filename construction */
   /* char * trace_file = argv[1]; */
@@ -256,6 +288,7 @@ int main(int argc, char *argv[])
   while (iterate_sim_environs(vehicle_state))
 #else //TRACE DRIVEN MODE
   read_next_trace_record(vehicle_state);
+  printf("Starting main loop...\n");
   while (!eof_trace_reader())
 #endif
   {

@@ -25,13 +25,13 @@ struct vitbfly2_access {
 
 // This is for the FFT Accelerator
 
-#if (FFT_FX_WIDTH == 64)
+#if (USE_FFT_FX64)
 typedef unsigned long long token_t;
 typedef double native_t;
 #define fx2float fixed64_to_double
 #define float2fx double_to_fixed64
 #define FX_IL 42
-#elif (FFT_FX_WIDTH == 32)
+#elif (USE_FFT_FX32)
 typedef int token_t;
 typedef float native_t;
 #define fx2float fixed32_to_float
