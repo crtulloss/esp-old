@@ -1,8 +1,8 @@
 
 TARGET = it-fcmainF32.exe
-CFLAGS = -I../../include -std=c99 -DUSE_ESP_INTERFACE -DINT_TIME -DHW_FFT -DUSE_FFT_FX32 -DBYPASS_KERAS_CV_CODE
-#TARGET = it-vfcmainF32.exe
-#CFLAGS = -I../../include -std=c99 -DUSE_ESP_INTERFACE -DINT_TIME -DHW_FFT -DUSE_FFT_FX32 -DBYPASS_KERAS_CV_CODE -DVERBOSE
+CFLAGS = -I../../include -std=c99 -DUSE_ESP_INTERFACE -DINT_TIME -DHW_FFT -DUSE_FFT_FX=32 -DBYPASS_KERAS_CV_CODE
+VTARGET = it-vfcmainF32.exe
+VCFLAGS = $(CFLAGS) -DVERBOSE
 
 SRC_S = $(wildcard *.c)
 OBJ_S = $(SRC_S:.c=.o)
@@ -27,6 +27,6 @@ it-vfcmainF32.exe: $(OBJ_S)
 	CROSS_COMPILE=$(CROSS_COMPILE) $(MAKE) -C ../../contig_alloc/ libcontig.a
 	CROSS_COMPILE=$(CROSS_COMPILE) $(MAKE) -C ../../test
 	CROSS_COMPILE=$(CROSS_COMPILE) $(MAKE) -C ../../libesp
-	$(CROSS_COMPILE)$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS)
+	$(CROSS_COMPILE)$(CC) $(VCFLAGS) $^ -o $@ $(LDFLAGS)
 
 .PHONY: compile
