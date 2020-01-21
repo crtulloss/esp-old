@@ -122,10 +122,6 @@ unsigned label_mismatch[NUM_OBJECTS][NUM_OBJECTS] = {{0, 0, 0, 0, 0}, {0, 0, 0, 
 unsigned int        num_radar_dictionary_items = 0;
 radar_dict_entry_t* the_radar_return_dict;
 
-unsigned radar_inf_errs = 0;
-unsigned radar_inf_noerr = 0;
-unsigned radar_zero_errs = 0;
-unsigned radar_zero_noerr = 0;
 unsigned radar_total_calc = 0;
 unsigned hist_pct_errs[5] = {0, 0, 0, 0, 0};
 char*    hist_pct_err_label[5] = {"   0%", "<  1%", "< 10%", "<100%", ">100%"};
@@ -224,14 +220,6 @@ size_t fftHW_size;
 struct fftHW_access fftHW_desc;
 
 const float FFT_ERR_TH = 0.05;
-
-#if (USE_FFT_FX64)
-typedef int64_t fftHW_token_t;
-typedef double  fftHW_indata_t;
-#elif (USE_FFT_FX32)
-typedef int32_t fftHW_token_t;
-typedef float   fftHW_indata_t;
-#endif
 
 /* User-defined code */
 static void init_fft_parameters()
@@ -686,48 +674,30 @@ void post_execute_rad_kernel(distance_t tr_dist, distance_t dist)
 {
   // Get an error estimate (Root-Squared?)
   radar_total_calc++;
-  /*
-  if (tr_dist == INFINITY) {
-    if (dist < 500.0) { // 100000.0) {
-      DEBUG(printf("%f vs %f => INF_PCT_ERR\n", tr_dist, dist));
-      radar_inf_errs++;
-    } else {
-      radar_inf_noerr++;
-    }      
-  } else if (dist == 0.0) {
-    if (dist != 0.0) {
-      DEBUG(printf("%f vs %f => INF_PCT_ERR\n", tr_dist, dist));
-      radar_zero_errs++;
-    } else {
-      radar_zero_noerr++;
-    }
-  } else */
-  {
-    float error;
-    if ((tr_dist >= 500.0) && (dist > 10000.0)) {
-      error = 0.0;
-    } else {
-      error = (tr_dist - dist);
-    }
-    float abs_err = fabs(error);
-    float pct_err = abs_err/tr_dist;
-    //DEBUG(
-    printf("%f vs %f : ERROR : %f   ABS_ERR : %f PCT_ERR : %f\n", tr_dist, dist, error, abs_err, pct_err);
-    if (pct_err == 0.0) {
-      hist_pct_errs[0]++;
-    } else if (pct_err < 0.01) {
-      //printf("RADAR_LT001_ERR : %f vs %f : ERROR : %f   PCT_ERR : %f\n", tr_dist, dist, error, pct_err);
-      hist_pct_errs[1]++;
-    } else if (pct_err < 0.1) {
-      //printf("RADAR_LT010_ERR : %f vs %f : ERROR : %f   PCT_ERR : %f\n", tr_dist, dist, error, pct_err);
-      hist_pct_errs[2]++;
-    } else if (pct_err < 1.00) {
-      //printf("RADAR_LT100_ERR : %f vs %f : ERROR : %f   PCT_ERR : %f\n", tr_dist, dist, error, pct_err);
-      hist_pct_errs[3]++;
-    } else {
-      //printf("RADAR_GT100_ERR : %f vs %f : ERROR : %f   PCT_ERR : %f\n", tr_dist, dist, error, pct_err);
-      hist_pct_errs[4]++;
-    }
+  float error;
+  if ((tr_dist >= 500.0) && (dist > 10000.0)) {
+    error = 0.0;
+  } else {
+    error = (tr_dist - dist);
+  }
+  float abs_err = fabs(error);
+  float pct_err = abs_err/tr_dist;
+  //DEBUG(
+  printf("%f vs %f : ERROR : %f   ABS_ERR : %f PCT_ERR : %f\n", tr_dist, dist, error, abs_err, pct_err);
+  if (pct_err == 0.0) {
+    hist_pct_errs[0]++;
+  } else if (pct_err < 0.01) {
+    //printf("RADAR_LT001_ERR : %f vs %f : ERROR : %f   PCT_ERR : %f\n", tr_dist, dist, error, pct_err);
+    hist_pct_errs[1]++;
+  } else if (pct_err < 0.1) {
+    //printf("RADAR_LT010_ERR : %f vs %f : ERROR : %f   PCT_ERR : %f\n", tr_dist, dist, error, pct_err);
+    hist_pct_errs[2]++;
+  } else if (pct_err < 1.00) {
+    //printf("RADAR_LT100_ERR : %f vs %f : ERROR : %f   PCT_ERR : %f\n", tr_dist, dist, error, pct_err);
+    hist_pct_errs[3]++;
+  } else {
+    //printf("RADAR_GT100_ERR : %f vs %f : ERROR : %f   PCT_ERR : %f\n", tr_dist, dist, error, pct_err);
+    hist_pct_errs[4]++;
   }
 }
 
@@ -1012,13 +982,6 @@ void closeout_rad_kernel()
   for (int i = 0; i < 5; i++) {
     printf("%7s | %9u \n", hist_pct_err_label[i], hist_pct_errs[i]);
   }
-  /*
-    printf("%7s | %9u \n", "Inf_Err", radar_inf_errs);
-    printf("%7s | %9u \n", "Inf_OK", radar_inf_noerr);
-    printf("%7s | %9u \n", "Inf_Err", radar_zero_errs);
-    printf("%7s | %9u \n", "ZeroOk", radar_zero_noerr);
-    printf("%7s | %9u \n", "Total", radar_total_calc);
-  */
 }
 
 void closeout_vit_kernel()
