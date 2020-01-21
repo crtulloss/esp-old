@@ -221,16 +221,19 @@ int main(int argc, char *argv[])
 #endif
   
   /* Kernels initialization */
+  printf("Initializing the CV kernel...\n");
   if (!init_cv_kernel(cv_py_file, cv_dict))
   {
     printf("Error: the computer vision kernel couldn't be initialized properly.\n");
     return 1;
   }
+  printf("Initializing the Radar kernel...\n");
   if (!init_rad_kernel(rad_dict))
   {
     printf("Error: the radar kernel couldn't be initialized properly.\n");
     return 1;
   }
+  printf("Initializing the Viterbi kernel...\n");
   if (!init_vit_kernel(vit_dict))
   {
     printf("Error: the Viterbi decoding kernel couldn't be initialized properly.\n");
@@ -280,8 +283,9 @@ int main(int argc, char *argv[])
   uint64_t exec_vit_usec = 0LL;
   uint64_t exec_cv_usec  = 0LL;
   //printf("Program run time in milliseconds %f\n", (double) (stop.tv_sec - start.tv_sec) * 1000 + (double) (stop.tv_usec - start.tv_usec) / 1000);
-  #endif
+#endif // TIME
 
+  printf("Starting the main loop...\n");
   /* The input trace contains the per-epoch (time-step) input data */
 #ifdef USE_SIM_ENVIRON
   DEBUG(printf("\n\nTime Step %d\n", time_step));  
@@ -323,9 +327,13 @@ int main(int argc, char *argv[])
     distance_t rdict_dist = rdentry_p->distance;
     float * ref_in = rdentry_p->return_data;
     float radar_inputs[2*RADAR_N];
-    for (int ii = 0; ii < 2*RADAR_N; ii++) {
-      radar_inputs[ii] = ref_in[ii];
-    }
+    #ifdef SUPER_VERBOSE
+      printf("\nCopying radar inputs...\n");
+      for (int ii = 0; ii < 2*RADAR_N; ii++) {
+        radar_inputs[ii] = ref_in[ii];
+        if (ii < 64) { printf("radar_inputs[%2u] = %f  %f\n", radar_inputs[ii], ref_in[ii]); }
+      }
+    #endif
 
     /* The Viterbi decoding kernel performs Viterbi decoding on the next
      * OFDM symbol (message), and returns the extracted message.
