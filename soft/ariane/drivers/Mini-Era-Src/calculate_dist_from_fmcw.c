@@ -10,10 +10,10 @@
 
 #if (USE_FFT_FX64)
 typedef int64_t fftHW_token_t;
-typedef double  fftHW_indata_t;
+typedef double  fftHW_native_t;
 #elif (USE_FFT_FX32)
 typedef int32_t fftHW_token_t;
-typedef float   fftHW_indata_t;
+typedef float   fftHW_native_t;
 #endif
 
 #ifdef INT_TIME
@@ -133,7 +133,7 @@ float calculate_peak_dist_from_fmcw(float* data)
 
   // convert input to fixed point
   for (int j = 0; j < 2 * fftHW_len; j++) {
-    fftHW_lmem[j] = float2fx((fftHW_indata_t) data[j], 42);
+    fftHW_lmem[j] = float2fx((fftHW_native_t) data[j], 42);
   }
  #ifdef INT_TIME
   gettimeofday(&fft_cvtin_stop, NULL);
