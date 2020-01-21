@@ -191,14 +191,14 @@ static void init_vit_parameters()
 
 #ifdef HW_FFT
 // These are FFT Harware Accelerator Variables, etc.
-#if (USE_FFT_FX64)
+#if (USE_FFT_FX == 64)
  #define FFT_DEVNAME  "/dev/fft.0"
-#else
+#elif (USE_FFT_FX == 32)
  #define FFT_DEVNAME  "/dev/fft.1"
+#else
+ #define FFT_DEVNAME  "/dev/no-dev.0"
 #endif
 
-//int32_t fftHW_do_bitrev = FFTHW_DO_BITREV;
-//int32_t fftHW_no_bitrev = FFTHW_NO_BITREV;
 int32_t fftHW_len = FFTHW_LEN;
 int32_t fftHW_log_len = FFTHW_LOG_LEN;
 
@@ -682,21 +682,16 @@ void post_execute_rad_kernel(distance_t tr_dist, distance_t dist)
   }
   float abs_err = fabs(error);
   float pct_err = abs_err/tr_dist;
-  //DEBUG(
-  printf("%f vs %f : ERROR : %f   ABS_ERR : %f PCT_ERR : %f\n", tr_dist, dist, error, abs_err, pct_err);
+  DEBUG(printf("%f vs %f : ERROR : %f   ABS_ERR : %f PCT_ERR : %f\n", tr_dist, dist, error, abs_err, pct_err));
   if (pct_err == 0.0) {
     hist_pct_errs[0]++;
   } else if (pct_err < 0.01) {
-    //printf("RADAR_LT001_ERR : %f vs %f : ERROR : %f   PCT_ERR : %f\n", tr_dist, dist, error, pct_err);
     hist_pct_errs[1]++;
   } else if (pct_err < 0.1) {
-    //printf("RADAR_LT010_ERR : %f vs %f : ERROR : %f   PCT_ERR : %f\n", tr_dist, dist, error, pct_err);
     hist_pct_errs[2]++;
   } else if (pct_err < 1.00) {
-    //printf("RADAR_LT100_ERR : %f vs %f : ERROR : %f   PCT_ERR : %f\n", tr_dist, dist, error, pct_err);
     hist_pct_errs[3]++;
   } else {
-    //printf("RADAR_GT100_ERR : %f vs %f : ERROR : %f   PCT_ERR : %f\n", tr_dist, dist, error, pct_err);
     hist_pct_errs[4]++;
   }
 }
