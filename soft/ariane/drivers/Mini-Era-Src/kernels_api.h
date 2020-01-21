@@ -24,6 +24,12 @@
 #define DEBUG(x)
 #endif
 
+#ifdef SUPER_VERBOSE
+#define SDEBUG(x) x
+#else
+#define SDEBUG(x)
+#endif
+
 #define TIME
 
 /* Types definitions */

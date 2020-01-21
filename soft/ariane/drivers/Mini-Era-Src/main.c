@@ -327,13 +327,13 @@ int main(int argc, char *argv[])
     distance_t rdict_dist = rdentry_p->distance;
     float * ref_in = rdentry_p->return_data;
     float radar_inputs[2*RADAR_N];
-    #ifdef SUPER_VERBOSE
-      printf("\nCopying radar inputs...\n");
-      for (int ii = 0; ii < 2*RADAR_N; ii++) {
-        radar_inputs[ii] = ref_in[ii];
-        if (ii < 64) { printf("radar_inputs[%2u] = %f  %f\n", radar_inputs[ii], ref_in[ii]); }
-      }
-    #endif
+    SDEBUG(printf("\nCopying radar inputs...\n"));
+    for (int ii = 0; ii < 2*RADAR_N; ii++) {
+      radar_inputs[ii] = ref_in[ii];
+      #ifdef SUPER_VERBOSE
+       if (ii < 64) { printf("radar_inputs[%2u] = %f  %f\n", radar_inputs[ii], ref_in[ii]); }
+      #endif
+    }
 
     /* The Viterbi decoding kernel performs Viterbi decoding on the next
      * OFDM symbol (message), and returns the extracted message.
