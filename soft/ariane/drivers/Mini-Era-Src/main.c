@@ -71,6 +71,9 @@ void print_usage(char * pname) {
   printf(" OPTIONS:\n");
   printf("    -h         : print this helpfule usage info\n");
   printf("    -o         : print the Visualizer output traace information during the run\n");
+  printf("    -R <file>  : defines the input Radar dictionary file <file> to use\n");
+  printf("    -V <file>  : defines the input Viterbi dictionary file <file> to use\n");
+  printf("    -C <file>  : defines the input CV/CNN dictionary file <file> to use\n");
 #ifdef USE_SIM_ENVIRON
   printf("    -s <N>     : Sets the max number of time steps to simulate\n");
   printf("    -r <N>     : Sets the rand random number seed to N\n");
@@ -79,6 +82,8 @@ void print_usage(char * pname) {
 #else
   printf("    -t <trace> : defines the input trace file <trace> to use\n");
 #endif
+  printf("    -f <N>     : defines Log2 number of FFT samples\n");
+  printf("               :      14 = 2^14 = 16k samples (default); 10 = 1k samples\n");
   printf("    -v <N>     : defines Viterbi messaging behavior:\n");
   printf("               :      0 = One short message per time step\n");
   printf("               :      1 = One long  message per time step\n");
@@ -98,19 +103,19 @@ int main(int argc, char *argv[])
 #ifdef USE_SIM_ENVIRON
   char* world_desc_file_name = "default_world.desc";
 #else
-  char* trace_file; 
+  char* trace_file;
 #endif
-  int opt; 
-      
+  int opt;
+
   rad_dict[0] = '\0';
   vit_dict[0] = '\0';
   cv_dict[0] = '\0';
 
-  // put ':' in the starting of the 
-  // string so that program can  
+  // put ':' in the starting of the
+  // string so that program can
   // distinguish between '?' and ':'
-  while((opt = getopt(argc, argv, ":hAot:v:s:r:W:R:V:C:")) != -1) {  
-    switch(opt) {  
+  while((opt = getopt(argc, argv, ":hAot:v:s:r:W:R:V:C:f:")) != -1) {
+    switch(opt) {
     case 'h':
       print_usage(argv[0]);
       exit(0);
@@ -135,6 +140,15 @@ int main(int argc, char *argv[])
       printf("Using %u maximum time steps (simulation)\n", max_time_steps);
 #endif
       break;
+    case 'f':
+      fft_logn_samples = atoi(optarg);
+      if ((fft_logn_samples == 10) || (fft_logn_samples == 14)) {
+	printf("Using 2^%u = %u samples for the FFT\n", fft_logn_samples, (1<<fft_logn_samples));
+      } else {
+	printf("Cannot specify FFT logn samples value %u (Legal values are 10, 14)\n", fft_logn_samples);
+	exit(-1);
+      }
+      break;
     case 'r':
 #ifdef USE_SIM_ENVIRON
       rand_seed = atoi(optarg);
@@ -158,18 +172,18 @@ int main(int argc, char *argv[])
       break;
     case ':':
       printf("option needs a value\n");
-      break;  
+      break;
     case '?':
-      printf("unknown option: %c\n", optopt); 
+      printf("unknown option: %c\n", optopt);
     break;
-    }  
-  }  
+    }
+  }
 
-  // optind is for the extra arguments 
-  // which are not parsed 
-  for(; optind < argc; optind++){      
-    printf("extra arguments: %s\n", argv[optind]);  
-  } 
+  // optind is for the extra arguments
+  // which are not parsed
+  for(; optind < argc; optind++){
+    printf("extra arguments: %s\n", argv[optind]);
+  }
 
 
   if (rad_dict[0] == '\0') {
@@ -210,7 +224,7 @@ int main(int argc, char *argv[])
 #ifndef USE_SIM_ENVIRON
   /* Trace filename construction */
   /* char * trace_file = argv[1]; */
-  printf("Input trace file: %s\n", trace_file);
+  //printf("Input trace file: %s\n", trace_file);
 
   /* Trace Reader initialization */
   if (!init_trace_reader(trace_file))
@@ -219,7 +233,7 @@ int main(int argc, char *argv[])
     return 1;
   }
 #endif
-  
+
   /* Kernels initialization */
   printf("Initializing the CV kernel...\n");
   if (!init_cv_kernel(cv_py_file, cv_dict))
@@ -253,10 +267,10 @@ int main(int argc, char *argv[])
   // In simulation mode, we could start the main car is a different state (lane, speed)
   init_sim_environs(world_desc_file_name, &vehicle_state);
   #endif
-  
+
 /*** MAIN LOOP -- iterates until all the traces are fully consumed ***/
   time_step = 0;
-  #ifdef TIME
+ #ifdef TIME
   struct timeval stop, start;
 
   struct timeval stop_iter_rad, start_iter_rad;
@@ -283,16 +297,16 @@ int main(int argc, char *argv[])
   uint64_t exec_vit_usec = 0LL;
   uint64_t exec_cv_usec  = 0LL;
   //printf("Program run time in milliseconds %f\n", (double) (stop.tv_sec - start.tv_sec) * 1000 + (double) (stop.tv_usec - start.tv_usec) / 1000);
-#endif // TIME
+ #endif // TIME
 
   printf("Starting the main loop...\n");
+  fflush(stdout);
   /* The input trace contains the per-epoch (time-step) input data */
 #ifdef USE_SIM_ENVIRON
-  DEBUG(printf("\n\nTime Step %d\n", time_step));  
+  DEBUG(printf("\n\nTime Step %d\n", time_step));
   while (iterate_sim_environs(vehicle_state))
 #else //TRACE DRIVEN MODE
   read_next_trace_record(vehicle_state);
-  printf("Starting main loop...\n");
   while (!eof_trace_reader())
 #endif
   {
@@ -426,22 +440,6 @@ int main(int argc, char *argv[])
 
   #ifdef TIME
   {
-    /*
-    double total_exec = (double) (stop.tv_sec - start.tv_sec) * 1000.0 + (double) (stop.tv_usec - start.tv_usec) / 1000.0;
-    double iter_rad   = (double) (iter_rad_sec) * 1000.0 + (double) (iter_rad_usec) / 1000.0;
-    double iter_vit   = (double) (iter_vit_sec) * 1000.0 + (double) (iter_vit_usec) / 1000.0;
-    double iter_cv    = (double) (iter_cv_sec)  * 1000.0 + (double) (iter_cv_usec)  / 1000.0;
-    double exec_rad   = (double) (exec_rad_sec) * 1000.0 + (double) (exec_rad_usec) / 1000.0;
-    double exec_vit   = (double) (exec_vit_sec) * 1000.0 + (double) (exec_vit_usec) / 1000.0;
-    double exec_cv    = (double) (exec_cv_sec)  * 1000.0 + (double) (exec_cv_usec)  / 1000.0;
-    printf("Program run time in milliseconds %f ms\n", total_exec);
-    printf("  iterate_rad_kernel run time    %f ms\n", iter_rad);
-    printf("  iterate_vit_kernel run time    %f ms\n", iter_vit);
-    printf("  iterate_cv_kernel run time     %f ms\n", iter_cv);
-    printf("  execute_rad_kernel run time    %f ms\n", exec_rad);
-    printf("  execute_vit_kernel run time    %f ms\n", exec_vit);
-    printf("  execute_cv_kernel run time     %f ms\n", exec_cv);
-    */
     uint64_t total_exec = (uint64_t) (stop.tv_sec - start.tv_sec) * 1000000 + (uint64_t) (stop.tv_usec - start.tv_usec);
     uint64_t iter_rad   = (uint64_t) (iter_rad_sec) * 1000000 + (uint64_t) (iter_rad_usec);
     uint64_t iter_vit   = (uint64_t) (iter_vit_sec) * 1000000 + (uint64_t) (iter_vit_usec);
@@ -449,7 +447,7 @@ int main(int argc, char *argv[])
     uint64_t exec_rad   = (uint64_t) (exec_rad_sec) * 1000000 + (uint64_t) (exec_rad_usec);
     uint64_t exec_vit   = (uint64_t) (exec_vit_sec) * 1000000 + (uint64_t) (exec_vit_usec);
     uint64_t exec_cv    = (uint64_t) (exec_cv_sec)  * 1000000 + (uint64_t) (exec_cv_usec);
-    printf("Program total execution time     %lu usec\n", total_exec);
+    printf("\nProgram total execution time     %lu usec\n", total_exec);
     printf("  iterate_rad_kernel run time    %lu usec\n", iter_rad);
     printf("  iterate_vit_kernel run time    %lu usec\n", iter_vit);
     printf("  iterate_cv_kernel run time     %lu usec\n", iter_cv);
@@ -457,9 +455,8 @@ int main(int argc, char *argv[])
     printf("  execute_vit_kernel run time    %lu usec\n", exec_vit);
     printf("  execute_cv_kernel run time     %lu usec\n", exec_cv);
   }
-  #endif 
-
-  #ifdef INT_TIME
+ #endif // TIME
+ #ifdef INT_TIME
   // These are timings taken from called routines...
   printf("\n");
   uint64_t fft_tot = (uint64_t) (calc_sec)  * 1000000 + (uint64_t) (calc_usec);
@@ -485,8 +482,7 @@ int main(int argc, char *argv[])
   printf("  depuncture  run time    %lu usec\n", depunc);
   uint64_t dodec    = (uint64_t) (dodec_sec)  * 1000000 + (uint64_t) (dodec_usec);
   printf("  do-decoding run time    %lu usec\n", dodec);
-
-  #endif
+ #endif // INT_TIME
 
   printf("\nDone.\n");
   return 0;

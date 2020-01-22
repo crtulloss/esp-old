@@ -34,6 +34,39 @@ uint64_t cdfmcw_sec  = 0LL;
 uint64_t cdfmcw_usec = 0LL;
 #endif
 
+unsigned RADAR_LOGN    = 0;   // Log2 of the number of samples
+unsigned RADAR_N       = 0;   // The number of samples (2^LOGN)
+float    RADAR_fs      = 0.0; // Sampling Frequency
+float    RADAR_alpha   = 0.0; // Chirp rate (saw-tooth)
+// CONSTANTS
+#define RADAR_c          300000000.0  // Speed of Light in Meters/Sec
+#define RADAR_threshold -100;
+
+float   RADAR_psd_threshold = 1e-10*pow(8192,2);  // ~= 0.006711 and 450 ~= 0.163635 in 16K
+
+void init_calculate_peak_dist(unsigned fft_logn_samples)
+{
+  switch (fft_logn_samples) {
+  case 10:
+    RADAR_LOGN  = 10;
+    RADAR_fs    = 204800.0;
+    RADAR_alpha = 30000000000.0;
+    RADAR_psd_threshold = 0.000316; // 1e-10*pow(8192,2);  // 450m ~= 0.000638 so psd_thres ~= 0.000316 ?
+    break;
+  case 14:
+    RADAR_LOGN  = 14;
+    RADAR_fs    = 32768000.0;
+    RADAR_alpha = 4800000000000.0;
+    RADAR_psd_threshold = 1e-10*pow(8192,2);
+    break;
+  default:
+    printf("ERROR : Unsupported Log-N FFT Samples Value: %u\n", fft_logn_samples);
+    exit(-1);
+  }
+  RADAR_N = (1 << RADAR_LOGN);
+}
+
+
 
 #ifdef HW_FFT
 #include "contig.h"
@@ -42,8 +75,8 @@ uint64_t cdfmcw_usec = 0LL;
 
 //#define FFT_DEVNAME  "/dev/fft.0"
 
-extern int32_t fftHW_len;
-extern int32_t fftHW_log_len;
+//extern int32_t fftHW_len;
+//extern int32_t fftHW_log_len;
 
 extern int fftHW_fd;
 extern contig_handle_t fftHW_mem;
@@ -111,20 +144,22 @@ float calculate_peak_dist_from_fmcw(float* data)
  #endif
 
 #ifdef HW_FFT
-#ifndef HW_FFT_BITREV
+ #ifndef HW_FFT_BITREV
   // preprocess with bitreverse (fast in software anyway)
-  fft_bit_reverse(data, fftHW_len, fftHW_log_len);
-#endif
+  //fft_bit_reverse(data, fftHW_len, fftHW_log_len);
+  fft_bit_reverse(data, RADAR_N, RADAR_LOGN);
+ #endif // HW_FFT
  #ifdef INT_TIME
   gettimeofday(&fft_br_stop, NULL);
   fft_br_sec  += fft_br_stop.tv_sec  - calc_start.tv_sec;
   fft_br_usec += fft_br_stop.tv_usec - calc_start.tv_usec;
 
   gettimeofday(&fft_cvtin_start, NULL);
- #endif
+ #endif // INT_TIME
 
   // convert input to fixed point
-  for (int j = 0; j < 2 * fftHW_len; j++) {
+  //for (int j = 0; j < 2 * fftHW_len; j++) {
+  for (int j = 0; j < 2 * RADAR_N; j++) {
     fftHW_lmem[j] = float2fx((fftHW_native_t) data[j], FX_IL);
   }
  #ifdef INT_TIME
@@ -133,41 +168,42 @@ float calculate_peak_dist_from_fmcw(float* data)
   fft_cvtin_usec += fft_cvtin_stop.tv_usec - fft_cvtin_start.tv_usec;
 
   gettimeofday(&fft_start, NULL);
- #endif
+ #endif // INT_TIME
   fft_in_hw(&fftHW_fd, &fftHW_desc);
  #ifdef INT_TIME
   gettimeofday(&fft_stop, NULL);
   fft_sec  += fft_stop.tv_sec  - fft_start.tv_sec;
   fft_usec += fft_stop.tv_usec - fft_start.tv_usec;
   gettimeofday(&fft_cvtout_start, NULL);
- #endif
-  for (int j = 0; j < 2 * fftHW_len; j++) {
+ #endif // INT_TIME
+  //for (int j = 0; j < 2 * fftHW_len; j++) {
+  for (int j = 0; j < 2 * RADAR_N; j++) {
     data[j] = (float)fx2float(fftHW_lmem[j], FX_IL);
   }
  #ifdef INT_TIME
   gettimeofday(&fft_cvtout_stop, NULL);
   fft_cvtout_sec  += fft_cvtout_stop.tv_sec  - fft_cvtout_start.tv_sec;
   fft_cvtout_usec += fft_cvtout_stop.tv_usec - fft_cvtout_start.tv_usec;
- #endif
+ #endif // INT_TIME
 #else // if HW_FFT
  #ifdef INT_TIME
   gettimeofday(&fft_start, NULL);
- #endif
+ #endif // INT_TIME
   fft (data, RADAR_N, RADAR_LOGN, -1);
  #ifdef INT_TIME
   gettimeofday(&fft_stop, NULL);
   fft_sec  += fft_stop.tv_sec  - fft_start.tv_sec;
   fft_usec += fft_stop.tv_usec - fft_start.tv_usec;
- #endif
+ #endif // INT_TIME
 #endif // if HW_FFT
 
-#ifdef INT_TIME
+ #ifdef INT_TIME
   gettimeofday(&calc_stop, NULL);
   calc_sec  += calc_stop.tv_sec  - calc_start.tv_sec;
   calc_usec += calc_stop.tv_usec - calc_start.tv_usec;
 
   gettimeofday(&cdfmcw_start, NULL);
-#endif
+ #endif // INT_TIME
   float max_psd = 0;
   unsigned int max_index = 0;
   unsigned int i;
@@ -181,12 +217,13 @@ float calculate_peak_dist_from_fmcw(float* data)
   }
   float distance = ((float)(max_index*((float)RADAR_fs)/((float)(RADAR_N))))*0.5*RADAR_c/((float)(RADAR_alpha));
   //printf("Max distance is %.3f\nMax PSD is %4E\nMax index is %d\n", distance, max_psd, max_index);
-#ifdef INT_TIME
+ #ifdef INT_TIME
   gettimeofday(&cdfmcw_stop, NULL);
   cdfmcw_sec  += cdfmcw_stop.tv_sec  - cdfmcw_start.tv_sec;
   cdfmcw_usec += cdfmcw_stop.tv_usec - cdfmcw_start.tv_usec;
-#endif
-  if (max_psd > 1e-10*pow(8192,2)) {
+ #endif // INT_TIME
+  //printf("max_psd = %f  vs %f\n", max_psd, 1e-10*pow(8192,2));
+  if (max_psd > RADAR_psd_threshold) {
     return distance;
   } else {
     return INFINITY;

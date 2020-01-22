@@ -80,16 +80,16 @@ uint64_t bitrev_usec = 0LL;
 static unsigned int
 _rev (unsigned int v)
 {
-  unsigned int r = v; 
-  int s = sizeof(v) * CHAR_BIT - 1; 
+  unsigned int r = v;
+  int s = sizeof(v) * CHAR_BIT - 1;
 
   for (v >>= 1; v; v >>= 1)
-  {   
+  {
     r <<= 1;
     r |= v & 1;
     s--;
   }
-  r <<= s; 
+  r <<= s;
 
   return r;
 }

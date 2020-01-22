@@ -63,6 +63,7 @@ bool_t output_viz_trace = true;
 #else
 bool_t output_viz_trace = false;
 #endif
+unsigned fft_logn_samples = 14; // Defaults to 16k samples
 
 unsigned total_obj; // Total non-'N' obstacle objects across all lanes this time step
 unsigned obj_in_lane[NUM_LANES]; // Number of obstacle objects in each lane this time step (at least one, 'n')
@@ -199,8 +200,8 @@ static void init_vit_parameters()
  #define FFT_DEVNAME  "/dev/no-dev.0"
 #endif
 
-int32_t fftHW_len = FFTHW_LEN;
-int32_t fftHW_log_len = FFTHW_LOG_LEN;
+/* int32_t fftHW_log_len = FFTHW_LOG_LEN; */
+/* int32_t fftHW_len     = FFTHW_LEN; */
 
 int fftHW_fd;
 contig_handle_t fftHW_mem;
@@ -249,6 +250,9 @@ extern void descrambler(uint8_t* in, int psdusize, char* out_msg, uint8_t* ref, 
 status_t init_rad_kernel(char* dict_fn)
 {
   DEBUG(printf("In init_rad_kernel...\n"));
+
+  init_calculate_peak_dist(fft_logn_samples);
+
   // Read in the radar distances dictionary file
   FILE *dictF = fopen(dict_fn,"r");
   if (!dictF)
@@ -289,7 +293,7 @@ status_t init_rad_kernel(char* dict_fn)
   }
   DEBUG(printf("  Read %u dict entries with %u values across them all\n", num_radar_dictionary_items, tot_dict_values));
   if (!feof(dictF)) {
-    printf("NOTE: Did not hit eof on the radar dictionary file %s\n", "radar_dictionary.dfn");
+    printf("NOTE: Did not hit eof on the radar dictionary file %s\n", dict_fn);
   }
   fclose(dictF);
 
@@ -337,8 +341,8 @@ status_t init_rad_kernel(char* dict_fn)
 #else
   fftHW_desc.do_bitrev  = FFTHW_NO_BITREV;
 #endif
-  //fftHW_desc.len  = fftHW_len;
-  fftHW_desc.log_len   = fftHW_log_len;
+  //fftHW_desc.len      = fftHW_len;
+  fftHW_desc.log_len    = fft_logn_samples; // fftHW_log_len;
   fftHW_desc.src_offset = 0;
   fftHW_desc.dst_offset = 0;
 #endif
@@ -363,7 +367,7 @@ status_t init_vit_kernel(char* dict_fn)
   FILE *dictF = fopen(dict_fn,"r");
   if (!dictF)
   {
-    printf("Error: unable to open viterbi dictionary definitiond file %s\n", "vit_dictionary.dfn");
+    printf("Error: unable to open viterbi dictionary definition file %s\n", dict_fn);
     return error;
   }
 
@@ -402,6 +406,7 @@ status_t init_vit_kernel(char* dict_fn)
     the_viterbi_trace_dict[i].ofdm_p.encoding   = in_encoding;
     the_viterbi_trace_dict[i].ofdm_p.n_bpsc     = in_bpsc;
     the_viterbi_trace_dict[i].ofdm_p.n_cbps     = in_cbps;
+    the_viterbi_trace_dict[i].ofdm_p.n_dbps     = in_dbps;
     the_viterbi_trace_dict[i].ofdm_p.rate_field = in_rate;
 
     int in_pdsu_size, in_sym, in_pad, in_encoded_bits, in_data_bits;
@@ -409,6 +414,7 @@ status_t init_vit_kernel(char* dict_fn)
       ;
     DEBUG(printf("  FRAME: %d %d %d %d %d\n", in_pdsu_size, in_sym, in_pad, in_encoded_bits, in_data_bits));
     the_viterbi_trace_dict[i].frame_p.psdu_size      = in_pdsu_size;
+    the_viterbi_trace_dict[i].frame_p.n_sym          = in_sym;
     the_viterbi_trace_dict[i].frame_p.n_pad          = in_pad;
     the_viterbi_trace_dict[i].frame_p.n_encoded_bits = in_encoded_bits;
     the_viterbi_trace_dict[i].frame_p.n_data_bits    = in_data_bits;
@@ -455,10 +461,6 @@ status_t init_vit_kernel(char* dict_fn)
   vitHW_desc.esp.p2p_store = 0;
   vitHW_desc.esp.p2p_nsrcs = 0;
   vitHW_desc.esp.contig = contig_to_khandle(vitHW_mem);
-
-  /* printf("\n================================================\n"); */
-  /* printf("Viterbi butterfly accelerator invocations: \r"); */
-  /* fflush(stdout); */
 
 #endif
 
@@ -686,15 +688,20 @@ distance_t execute_rad_kernel(float * inputs)
 void post_execute_rad_kernel(distance_t tr_dist, distance_t dist)
 {
   // Get an error estimate (Root-Squared?)
-  radar_total_calc++;
   float error;
+  radar_total_calc++;
   if ((tr_dist >= 500.0) && (dist > 10000.0)) {
     error = 0.0;
   } else {
     error = (tr_dist - dist);
   }
   float abs_err = fabs(error);
-  float pct_err = abs_err/tr_dist;
+  float pct_err;
+  if (tr_dist != 0.0) {
+    pct_err = abs_err/tr_dist;
+  } else {
+    pct_err = abs_err;
+  }
   DEBUG(printf("%f vs %f : ERROR : %f   ABS_ERR : %f PCT_ERR : %f\n", tr_dist, dist, error, abs_err, pct_err));
   //printf("%f vs %f : ERROR : %f   ABS_ERR : %f PCT_ERR : %f\n", tr_dist, dist, error, abs_err, pct_err);
   if (pct_err == 0.0) {
@@ -817,13 +824,14 @@ message_t execute_vit_kernel(vit_dict_entry_t* trace_msg, int num_msgs)
     int psdusize = trace_msg->frame_p.psdu_size;
     DEBUG(printf("  Calling the viterbi descrambler routine\n"));
     descrambler(result, psdusize, msg_text, NULL /*descram_ref*/, NULL /*msg*/);
-  #if(0)
-    printf(" PSDU %u : Msg: '", psdusize);
+
+   #if(0)
+    printf(" PSDU %u : Msg : = `", psdusize);
     for (int ci = 0; ci < (psdusize - 26); ci++) {
-	    printf("%c", msg_text[ci]);
+      printf("%c", msg_text[ci]);
     }
     printf("'\n");
-  #endif
+   #endif
     // Here we look at the message string and select proper message_t
     switch(msg_text[3]) {
     case '0' : msg = safe_to_move_right_or_left; break;
@@ -835,7 +843,7 @@ message_t execute_vit_kernel(vit_dict_entry_t* trace_msg, int num_msgs)
   }
 
   DEBUG(printf("The execute_vit_kernel is returning msg %u\n", msg));
-  
+
   return msg;
 }
 

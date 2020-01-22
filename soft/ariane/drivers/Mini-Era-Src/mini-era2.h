@@ -47,8 +47,8 @@ typedef float fftHW_native_t;
 #endif /* FFT_FX_WIDTH */
 
 /* <<--params-def-->> */
-#define FFTHW_LOG_LEN     14
-#define FFTHW_LEN         (1 << FFTHW_LOG_LEN)
+/* #define FFTHW_LOG_LEN     14 */
+/* #define FFTHW_LEN         (1 << FFTHW_LOG_LEN) */
 #define FFTHW_NO_BITREV    0
 #define FFTHW_DO_BITREV    1
 
