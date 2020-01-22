@@ -296,10 +296,23 @@ status_t init_rad_kernel(char* dict_fn)
 #ifdef HW_FFT
   init_fft_parameters();
   printf("Open device %s\n", FFT_DEVNAME);
+  #if (USE_FFT_FX == 64)
+   printf(" typedef unsigned long long token_t\n");
+   printf(" typedef double native_t\n");
+   printf(" #define fx2float fixed64_to_double\n");
+   printf(" #define float2fx double_to_fixed64\n");
+  #elif (USE_FFT_FX == 32)
+   printf(" typedef int token_t\n");
+   printf(" typedef float native_t\n");
+   printf(" #define fx2float fixed32_to_float\n");
+   printf(" #define float2fx float_to_fixed32\n");
+  #endif /* FFT_FX_WIDTH */
+  printf(" #define FX_IL %u\n", FX_IL);
+
   fftHW_fd = open(FFT_DEVNAME, O_RDWR, 0);
-  if(fftHW_fd < 0) {
-	  fprintf(stderr, "Error: cannot open %s", FFT_DEVNAME);
-	  exit(EXIT_FAILURE);
+  if (fftHW_fd < 0) {
+    fprintf(stderr, "Error: cannot open %s", FFT_DEVNAME);
+    exit(EXIT_FAILURE);
   }
 
   printf("Allocate hardware buffer of size %zu\n", fftHW_size);
@@ -683,6 +696,7 @@ void post_execute_rad_kernel(distance_t tr_dist, distance_t dist)
   float abs_err = fabs(error);
   float pct_err = abs_err/tr_dist;
   DEBUG(printf("%f vs %f : ERROR : %f   ABS_ERR : %f PCT_ERR : %f\n", tr_dist, dist, error, abs_err, pct_err));
+  //printf("%f vs %f : ERROR : %f   ABS_ERR : %f PCT_ERR : %f\n", tr_dist, dist, error, abs_err, pct_err);
   if (pct_err == 0.0) {
     hist_pct_errs[0]++;
   } else if (pct_err < 0.01) {
