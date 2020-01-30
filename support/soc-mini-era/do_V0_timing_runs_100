@@ -1,0 +1,40 @@
+echo "THESE ARE THE 100 STEP V=0 SINGLE SHORT MESSAGE RUNS"
+echo ""
+echo "Base it-fcmain.exe tt02_0100 Vit 0 FFT 16k"
+#./it-fcmain.exe -t traces/tt02_0100.new -v 0 -f 14 -R traces/radar_16k_dictionary.dfn
+/applications/test/it-fcmain.exe -t traces/tt02_0100.new -v 0 -f 14 -R traces/radar_16k_dictionary.dfn
+echo ""
+echo "B+V it-fcmainV.exe tt02_0100 Vit 0 FFT 16k"
+/applications/test/it-fcmainV.exe -t traces/tt02_0100.new -v 0 -f 14 -R traces/radar_16k_dictionary.dfn
+echo ""
+echo "B+F it-fcmainF64.exe tt02_0100 Vit 0 FFT 16k"
+/applications/test/it-fcmainF64.exe -t traces/tt02_0100.new -v 0 -f 14 -R traces/radar_16k_dictionary.dfn
+echo ""
+echo "B+Fbr it-fcmainF64br.exe tt02_0100 Vit 0 FFT 16k"
+/applications/test/it-fcmainF64br.exe -t traces/tt02_0100.new -v 0 -f 14 -R traces/radar_16k_dictionary.dfn
+echo ""
+echo "B+VF it-fcmainVF64.exe tt02_0100 Vit 0 FFT 16k"
+/applications/test/it-fcmainVF64.exe -t traces/tt02_0100.new -v 0 -f 14 -R traces/radar_16k_dictionary.dfn
+echo ""
+echo "B+VFbr it-fcmainVF64br.exe tt02_0100 Vit 0 FFT 16k"
+/applications/test/it-fcmainVF64br.exe -t traces/tt02_0100.new -v 0 -f 14 -R traces/radar_16k_dictionary.dfn
+
+echo ""
+echo "Base it-fcmain.exe tt02_0100 Vit 0 FFT 1k"
+#./it-fcmain.exe -t traces/tt02_0100.new -v 0 -f 10 -R traces/radar_01k_dictionary.dfn
+/applications/test/it-fcmain.exe -t traces/tt02_0100.new -v 0 -f 10 -R traces/radar_01k_dictionary.dfn
+echo ""
+echo "B+V it-fcmainV.exe tt02_0100 Vit 0 FFT 1k"
+/applications/test/it-fcmainV.exe -t traces/tt02_0100.new -v 0 -f 10 -R traces/radar_01k_dictionary.dfn
+echo ""
+echo "B+F it-fcmainF64.exe tt02_0100 Vit 0 FFT 1k"
+/applications/test/it-fcmainF64.exe -t traces/tt02_0100.new -v 0 -f 10 -R traces/radar_01k_dictionary.dfn
+echo ""
+echo "B+Fbr it-fcmainF64br.exe tt02_0100 Vit 0 FFT 1k"
+/applications/test/it-fcmainF64br.exe -t traces/tt02_0100.new -v 0 -f 10 -R traces/radar_01k_dictionary.dfn
+echo ""
+echo "B+VF it-fcmainVF64.exe tt02_0100 Vit 0 FFT 1k"
+/applications/test/it-fcmainVF64.exe -t traces/tt02_0100.new -v 0 -f 10 -R traces/radar_01k_dictionary.dfn
+echo ""
+echo "B+VFbr it-fcmainVF64br.exe tt02_0100 Vit 0 FFT 1k"
+/applications/test/it-fcmainVF64br.exe -t traces/tt02_0100.new -v 0 -f 10 -R traces/radar_01k_dictionary.dfn
