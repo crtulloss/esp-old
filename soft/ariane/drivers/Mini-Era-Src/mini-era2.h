@@ -43,7 +43,7 @@ typedef int fftHW_token_t;
 typedef float fftHW_native_t;
 #define fx2float fixed32_to_float
 #define float2fx float_to_fixed32
-#define FX_IL 12
+#define FX_IL 14
 #endif /* FFT_FX_WIDTH */
 
 /* <<--params-def-->> */
