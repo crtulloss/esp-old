@@ -80,7 +80,7 @@ void init_calculate_peak_dist(unsigned fft_logn_samples)
 
 extern int fftHW_fd;
 extern contig_handle_t fftHW_mem;
-extern int64_t* fftHW_lmem;
+extern fftHW_token_t* fftHW_lmem;
 
 extern struct fftHW_access fftHW_desc;
 
@@ -160,7 +160,8 @@ float calculate_peak_dist_from_fmcw(float* data)
   // convert input to fixed point
   //for (int j = 0; j < 2 * fftHW_len; j++) {
   for (int j = 0; j < 2 * RADAR_N; j++) {
-    fftHW_lmem[j] = float2fx((fftHW_native_t) data[j], FX_IL);
+    //fftHW_lmem[j] = float2fx((fftHW_native_t) data[j], FX_IL);
+    fftHW_lmem[j] = float2fx(data[j], FX_IL);
   }
  #ifdef INT_TIME
   gettimeofday(&fft_cvtin_stop, NULL);
@@ -179,6 +180,7 @@ float calculate_peak_dist_from_fmcw(float* data)
   //for (int j = 0; j < 2 * fftHW_len; j++) {
   for (int j = 0; j < 2 * RADAR_N; j++) {
     data[j] = (float)fx2float(fftHW_lmem[j], FX_IL);
+    //printf("%u,0x%08x,%f\n", j, fftHW_lmem[j], data[j]);
   }
  #ifdef INT_TIME
   gettimeofday(&fft_cvtout_stop, NULL);
@@ -189,7 +191,10 @@ float calculate_peak_dist_from_fmcw(float* data)
  #ifdef INT_TIME
   gettimeofday(&fft_start, NULL);
  #endif // INT_TIME
-  fft (data, RADAR_N, RADAR_LOGN, -1);
+  fft(data, RADAR_N, RADAR_LOGN, -1);
+  /* for (int j = 0; j < 2 * RADAR_N; j++) { */
+  /*   printf("%u,%f\n", j, data[j]); */
+  /* } */
  #ifdef INT_TIME
   gettimeofday(&fft_stop, NULL);
   fft_sec  += fft_stop.tv_sec  - fft_start.tv_sec;
