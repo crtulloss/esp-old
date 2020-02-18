@@ -103,7 +103,7 @@ if [ $(noyes "Skip ${src}") == "n" ]; then
 	git checkout .
 	git submodule update --init --recursive
     else
-	git clone --recursive git@github.com:riscv/riscv-gnu-toolchain.git
+	git clone --recursive https://github.com/riscv/riscv-gnu-toolchain
 	cd $src
     fi
 
@@ -124,7 +124,7 @@ if [ $(noyes "Skip ${src}") == "n" ]; then
 	git checkout .
 	git submodule update --init --recursive
     else
-	git clone --recursive git@github.com:riscv/riscv-gnu-toolchain.git
+	git clone --recursive https://github.com/riscv/riscv-gnu-toolchain
 	cd $src
     fi
 
@@ -152,7 +152,7 @@ if [ $(noyes "Skip buildroot?") == "n" ]; then
     	git checkout .
     	git pull
     else
-    	git clone --recursive git://git.buildroot.net/buildroot
+    	git clone --recursive https://git.buildroot.net/buildroot
     	cd $src
     fi
 
