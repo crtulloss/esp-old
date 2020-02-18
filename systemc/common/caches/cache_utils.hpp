@@ -61,12 +61,9 @@ inline void write_word(line_t &line, word_t word, word_offset_t w_off, byte_offs
     } else if (hsize == HALFWORD) {
 	b_off_tmp = BYTES_PER_WORD - BYTES_PER_WORD/2 - b_off;
 	size = BITS_PER_HALFWORD;
-    } else if (hsize == WORD) {
+    } else if (hsize == WORD_32 || hsize == WORD_64) {
 	b_off_tmp = 0;
 	size = BITS_PER_WORD;
-    } else if (hsize == WORDS_2) {
-    b_off_tmp = 0;
-    size = BITS_PER_DOUBLEWORD;
     }
 
     uint32_t w_off_bits = BITS_PER_WORD * w_off;
