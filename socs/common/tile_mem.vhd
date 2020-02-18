@@ -409,6 +409,7 @@ begin
         local_y       => this_local_y,
         local_x       => this_local_x,
         cacheline     => CFG_DLINE,
+        little_end    => GLOB_CPU_AXI,
         l2_cache_en   => CFG_L2_ENABLE,
         cache_tile_id => cache_tile_id,
         dma_tile_id   => dma_tile_id,

@@ -32,6 +32,8 @@ package cachepackage is
   constant AS_AHBS_STRSP_HREADY  : integer := 10;
   constant AS_AHBS_INV_FIFO      : integer := 11;
   constant AS_AHBS_NON_CACHEABLE : integer := 12;
+
+  constant AS_INV_STATE          : integer := 13;
   -- constant AS_AHBM_ : integer := 0;
 
   -- constant AS_REQ_ : integer := 0;
@@ -166,6 +168,8 @@ package cachepackage is
       ahbso : out ahb_slv_out_type;
       ahbmi : in  ahb_mst_in_type;
       ahbmo : out ahb_mst_out_type;
+      mosi  : in  axi_mosi_type;
+      somi  : out axi_somi_type;
       apbi  : in  apb_slv_in_type;
       apbo  : out apb_slv_out_type;
       flush : in  std_ulogic;           -- flush request from CPU
@@ -267,6 +271,7 @@ package cachepackage is
       local_y     : local_yx;
       local_x     : local_yx;
       cacheline   : integer;
+      little_end  : integer range 0 to 1 := 0;
       l2_cache_en : integer                      := 0;
       cache_tile_id : cache_attribute_array;
       dma_tile_id   : dma_attribute_array;
