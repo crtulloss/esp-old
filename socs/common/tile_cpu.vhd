@@ -208,19 +208,7 @@ architecture rtl of tile_cpu is
   constant this_local_y           : local_yx                           := tile_y(tile_id);
   constant this_local_x           : local_yx                           := tile_x(tile_id);
 
-  -- attribute keep : string;
   -- attribute mark_debug : string;
-
-  -- attribute keep of apbi : signal is "true";
-  -- attribute keep of apbo : signal is "true";
-  -- attribute keep of apb_req : signal is "true";
-  -- attribute keep of apb_ack : signal is "true";
-  -- attribute keep of remote_apb_snd_wrreq : signal is "true";
-  -- attribute keep of remote_apb_snd_data_in : signal is "true";
-  -- attribute keep of remote_apb_snd_full : signal is "true";
-  -- attribute keep of remote_apb_rcv_rdreq : signal is "true";
-  -- attribute keep of remote_apb_rcv_data_out : signal is "true";
-  -- attribute keep of remote_apb_rcv_empty : signal is "true";
 
   -- attribute mark_debug of apbi : signal is "true";
   -- attribute mark_debug of apbo : signal is "true";

@@ -245,7 +245,6 @@ architecture rtl of tile_io is
   constant this_remote_ahb_slv_en : std_logic_vector(0 to NAHBSLV - 1) := remote_ahb_mask(io_tile_id);
 
   attribute mark_debug : string;
-  attribute keep : string;
 
   -- attribute mark_debug of ahbsi                 : signal is "true";
   -- attribute mark_debug of ctrl_ahbso            : signal is "true";
@@ -266,33 +265,19 @@ architecture rtl of tile_io is
   -- attribute mark_debug of remote_ahbs_snd_data_in   : signal is"true";
   -- attribute mark_debug of remote_ahbs_snd_full      : signal is"true";
 
-  attribute keep of noc_apbi_wirq : signal is "true";
-  attribute keep of noc_apbo : signal is "true";
-  attribute keep of apb_snd_wrreq : signal is "true";
-  attribute keep of apb_snd_data_in : signal is "true";
-  attribute keep of apb_snd_full: signal is "true";
-  attribute keep of apb_rcv_rdreq : signal is "true";
-  attribute keep of apb_rcv_data_out : signal is "true";
-  attribute keep of apb_rcv_empty : signal is "true";
-  attribute keep of pready : signal is "true";
-  attribute keep of plic_pready : signal is "true";
-  attribute keep of plic_pslverr : signal is "true";
-  attribute keep of irq_sources : signal is "true";
-  attribute keep of irq : signal is "true";
-
-  attribute mark_debug of noc_apbi_wirq : signal is "true";
-  attribute mark_debug of noc_apbo : signal is "true";
-  attribute mark_debug of apb_snd_wrreq : signal is "true";
-  attribute mark_debug of apb_snd_data_in : signal is "true";
-  attribute mark_debug of apb_snd_full: signal is "true";
-  attribute mark_debug of apb_rcv_rdreq : signal is "true";
-  attribute mark_debug of apb_rcv_data_out : signal is "true";
-  attribute mark_debug of apb_rcv_empty : signal is "true";
-  attribute mark_debug of pready : signal is "true";
-  attribute mark_debug of plic_pready : signal is "true";
-  attribute mark_debug of plic_pslverr : signal is "true";
-  attribute mark_debug of irq_sources : signal is "true";
-  attribute mark_debug of irq : signal is "true";
+  -- attribute mark_debug of noc_apbi_wirq : signal is "true";
+  -- attribute mark_debug of noc_apbo : signal is "true";
+  -- attribute mark_debug of apb_snd_wrreq : signal is "true";
+  -- attribute mark_debug of apb_snd_data_in : signal is "true";
+  -- attribute mark_debug of apb_snd_full: signal is "true";
+  -- attribute mark_debug of apb_rcv_rdreq : signal is "true";
+  -- attribute mark_debug of apb_rcv_data_out : signal is "true";
+  -- attribute mark_debug of apb_rcv_empty : signal is "true";
+  -- attribute mark_debug of pready : signal is "true";
+  -- attribute mark_debug of plic_pready : signal is "true";
+  -- attribute mark_debug of plic_pslverr : signal is "true";
+  -- attribute mark_debug of irq_sources : signal is "true";
+  -- attribute mark_debug of irq : signal is "true";
 
 begin
 

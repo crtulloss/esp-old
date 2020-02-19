@@ -403,6 +403,13 @@ architecture rtl of l2_wrapper is
 
   attribute mark_debug : string;
 
+  -- attribute mark_debug of ahbsi            : signal is "true";
+  -- attribute mark_debug of ahbso            : signal is "true";
+  -- attribute mark_debug of ahbmi            : signal is "true";
+  -- attribute mark_debug of ahbmo            : signal is "true";
+  attribute mark_debug of mosi             : signal is "true";
+  attribute mark_debug of somi             : signal is "true";
+
   attribute mark_debug of ahbs_reg_state   : signal is "true";
   attribute mark_debug of ahbm_reg_state   : signal is "true";
   attribute mark_debug of req_reg_state    : signal is "true";
@@ -413,13 +420,13 @@ architecture rtl of l2_wrapper is
 
   -- attribute mark_debug of inv_fifo_empty        : signal is "true";
   -- attribute mark_debug of inv_fifo_almost_empty : signal is "true";
-  attribute mark_debug of inv_fifo_full         : signal is "true";
+  -- attribute mark_debug of inv_fifo_full         : signal is "true";
   -- attribute mark_debug of inv_fifo_rdreq        : signal is "true";
   -- attribute mark_debug of inv_fifo_wrreq        : signal is "true";
   -- attribute mark_debug of inv_fifo_data_in      : signal is "true";
   -- attribute mark_debug of inv_fifo_data_out     : signal is "true";
 
-  --attribute mark_debug of ahbs_asserts : signal is "true";
+  -- attribute mark_debug of ahbs_asserts : signal is "true";
   -- attribute mark_debug of ahbm_asserts   : signal is "true";
   -- attribute mark_debug of req_asserts    : signal is "true";
   -- attribute mark_debug of rsp_out_asserts    : signal is "true";
@@ -439,7 +446,7 @@ architecture rtl of l2_wrapper is
   -- cache to AHB
   attribute mark_debug of rd_rsp_ready           : signal is "true";
   attribute mark_debug of rd_rsp_valid           : signal is "true";
-  -- attribute mark_debug of rd_rsp_data_line       : signal is "true";
+  attribute mark_debug of rd_rsp_data_line       : signal is "true";
   attribute mark_debug of inval_ready            : signal is "true";
   attribute mark_debug of inval_valid            : signal is "true";
   attribute mark_debug of inval_data             : signal is "true";
@@ -449,7 +456,7 @@ architecture rtl of l2_wrapper is
   attribute mark_debug of req_out_data_coh_msg   : signal is "true";
   attribute mark_debug of req_out_data_hprot     : signal is "true";
   attribute mark_debug of req_out_data_addr      : signal is "true";
-  -- attribute mark_debug of req_out_data_line      : signal is "true";
+  attribute mark_debug of req_out_data_line      : signal is "true";
   attribute mark_debug of rsp_out_ready          : signal is "true";
   attribute mark_debug of rsp_out_valid          : signal is "true";
   attribute mark_debug of rsp_out_data_coh_msg   : signal is "true";
@@ -467,11 +474,11 @@ architecture rtl of l2_wrapper is
   attribute mark_debug of rsp_in_ready           : signal is "true";
   attribute mark_debug of rsp_in_data_coh_msg    : signal is "true";
   attribute mark_debug of rsp_in_data_addr       : signal is "true";
-  -- attribute mark_debug of rsp_in_data_line       : signal is "true";
+  attribute mark_debug of rsp_in_data_line       : signal is "true";
   attribute mark_debug of rsp_in_data_invack_cnt : signal is "true";
   -- debug
-  --attribute mark_debug of asserts                : signal is "true";
-  --attribute mark_debug of bookmark               : signal is "true";
+  -- attribute mark_debug of asserts                : signal is "true";
+  -- attribute mark_debug of bookmark               : signal is "true";
   -- attribute mark_debug of custom_dbg             : signal is "true";
   attribute mark_debug of flush_done             : signal is "true";
   -- statistics
