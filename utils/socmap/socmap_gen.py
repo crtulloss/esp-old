@@ -1565,9 +1565,12 @@ def print_cache_config(fp, soc):
   byte_bits = 2
   word_bits = 2
   if soc.CPU_ARCH.get() == "ariane":
+    fp.write("`define LITTLE_ENDIAN\n")
     addr_bits = 32
     byte_bits = 3
     word_bits = 1
+  else:
+    fp.write("`define BIG_ENDIAN\n")
 
   fp.write("`define ADDR_BITS    " + str(addr_bits) + "\n")
   fp.write("`define BYTE_BITS    " + str(byte_bits) + "\n")
