@@ -11,89 +11,177 @@ use work.nocpackage.all;
 
 entity sync_noc_xy is
   generic (
-    XLEN      : integer;
-    YLEN      : integer;
-    TILES_NUM : integer;
+    PORTS     : std_logic_vector(4 downto 0);
+    local_x   : std_logic_vector(2 downto 0);
+    local_y   : std_logic_vector(2 downto 0);
     HAS_SYNC  : integer range 0 to 1 := 0);
   port (
     clk           : in  std_logic;
-    clk_tile      : in  std_logic_vector(TILES_NUM-1 downto 0);
+    clk_tile      : in  std_logic;
     rst           : in  std_logic;
-    input_port    : in  noc_flit_vector(TILES_NUM-1 downto 0);
-    data_void_in  : in  std_logic_vector(TILES_NUM-1 downto 0);
-    stop_in       : in  std_logic_vector(TILES_NUM-1 downto 0);
-    output_port   : out noc_flit_vector(TILES_NUM-1 downto 0);
-    data_void_out : out std_logic_vector(TILES_NUM-1 downto 0);
-    stop_out      : out std_logic_vector(TILES_NUM-1 downto 0);
+    data_n_in     : in  std_logic_vector(NOC_FLIT_SIZE-1 downto 0);
+    data_s_in     : in  std_logic_vector(NOC_FLIT_SIZE-1 downto 0);
+    data_w_in     : in  std_logic_vector(NOC_FLIT_SIZE-1 downto 0);
+    data_e_in     : in  std_logic_vector(NOC_FLIT_SIZE-1 downto 0);
+    input_port    : in  std_logic_vector(NOC_FLIT_SIZE-1 downto 0);
+    data_void_in  : in  std_logic_vector(4 downto 0);
+    stop_in       : in  std_logic_vector(4 downto 0);
+    data_n_out    : in  std_logic_vector(NOC_FLIT_SIZE-1 downto 0);
+    data_s_out    : in  std_logic_vector(NOC_FLIT_SIZE-1 downto 0);
+    data_w_out    : in  std_logic_vector(NOC_FLIT_SIZE-1 downto 0);
+    data_e_out    : in  std_logic_vector(NOC_FLIT_SIZE-1 downto 0);
+    output_port   : out std_logic_vector(NOC_FLIT_SIZE-1 downto 0);
+    data_void_out : out std_logic_vector(4 downto 0);
+    stop_out      : out std_logic_vector(4 downto 0);
     -- Monitor output. Can be left unconnected
-    mon_noc       : out monitor_noc_vector(0 to TILES_NUM-1)
+    mon_noc       : out monitor_noc_type
     );
 
 end sync_noc_xy;
 
 architecture mesh of sync_noc_xy is
 
-  component noc_xy
+------------------------------------------------------------------------------------------------------
+-- This functions is no longer required. They are stated in the tiles as this_local_x and this_local_y
+
+--  function set_tile_x (
+--    constant XLEN : integer;
+--    constant YLEN : integer;
+--    constant id_bits  : integer)
+--    return local_vec is
+--    variable x : local_vec;
+--  begin  -- set_tile_id
+--    for i in 0 to YLEN-1 loop
+--      for j in 0 to XLEN-1 loop
+--        x(i * XLEN + j) := conv_std_logic_vector(j, id_bits);
+--      end loop;  -- j
+--    end loop;  -- i
+--    return x;
+--  end set_tile_x;
+
+--  function set_tile_y (
+--    constant XLEN : integer;
+--    constant YLEN : integer;
+--    constant id_bits  : integer)
+--    return local_vec is
+--    variable y : local_vec;
+--  begin  -- set_tile_id
+--    for i in 0 to YLEN-1 loop
+--      for j in 0 to XLEN-1 loop
+--        y(i * XLEN + j) := conv_std_logic_vector(i, id_bits);
+--      end loop;  -- j
+--    end loop;  -- i
+--    return y;
+--  end set_tile_y;
+
+--  constant localx       : local_vec := set_tile_x(XLEN, YLEN, 3);
+--  constant localy       : local_vec := set_tile_y(XLEN, YLEN, 3);
+----------------------------------------------------------------------------------------------------------
+  component router
     generic (
-      XLEN      : integer;
-      YLEN      : integer;
-      TILES_NUM : integer);
+      flow_control : integer;
+      width        : integer;
+      depth        : integer;
+      ports        : std_logic_vector(4 downto 0);
+      localx       : std_logic_vector(2 downto 0);
+      localy       : std_logic_vector(2 downto 0));
+
     port (
       clk           : in  std_logic;
       rst           : in  std_logic;
-      input_port    : in  noc_flit_vector(TILES_NUM-1 downto 0);
-      data_void_in  : in  std_logic_vector(TILES_NUM-1 downto 0);
-      stop_in       : in  std_logic_vector(TILES_NUM-1 downto 0);
-      output_port   : out noc_flit_vector(TILES_NUM-1 downto 0);
-      data_void_out : out std_logic_vector(TILES_NUM-1 downto 0);
-      stop_out      : out std_logic_vector(TILES_NUM-1 downto 0);
-      -- Monitor output
-      mon_noc       : out monitor_noc_vector(0 to TILES_NUM-1)
-      );
+      data_n_in     : in  std_logic_vector(width-1 downto 0);
+      data_s_in     : in  std_logic_vector(width-1 downto 0);
+      data_w_in     : in  std_logic_vector(width-1 downto 0);
+      data_e_in     : in  std_logic_vector(width-1 downto 0);
+      data_p_in     : in  std_logic_vector(width-1 downto 0);
+      data_void_in  : in  std_logic_vector(4 downto 0);
+      stop_in       : in  std_logic_vector(4 downto 0);
+      data_n_out    : out std_logic_vector(width-1 downto 0);
+      data_s_out    : out std_logic_vector(width-1 downto 0);
+      data_w_out    : out std_logic_vector(width-1 downto 0);
+      data_e_out    : out std_logic_vector(width-1 downto 0);
+      data_p_out    : out std_logic_vector(width-1 downto 0);
+      data_void_out : out std_logic_vector(4 downto 0);
+      stop_out      : out std_logic_vector(4 downto 0));
   end component;
 
-  signal fwd_ack	  : std_logic_vector(TILES_NUM-1 downto 0);
-  signal fwd_req	  : std_logic_vector(TILES_NUM-1 downto 0);
-  signal fwd_chnl_data	  : noc_flit_vector(TILES_NUM-1 downto 0);
-  signal fwd_chnl_stop	  : std_logic_vector(TILES_NUM-1 downto 0);
+  signal fwd_ack	  : std_logic_vector;
+  signal fwd_req	  : std_logic_vector;
+  signal fwd_chnl_data	  : noc_flit_vector;
+  signal fwd_chnl_stop	  : std_logic_vector;
 
-  signal rev_ack	  : std_logic_vector(TILES_NUM-1 downto 0);
-  signal rev_req	  : std_logic_vector(TILES_NUM-1 downto 0);
-  signal rev_chnl_data	  : noc_flit_vector(TILES_NUM-1 downto 0);
-  signal rev_chnl_stop	  : std_logic_vector(TILES_NUM-1 downto 0);
+  signal rev_ack	  : std_logic_vector;
+  signal rev_req	  : std_logic_vector;
+  signal rev_chnl_data	  : noc_flit_vector;
+  signal rev_chnl_stop	  : std_logic_vector;
 
-  signal sync_output_port   : noc_flit_vector(TILES_NUM-1 downto 0);
-  signal sync_data_void_out : std_logic_vector(TILES_NUM-1 downto 0);
-  signal sync_input_port    : noc_flit_vector(TILES_NUM-1 downto 0);
-  signal sync_data_void_in  : std_logic_vector(TILES_NUM-1 downto 0);
-  signal sync_stop_in 	    : std_logic_vector(TILES_NUM-1 downto 0);
-  signal sync_stop_out 	    : std_logic_vector(TILES_NUM-1 downto 0);
+  signal sync_output_port   : noc_flit_vector;
+  signal sync_data_void_out : std_logic_vector;
+  signal sync_input_port    : noc_flit_vector;
+  signal sync_data_void_in  : std_logic_vector;
+  signal sync_stop_in 	    : std_logic_vector;
+  signal sync_stop_out 	    : std_logic_vector;
 
-  signal fwd_rd_i, fwd_we_i : std_logic_vector(TILES_NUM-1 downto 0);
-  signal rev_rd_i, rev_we_i : std_logic_vector(TILES_NUM-1 downto 0);
-  signal fwd_rd_empty_o     : std_logic_vector(TILES_NUM-1 downto 0);
-  signal fwd_wr_full_o      : std_logic_vector(TILES_NUM-1 downto 0);
-  signal rev_rd_empty_o     : std_logic_vector(TILES_NUM-1 downto 0);
-  signal rev_wr_full_o      : std_logic_vector(TILES_NUM-1 downto 0);
+  signal fwd_rd_i, fwd_we_i : std_logic_vector;
+  signal rev_rd_i, rev_we_i : std_logic_vector;
+  signal fwd_rd_empty_o     : std_logic_vector;
+  signal fwd_wr_full_o      : std_logic_vector;
+  signal rev_rd_empty_o     : std_logic_vector;
+  signal rev_wr_full_o      : std_logic_vector;
 
-begin
+  signal data_void_in_i  : std_logic_vector(4 downto 0);
+  signal stop_in_i       : std_logic_vector(4 downto 0);
+  signal data_void_out_i : std_logic_vector(4 downto 0);
+  signal stop_out_i      : std_logic_vector(4 downto 0);
 
-  noc_xy_1: noc_xy
-    generic map (
-      XLEN      => XLEN,
-      YLEN      => YLEN,
-      TILES_NUM => TILES_NUM)
-    port map (
-      clk           => clk,
-      rst           => rst,
-      input_port    => sync_input_port,
-      data_void_in  => sync_data_void_in,
-      stop_in       => sync_stop_in,
-      output_port   => sync_output_port,
-      data_void_out => sync_data_void_out,
-      stop_out      => sync_stop_out,
-      mon_noc       => mon_noc
-      );
+  begin
+
+  data_void_in_i     <= sync_data_void_in & data_void_in(3 downto 0);
+  stop_in_i          <= sync_stop_in & stop_in(3 downto 0);
+  sync_data_void_out <= data_void_out_i(4);
+  data_void_out      <= data_void_out_i(3 downto 0);
+  sync_stop_out      <= stop_out_i(4);
+  stop_out           <= stop_out_i(3 downto 0);
+
+----------------------------------------------------------------------------------------------
+-- Router
+----------------------------------------------------------------------------------------------
+
+    router_ij: router
+        generic map (
+          flow_control => FLOW_CONTROL,
+          width        => NOC_FLIT_SIZE,
+          depth        => ROUTER_DEPTH,
+          ports        => PORTS,
+          localx       => local_x,
+          localy       => local_y)
+      port map (
+          clk           => clk,
+          rst           => rst,
+          data_n_in     => data_n_in,
+          data_s_in     => data_s_in,
+          data_w_in     => data_w_in,
+          data_e_in     => data_e_in,
+          data_p_in     => sync_input_port,
+          data_void_in  => data_void_in_i,
+          stop_in       => stop_in_i,
+          data_n_out    => data_n_out,
+          data_s_out    => data_s_out,
+          data_w_out    => data_w_out,
+          data_e_out    => data_e_out,
+          data_p_out    => sync_output_port,
+          data_void_out => data_void_out_i,
+          stop_out      => stop_out_i);
+
+    -- Monitor signals
+    mon_noc.clk          <= clk;
+    mon_noc.tile_inject  <= not data_void_in;
+
+    mon_noc.queue_full(4) <= data_void_out_i(4) nand data_void_in_i(4);
+    mon_noc.queue_full(3) <= not data_void_out_i(3);
+    mon_noc.queue_full(2) <= not data_void_out_i(2);
+    mon_noc.queue_full(1) <= not data_void_out_i(1);
+    mon_noc.queue_full(0) <= not data_void_out_i(0);
 
 ----------------------------------------------------------------------------------------------
 -- FWD channel: input to the NoC
@@ -102,69 +190,66 @@ begin
 
   no_synchronizers: if HAS_SYNC = 0 generate
     sync_input_port <= input_port;
-    sync_data_void_in <= data_void_in;
-    sync_stop_in <= stop_in;
-    output_port <= sync_output_port;
-    data_void_out <= sync_data_void_out;
-    stop_out <= sync_stop_out;
+    sync_data_void_in <= data_void_in(4);
+    sync_stop_in <= stop_in(4);
+    output_port(4) <= sync_output_port;
+    data_void_out(4) <= sync_data_void_out;
+    stop_out(4) <= sync_stop_out;
     fwd_ack <= (others => '0');
     fwd_req <= (others => '0');
     fwd_chnl_stop <= (others => '0');
     rev_ack <= (others => '0');
     rev_req <= (others => '0');
     rev_chnl_stop <= (others => '0');
-    data_reset: for i in 0 to TILES_NUM-1 generate
-      fwd_chnl_data(i) <= (others => '0');
-      rev_chnl_data(i) <= (others => '0');
-    end generate;
+    fwd_chnl_data <= (others => '0');
+    rev_chnl_data <= (others => '0');
+
   end generate no_synchronizers;
 
   inferred_async_fifos_gen: if HAS_SYNC /= 0 generate
     tile_to_NoC:
-    for i in 0 to TILES_NUM-1 generate
     begin
-      fwd_we_i(i) <= not data_void_in(i);
-      stop_out(i) <= fwd_wr_full_o(i);-- when data_void_in(i) = '0' else '0';
-      fwd_rd_i(i) <= not sync_stop_out(i);
-      sync_data_void_in(i) <= fwd_rd_empty_o(i) when sync_stop_out(i) = '0' else '1';
+      fwd_we_i    <= not data_void_in(4);
+      stop_out(4) <= fwd_wr_full_o;-- when data_void_in = '0' else '0';
+      fwd_rd_i    <= not sync_stop_out;
+      sync_data_void_in <= fwd_rd_empty_o when sync_stop_out = '0' else '1';
       inferred_async_fifo_1: inferred_async_fifo
         generic map (
           g_data_width => NOC_FLIT_SIZE,
           g_size       => 8)
         port map (
           rst_n_i    => rst,
-          clk_wr_i   => clk_tile(i),
-          we_i       => fwd_we_i(i),
-          d_i        => input_port(i),
-          wr_full_o  => fwd_wr_full_o(i),
+          clk_wr_i   => clk_tile,
+          we_i       => fwd_we_i,
+          d_i        => input_port,
+          wr_full_o  => fwd_wr_full_o,
           clk_rd_i   => clk,
-          rd_i       => fwd_rd_i(i),
-          q_o        => sync_input_port(i),
-          rd_empty_o => fwd_rd_empty_o(i));
-    end generate tile_to_NoC;
+          rd_i       => fwd_rd_i,
+          q_o        => sync_input_port,
+          rd_empty_o => fwd_rd_empty_o);
+    end tile_to_NoC;
 
     Noc_to_tile:
-    for i in 0 to TILES_NUM-1 generate
     begin
-      rev_we_i(i) <= not sync_data_void_out(i);
-      sync_stop_in(i) <= rev_wr_full_o(i) when sync_data_void_out(i) = '0' else '0';
-      rev_rd_i(i) <= not stop_in(i);
-      data_void_out(i) <= rev_rd_empty_o(i);-- when stop_in(i) = '0' else '1';
+      rev_we_i         <= not sync_data_void_out;
+      sync_stop_in     <= rev_wr_full_o when sync_data_void_out = '0' else '0';
+      rev_rd_i         <= not stop_in;
+      data_void_out(4) <= rev_rd_empty_o;-- when stop_in = '0' else '1';
       inferred_async_fifo_1: inferred_async_fifo
         generic map (
           g_data_width => NOC_FLIT_SIZE,
           g_size       => 8)
         port map (
-          rst_n_i    => rst,
-          clk_wr_i   => clk,
-          we_i       => rev_we_i(i),
-          d_i        => sync_output_port(i),
-          wr_full_o  => rev_wr_full_o(i),
-          clk_rd_i   => clk_tile(i),
-          rd_i       => rev_rd_i(i),
-          q_o        => output_port(i),
-          rd_empty_o => rev_rd_empty_o(i));
-    end generate Noc_to_tile;
+          rst_n_i      => rst,
+          clk_wr_i     => clk,
+          we_i         => rev_we_i,
+          d_i          => sync_output_port,
+          wr_full_o    => rev_wr_full_o,
+          clk_rd_i     => clk_tile,
+          rd_i         => rev_rd_i,
+          q_o          => output_port,
+          rd_empty_o   => rev_rd_empty_o);
+    end Noc_to_tile;
 
   end generate inferred_async_fifos_gen;
 

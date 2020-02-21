@@ -63,26 +63,37 @@ end;
 
 architecture rtl of esp is
 
-  component sync_noc_xy
-    generic (
-      XLEN      : integer;
-      YLEN      : integer;
-      TILES_NUM : integer;
-      has_sync  : integer range 0 to 1);
-    port (
-      clk           : in  std_logic;
-      clk_tile      : in  std_logic_vector(TILES_NUM-1 downto 0);
-      rst           : in  std_logic;
-      input_port    : in  noc_flit_vector(TILES_NUM-1 downto 0);
-      data_void_in  : in  std_logic_vector(TILES_NUM-1 downto 0);
-      stop_in       : in  std_logic_vector(TILES_NUM-1 downto 0);
-      output_port   : out noc_flit_vector(TILES_NUM-1 downto 0);
-      data_void_out : out std_logic_vector(TILES_NUM-1 downto 0);
-      stop_out      : out std_logic_vector(TILES_NUM-1 downto 0);
+----------------------------------------------------------------------------------------------
+-- SYNC_NOC_XY AND SYNC_NOC32_XY are going to be instanciated in the tiles
+----------------------------------------------------------------------------------------------
+--  component sync_noc_xy
+--    generic (
+--      PORTS     : std_logic_vector(4 downto 0);
+--      local_x   : std_logic_vector(2 downto 0);
+--      local_y   : std_logic_vector(2 downto 0);
+--      has_sync  : integer range 0 to 1);
+--    port (
+--      clk           : in  std_logic;
+--      clk_tile      : in  std_logic;
+--      rst           : in  std_logic;
+--      data_n_in     : in  std_logic_vector(NOC_FLIT_SIZE-1 downto 0);
+--      data_s_in     : in  std_logic_vector(NOC_FLIT_SIZE-1 downto 0);
+--      data_w_in     : in  std_logic_vector(NOC_FLIT_SIZE-1 downto 0);
+--      data_e_in     : in  std_logic_vector(NOC_FLIT_SIZE-1 downto 0);
+--      input_port    : in  std_logic_vector(NOC_FLIT_SIZE-1 downto 0);
+--      data_void_in  : in  std_logic_vector(4 downto 0);
+--      stop_in       : in  std_logic_vector(4 downto 0);
+--      data_n_out    : in  std_logic_vector(NOC_FLIT_SIZE-1 downto 0);
+--      data_s_out    : in  std_logic_vector(NOC_FLIT_SIZE-1 downto 0);
+--      data_w_out    : in  std_logic_vector(NOC_FLIT_SIZE-1 downto 0);
+--      data_e_out    : in  std_logic_vector(NOC_FLIT_SIZE-1 downto 0);
+--      output_port   : out std_logic_vector(NOC_FLIT_SIZE-1 downto 0);
+--      data_void_out : out std_logic_vector(4 downto 0);
+--      stop_out      : out std_logic_vector(4 downto 0);
       -- Monitor output. Can be left unconnected
-      mon_noc       : out monitor_noc_vector(0 to TILES_NUM-1)
-      );
-  end component;
+--      mon_noc       : out monitor_noc_type
+--      );
+--  end component;
 
   component sync_noc32_xy
     generic (
@@ -214,6 +225,123 @@ begin
   end generate domain_probes_gen;
 
   mon_dvfs <= mon_dvfs_out;
+
+  -----------------------------------------------------------------------------
+  -- NOC CONNECTIONS
+  -----------------------------------------------------------------------------
+
+  meshgen_y: for i in 0 to YLEN-1 generate
+    meshgen_x: for j in 0 to XLEN-1 generate
+
+      y_0: if (i=0) generate
+        -- North port is unconnected
+        data_n_in(i*XLEN + j) <= (others => '0');
+        data_void_in_i(i*XLEN + j)(0) <= '1';
+        stop_in_i(i*XLEN + j)(0) <= '0';
+      end generate y_0;
+
+      y_non_0: if (i /= 0) generate
+        -- North port is connected
+        data_n_in(i*XLEN + j) <= data_s_out((i-1)*XLEN + j);
+        data_void_in_i(i*XLEN + j)(0) <= data_void_out_i((i-1)*XLEN + j)(1);
+        stop_in_i(i*XLEN + j)(0) <= stop_out_i((i-1)*XLEN + j)(1);
+      end generate y_non_0;
+
+      y_YLEN: if (i=YLEN-1) generate
+        -- South port is unconnected
+        data_s_in(i*XLEN + j) <= (others => '0');
+        data_void_in_i(i*XLEN + j)(1) <= '1';
+        stop_in_i(i*XLEN + j)(1) <= '0';
+      end generate y_YLEN;
+
+      y_non_YLEN: if (i /= YLEN-1) generate
+        -- south port is connected
+        data_s_in(i*XLEN + j) <= data_n_out((i+1)*XLEN + j);
+        data_void_in_i(i*XLEN + j)(1) <= data_void_out_i((i+1)*XLEN + j)(0);
+        stop_in_i(i*XLEN + j)(1) <= stop_out_i((i+1)*XLEN + j)(0);
+      end generate y_non_YLEN;
+
+      x_0: if (j=0) generate
+        -- West port is unconnected
+        data_w_in(i*XLEN + j) <= (others => '0');
+        data_void_in_i(i*XLEN + j)(2) <= '1';
+        stop_in_i(i*XLEN + j)(2) <= '0';
+      end generate x_0;
+
+      x_non_0: if (j /= 0) generate
+        -- West port is connected
+        data_w_in(i*XLEN + j) <= data_e_out(i*XLEN + j - 1);
+        data_void_in_i(i*XLEN + j)(2) <= data_void_out_i(i*XLEN + j - 1)(3);
+        stop_in_i(i*XLEN + j)(2) <= stop_out_i(i*XLEN + j - 1)(3);
+      end generate x_non_0;
+
+      x_XLEN: if (j=XLEN-1) generate
+        -- East port is unconnected
+        data_e_in(i*XLEN + j) <= (others => '0');
+        data_void_in_i(i*XLEN + j)(3) <= '1';
+        stop_in_i(i*XLEN + j)(3) <= '0';
+      end generate x_XLEN;
+
+      x_non_XLEN: if (j /= XLEN-1) generate
+        -- East port is connected
+        data_e_in(i*XLEN + j) <= data_w_out(i*XLEN + j + 1);
+        data_void_in_i(i*XLEN + j)(3) <= data_void_out_i(i*XLEN + j + 1)(2);
+        stop_in_i(i*XLEN + j)(3) <= stop_out_i(i*XLEN + j + 1)(2);
+      end generate x_non_XLEN;
+
+    end generate meshgen_x;
+  end generate meshgen_y;
+
+--------------------------------------------------------------------------------------------------
+-- Insert in the nocpackage.vhd
+-- Remove the loops and use conditionals of local_x and local_y to find required ports
+-- Same port generation must be used in tiles ports
+-- This function will go to top and ROUTER_PORTS will be passed through parameter
+
+type ports_vec is array (TILES_NUM-1 downto 0) of std_logic_vector(4 downto 0);
+
+  function set_router_ports(
+    constant XLEN : integer;
+    constant YLEN : integer)
+    return ports_vec is
+    variable ports : ports_vec;
+  begin
+    ports := (others => (others => '0'));
+    --   0,0    - 0,1 - 0,2 - ... -    0,XLEN-1
+    --    |        |     |     |          |
+    --   1,0    - ...   ...   ... -    1,XLEN-1
+    --    |        |     |     |          |
+    --   ...    - ...   ...   ... -      ...
+    --    |        |     |     |          |
+    -- YLEN-1,0 - ...   ...   ... - YLEN-1,XLEN-1
+    for i in 0 to YLEN-1 loop
+      for j in 0 to XLEN-1 loop
+        -- local ports are all set
+        ports(i * XLEN + j)(4) := '1';
+        if j /= XLEN-1 then
+          -- east ports
+          ports(i * XLEN + j)(3) := '1';
+        end if;
+        if j /= 0 then
+          -- west ports
+          ports(i * XLEN + j)(2) := '1';
+        end if;
+        if i /= YLEN-1 then
+          -- south ports
+          ports(i * XLEN + j)(1) := '1';
+        end if;
+        if i /= 0 then
+          -- nord ports
+          ports(i * XLEN + j)(0) := '1';
+        end if;
+      end loop;  -- j
+    end loop;  -- i
+    return ports;
+  end set_router_ports;
+
+constant ROUTER_PORTS : ports_vec := set_router_ports(XLEN, YLEN);
+
+------------------------------------------------------------------------------------------------------
 
   -----------------------------------------------------------------------------
   -- TILES
