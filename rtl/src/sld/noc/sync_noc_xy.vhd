@@ -19,18 +19,18 @@ entity sync_noc_xy is
     clk           : in  std_logic;
     clk_tile      : in  std_logic;
     rst           : in  std_logic;
-    data_n_in     : in  std_logic_vector(NOC_FLIT_SIZE-1 downto 0);
-    data_s_in     : in  std_logic_vector(NOC_FLIT_SIZE-1 downto 0);
-    data_w_in     : in  std_logic_vector(NOC_FLIT_SIZE-1 downto 0);
-    data_e_in     : in  std_logic_vector(NOC_FLIT_SIZE-1 downto 0);
-    input_port    : in  std_logic_vector(NOC_FLIT_SIZE-1 downto 0);
+    data_n_in     : in  noc_flit_type; 
+    data_s_in     : in  noc_flit_type;
+    data_w_in     : in  noc_flit_type;
+    data_e_in     : in  noc_flit_type;
+    input_port    : in  noc_flit_type;
     data_void_in  : in  std_logic_vector(4 downto 0);
     stop_in       : in  std_logic_vector(4 downto 0);
-    data_n_out    : in  std_logic_vector(NOC_FLIT_SIZE-1 downto 0);
-    data_s_out    : in  std_logic_vector(NOC_FLIT_SIZE-1 downto 0);
-    data_w_out    : in  std_logic_vector(NOC_FLIT_SIZE-1 downto 0);
-    data_e_out    : in  std_logic_vector(NOC_FLIT_SIZE-1 downto 0);
-    output_port   : out std_logic_vector(NOC_FLIT_SIZE-1 downto 0);
+    data_n_out    : out noc_flit_type;
+    data_s_out    : out noc_flit_type;
+    data_w_out    : out noc_flit_type;
+    data_e_out    : out noc_flit_type;
+    output_port   : out noc_flit_type;
     data_void_out : out std_logic_vector(4 downto 0);
     stop_out      : out std_logic_vector(4 downto 0);
     -- Monitor output. Can be left unconnected
