@@ -36,11 +36,9 @@ use work.socmap.all;
 entity tile_cpu is
   generic (
     SIMULATION : boolean := false;
-    tile_id : integer range 0 to CFG_TILES_NUM - 1 := 0);
+    tile_id : integer range 0 to CFG_TILES_NUM - 1 := 0;
     PORTS   : std_logic_vector(4 downto 0);
-    local_x : std_logic_vector(3 downto 0);
-    local_y : std_logic_vector(3 downto 0);
-    HAS_SYNC : integer range 0 to 1 := 0);
+    HAS_SYNC : integer range 0 to 1 := 0 );
   port (
     rst                : in  std_ulogic;
     srst               : in  std_ulogic;
@@ -127,11 +125,11 @@ entity tile_cpu is
     noc6_data_void_out : in  std_logic_vector(3 downto 0); --std_ulogic;
     noc6_stop_out      : in  std_logic_vector(3 downto 0); --std_ulogic;
     noc1_mon_noc_vec   : out monitor_noc_type;
-    noc2_mon_noc_vec   : out monitor_noc_type
+    noc2_mon_noc_vec   : out monitor_noc_type;
     noc3_mon_noc_vec   : out monitor_noc_type;
-    noc4_mon_noc_vec   : out monitor_noc_type
+    noc4_mon_noc_vec   : out monitor_noc_type;
     noc5_mon_noc_vec   : out monitor_noc_type;
-    noc6_mon_noc_vec   : out monitor_noc_type
+    noc6_mon_noc_vec   : out monitor_noc_type;
     mon_cache          : out monitor_cache_type;
     mon_dvfs_in        : in  monitor_dvfs_type;
     mon_dvfs           : out monitor_dvfs_type);
@@ -476,10 +474,10 @@ begin
 
   sync_noc_set: sync_noc_set
   generic (
-     PORTS    =>     
-     local_x  => 
-     local_y  =>
-     HAS_SYNC => 
+     PORTS    => PORTS,
+     local_x  => this_local_x, 
+     local_y  => this_local_y,
+     HAS_SYNC => HAS_SYNC )
    port (
      clk                => sys_clk_int,
      clk_tile           => pllclk,
@@ -568,12 +566,12 @@ begin
      noc6_output_port   => noc6_output_port,
      noc6_data_void_out => noc6_data_void_out_s,
      noc6_stop_out      => noc6_stop_out_s,
-     noc1_mon_noc_vec   => monitor_noc_type,
-     noc2_mon_noc_vec   => monitor_noc_type,
-     noc3_mon_noc_vec   => monitor_noc_type,
-     noc4_mon_noc_vec   => monitor_noc_type,
-     noc5_mon_noc_vec   => monitor_noc_type,
-     noc6_mon_noc_vec   => monitor_noc_type
+     noc1_mon_noc_vec   => noc1_mon_noc_vec,
+     noc2_mon_noc_vec   => noc2_mon_noc_vec,
+     noc3_mon_noc_vec   => noc3_mon_noc_vec,
+     noc4_mon_noc_vec   => noc4_mon_noc_vec,
+     noc5_mon_noc_vec   => noc5_mon_noc_vec,
+     noc6_mon_noc_vec   => noc6_mon_noc_vec
 
      );
 
