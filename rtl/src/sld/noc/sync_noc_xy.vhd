@@ -41,42 +41,6 @@ end sync_noc_xy;
 
 architecture mesh of sync_noc_xy is
 
-------------------------------------------------------------------------------------------------------
--- This functions is no longer required. They are stated in the tiles as this_local_x and this_local_y
-
---  function set_tile_x (
---    constant XLEN : integer;
---    constant YLEN : integer;
---    constant id_bits  : integer)
---    return local_vec is
---    variable x : local_vec;
---  begin  -- set_tile_id
---    for i in 0 to YLEN-1 loop
---      for j in 0 to XLEN-1 loop
---        x(i * XLEN + j) := conv_std_logic_vector(j, id_bits);
---      end loop;  -- j
---    end loop;  -- i
---    return x;
---  end set_tile_x;
-
---  function set_tile_y (
---    constant XLEN : integer;
---    constant YLEN : integer;
---    constant id_bits  : integer)
---    return local_vec is
---    variable y : local_vec;
---  begin  -- set_tile_id
---    for i in 0 to YLEN-1 loop
---      for j in 0 to XLEN-1 loop
---        y(i * XLEN + j) := conv_std_logic_vector(i, id_bits);
---      end loop;  -- j
---    end loop;  -- i
---    return y;
---  end set_tile_y;
-
---  constant localx       : local_vec := set_tile_x(XLEN, YLEN, 3);
---  constant localy       : local_vec := set_tile_y(XLEN, YLEN, 3);
-----------------------------------------------------------------------------------------------------------
   component router
     generic (
       flow_control : integer;
@@ -105,29 +69,29 @@ architecture mesh of sync_noc_xy is
       stop_out      : out std_logic_vector(4 downto 0));
   end component;
 
-  signal fwd_ack	  : std_logic_vector;
-  signal fwd_req	  : std_logic_vector;
-  signal fwd_chnl_data	  : noc_flit_vector;
-  signal fwd_chnl_stop	  : std_logic_vector;
+  signal fwd_ack	  : std_logic;
+  signal fwd_req	  : std_logic;
+  signal fwd_chnl_data	  : noc_flit_type;
+  signal fwd_chnl_stop	  : std_logic;
 
-  signal rev_ack	  : std_logic_vector;
-  signal rev_req	  : std_logic_vector;
-  signal rev_chnl_data	  : noc_flit_vector;
-  signal rev_chnl_stop	  : std_logic_vector;
+  signal rev_ack	  : std_logic;
+  signal rev_req	  : std_logic;
+  signal rev_chnl_data	  : noc_flit_type;
+  signal rev_chnl_stop	  : std_logic;
 
-  signal sync_output_port   : noc_flit_vector;
-  signal sync_data_void_out : std_logic_vector;
-  signal sync_input_port    : noc_flit_vector;
-  signal sync_data_void_in  : std_logic_vector;
-  signal sync_stop_in 	    : std_logic_vector;
-  signal sync_stop_out 	    : std_logic_vector;
+  signal sync_output_port   : noc_flit_type;
+  signal sync_data_void_out : std_logic;
+  signal sync_input_port    : noc_flit_type;
+  signal sync_data_void_in  : std_logic;
+  signal sync_stop_in 	    : std_logic;
+  signal sync_stop_out 	    : std_logic;
 
-  signal fwd_rd_i, fwd_we_i : std_logic_vector;
-  signal rev_rd_i, rev_we_i : std_logic_vector;
-  signal fwd_rd_empty_o     : std_logic_vector;
-  signal fwd_wr_full_o      : std_logic_vector;
-  signal rev_rd_empty_o     : std_logic_vector;
-  signal rev_wr_full_o      : std_logic_vector;
+  signal fwd_rd_i, fwd_we_i : std_logic;
+  signal rev_rd_i, rev_we_i : std_logic;
+  signal fwd_rd_empty_o     : std_logic;
+  signal fwd_wr_full_o      : std_logic;
+  signal rev_rd_empty_o     : std_logic;
+  signal rev_wr_full_o      : std_logic;
 
   signal data_void_in_i  : std_logic_vector(4 downto 0);
   signal stop_in_i       : std_logic_vector(4 downto 0);

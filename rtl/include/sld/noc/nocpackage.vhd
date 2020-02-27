@@ -49,6 +49,7 @@ package nocpackage is
 
   type noc_flit_vector is array (natural range <>) of noc_flit_type;
   type misc_noc_flit_vector is array (natural range <>) of misc_noc_flit_type;
+  type ports_vec is std_logic_vector(4 downto 0);
 
   constant noc_flit_pad : std_logic_vector(NOC_FLIT_SIZE - MISC_NOC_FLIT_SIZE - 1 downto 0) := (others => '0');
 
@@ -476,15 +477,16 @@ package body nocpackage is
 -- This function will go to top and ROUTER_PORTS will be passed through parameter
 
 
-  type ports_vec is array (TILES_NUM-1 downto 0) of std_logic_vector(4 downto 0);
+--  type ports_vec is array (CFG_TILES_NUM-1 downto 0) of std_logic_vector(4 downto 0);
 
-  function set_router_ports(
-    constant XLEN : integer;
-    constant YLEN : integer)
-    return ports_vec is
-    variable ports : ports_vec;
-  begin
-    ports := (others => (others => '0'));
+
+--  function set_router_ports(
+--    constant CFG_XLEN : integer;
+--    constant CFG_YLEN : integer)
+--    return ports_vec is
+--    variable ports : ports_vec;
+--  begin
+--    ports := (others => (others => '0'));
     --   0,0    - 0,1 - 0,2 - ... -    0,XLEN-1
     --    |        |     |     |          |
     --   1,0    - ...   ...   ... -    1,XLEN-1
@@ -492,31 +494,59 @@ package body nocpackage is
     --   ...    - ...   ...   ... -      ...
     --    |        |     |     |          |
     -- YLEN-1,0 - ...   ...   ... - YLEN-1,XLEN-1
-    for i in 0 to YLEN-1 loop
-      for j in 0 to XLEN-1 loop
-        -- local ports are all set
-        ports(i * XLEN + j)(4) := '1';
-        if j /= XLEN-1 then
-          -- east ports
-          ports(i * XLEN + j)(3) := '1';
-        end if;
-        if j /= 0 then
-          -- west ports
-          ports(i * XLEN + j)(2) := '1';
-        end if;
-        if i /= YLEN-1 then
-          -- south ports
-          ports(i * XLEN + j)(1) := '1';
-        end if;
-        if i /= 0 then
-          -- nord ports
-          ports(i * XLEN + j)(0) := '1';
-        end if;
-      end loop;  -- j
-    end loop;  -- i
+--    for i in 0 to YLEN-1 loop
+--      for j in 0 to XLEN-1 loop
+--        -- local ports are all set
+--        ports(i * XLEN + j)(4) := '1';
+--        if j /= XLEN-1 then
+--          -- east ports
+--          ports(i * XLEN + j)(3) := '1';
+--        end if;
+--        if j /= 0 then
+--          -- west ports
+--          ports(i * XLEN + j)(2) := '1';
+--        end if;
+--        if i /= YLEN-1 then
+--          -- south ports
+--          ports(i * XLEN + j)(1) := '1';
+--        end if;
+--        if i /= 0 then
+--          -- nord ports
+--          ports(i * XLEN + j)(0) := '1';
+--        end if;
+--      end loop;  -- j
+--    end loop;  -- i
+--    return ports;
+--  end set_router_ports;
+
+
+  function set_router_ports(
+    constant CFG_XLEN : integer;
+    constant CFG_YLEN : integer;
+    constant local_x : local_xy;
+    constant local_y : local_xy)
+    return ports_vec is
+    variable ports : ports_vec;
+  begin
+    -- initialize all local ports set
+    ports := (others => (others => '1'));
+    -- nord ports removed in top tiles
+    if local_x == '000' then
+      ports(0) = '0';
+    end
+    -- west ports removed in left edge tiles
+    if local_y == '000' then
+      ports(2) == '0';
+    end
+    -- south ports removed in bottom tiles
+    if (to_integer(unsigned(local_x))) == CFG_XLEN-1 then
+      ports(1) == '0';
+    end
+    -- east ports removed in right edge tiles
+    if (to_integer(unsigned(local_y))) == CFG_YLEN-1 then
+      ports(3) == '0';
+    end
     return ports;
   end set_router_ports;
-
-  constant ROUTER_PORTS : ports_vec := set_router_ports(CFG_XLEN, CFG_YLEN);
 
 end nocpackage;
