@@ -33,7 +33,6 @@ use work.socmap.all;
 entity tile_mem is
   generic (
     tile_id : integer range 0 to CFG_TILES_NUM - 1 := 0;
-    PORTS   : std_logic_vector(4 downto 0);
     HAS_SYNC: integer range 0 to 1 := 0);
   port (
     rst                : in  std_ulogic;
@@ -358,6 +357,7 @@ architecture rtl of tile_mem is
   constant this_local_ahb_en : std_logic_vector(0 to NAHBSLV - 1) := local_ahb_mask(tile_id);
   constant this_local_y      : local_yx                           := tile_y(tile_id);
   constant this_local_x      : local_yx                           := tile_x(tile_id);
+  constant ROUTER_PORTS      : ports_vec                          := set_router_ports(CFG_XLEN, CFG_YLEN, this_local_x, this_local_y);
 
   -- Noc signals
   signal noc1_stop_in_s         : std_logic_vector(4 downto 0);
@@ -454,7 +454,7 @@ begin
 
   sync_noc_set: sync_noc_set
   generic (
-     PORTS    => PORTS,
+     PORTS    => ROUTER_PORTS,
      local_x  => this_local_x,
      local_y  => this_local_y,
      HAS_SYNC => HAS_SYNC )

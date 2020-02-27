@@ -59,7 +59,6 @@ package soctiles is
     generic (
       SIMULATION : boolean := false;
       tile_id : integer range 0 to CFG_TILES_NUM - 1 := 0;
-      PORTS   : std_logic_vector(4 downto 0);
       HAS_SYNC : integer range 0 to 1 := 0 );
     port (
       rst                : in  std_ulogic;
@@ -160,7 +159,6 @@ package soctiles is
   component tile_acc is
     generic ( 
       tile_id : integer range 0 to CFG_TILES_NUM - 1 := 0);
-      PORTS   : std_logic_vector(4 downto 0);
       HAS_SYNC : integer range 0 to 1 := 0 );
     port (
       rst                : in  std_ulogic;
@@ -258,7 +256,7 @@ package soctiles is
   component tile_io is
     generic (
       SIMULATION : boolean := false;
-      PORTS   : std_logic_vector(4 downto 0);
+      tile_id  : integer range 0 to CFG_TILES_NUM-1 := 0;
       HAS_SYNC : integer range 0 to 1 := 0 );
     port (
       rst                : in  std_ulogic;
@@ -369,7 +367,6 @@ package soctiles is
   component tile_mem is
     generic (
       tile_id : integer range 0 to CFG_TILES_NUM - 1 := 0;
-      PORTS   : std_logic_vector(4 downto 0);
       HAS_SYNC: integer range 0 to 1 := 0);
     port (
       rst                : in  std_ulogic;
@@ -466,7 +463,6 @@ package soctiles is
     generic (
       SIMULATION : boolean := false;
       tile_id : integer range 0 to CFG_TILES_NUM - 1 := 0;
-      PORTS   : std_logic_vector(4 downto 0);
       HAS_SYNC : integer range 0 to 1 := 0 );
     port (
       sys_clk_int        : in  std_logic;

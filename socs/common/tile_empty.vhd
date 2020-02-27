@@ -37,7 +37,6 @@ entity tile_empty is
   generic (
     SIMULATION : boolean := false;
     tile_id : integer range 0 to CFG_TILES_NUM - 1 := 0;
-    PORTS   : std_logic_vector(4 downto 0);
     HAS_SYNC : integer range 0 to 1 := 0 );
   port (
     sys_clk_int        : in  std_logic;
@@ -269,6 +268,10 @@ signal noc4_stop_out_s : std_logic_vector(4 downto 0);
 signal noc5_stop_out_s : std_logic_vector(4 downto 0);
 signal noc6_stop_out_s : std_logic_vector(4 downto 0);
 
+constant this_local_y  : local_yx  := tile_y(tile_id);
+constant this_local_x  : local_yx  := tile_x(tile_id);
+constant ROUTER_PORTS  : ports_vec := set_router_ports(CFG_XLEN, CFG_YLEN, this_local_x, this_local_y);
+
 begin
 
 mon_dvfs_out.vf       <= (others => '0');
@@ -318,7 +321,7 @@ noc6_stop_out <= noc6_stop_out_s(3 downto 0);
 
   sync_noc_set: sync_noc_set
   generic (
-     PORTS    => PORTS,
+     PORTS    => ROUTER_PORTS,
      local_x  => this_local_x,
      local_y  => this_local_y,
      HAS_SYNC => HAS_SYNC )
