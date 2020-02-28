@@ -68,23 +68,24 @@ constant nocs_num : integer := 6;
 
 signal clk_tile : std_logic_vector(CFG_TILES_NUM-1 downto 0);
 type noc_ctrl_matrix is array (1 to nocs_num) of std_logic_vector(CFG_TILES_NUM-1 downto 0);
+type handshake_vec is array (CFG_TILES_NUM-1 downto 0) of std_logic_vector(3 downto 0);
 
-signal noc_input_port_1  : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
-signal noc_input_port_2  : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
-signal noc_input_port_3  : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
-signal noc_input_port_4  : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
-signal noc_input_port_5  : misc_noc_flit_vector(CFG_TILES_NUM-1 downto 0);
-signal noc_input_port_6  : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
-signal noc_data_void_in  : noc_ctrl_matrix;
-signal noc_stop_in       : noc_ctrl_matrix;
-signal noc_output_port_1 : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
-signal noc_output_port_2 : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
-signal noc_output_port_3 : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
-signal noc_output_port_4 : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
-signal noc_output_port_5 : misc_noc_flit_vector(CFG_TILES_NUM-1 downto 0);
-signal noc_output_port_6 : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
-signal noc_data_void_out : noc_ctrl_matrix;
-signal noc_stop_out      : noc_ctrl_matrix;
+--signal noc_input_port_1  : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
+--signal noc_input_port_2  : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
+--signal noc_input_port_3  : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
+--signal noc_input_port_4  : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
+--signal noc_input_port_5  : misc_noc_flit_vector(CFG_TILES_NUM-1 downto 0);
+--signal noc_input_port_6  : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
+--signal noc_data_void_in  : noc_ctrl_matrix;
+--signal noc_stop_in       : noc_ctrl_matrix;
+--signal noc_output_port_1 : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
+--signal noc_output_port_2 : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
+--signal noc_output_port_3 : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
+--signal noc_output_port_4 : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
+--signal noc_output_port_5 : misc_noc_flit_vector(CFG_TILES_NUM-1 downto 0);
+--signal noc_output_port_6 : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
+--signal noc_data_void_out : noc_ctrl_matrix;
+--signal noc_stop_out      : noc_ctrl_matrix;
 
 signal rst_int       : std_logic;
 signal srst          : std_logic;
@@ -104,6 +105,81 @@ signal mon_dvfs_domain  : monitor_dvfs_vector(0 to CFG_TILES_NUM-1);
 
 signal mon_l2_int : monitor_cache_vector(0 to CFG_TILES_NUM-1);
 signal mon_llc_int : monitor_cache_vector(0 to CFG_TILES_NUM-1);
+
+-- NOC Signals
+signal noc1_data_n_in       : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
+signal noc1_data_s_in       : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
+signal noc1_data_w_in       : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
+signal noc1_data_e_in       : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
+signal noc1_data_void_in    : handshake_vec;
+signal noc1_stop_in         : handshake_vec;
+signal noc1_data_n_out      : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
+signal noc1_data_s_out      : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
+signal noc1_data_w_out      : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
+signal noc1_data_e_out      : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
+signal noc1_data_void_out   : handshake_vec;
+signal noc1_stop_out        : handshake_vec;
+signal noc2_data_n_in       : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
+signal noc2_data_s_in       : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
+signal noc2_data_w_in       : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
+signal noc2_data_e_in       : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
+signal noc2_data_void_in    : handshake_vec;
+signal noc2_stop_in         : handshake_vec;
+signal noc2_data_n_out      : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
+signal noc2_data_s_out      : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
+signal noc2_data_w_out      : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
+signal noc2_data_e_out      : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
+signal noc2_data_void_out   : handshake_vec;
+signal noc2_stop_out        : handshake_vec;
+signal noc3_data_n_in       : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
+signal noc3_data_s_in       : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
+signal noc3_data_w_in       : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
+signal noc3_data_e_in       : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
+signal noc3_data_void_in    : handshake_vec;
+signal noc3_stop_in         : handshake_vec;
+signal noc3_data_n_out      : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
+signal noc3_data_s_out      : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
+signal noc3_data_w_out      : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
+signal noc3_data_e_out      : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
+signal noc3_data_void_out   : handshake_vec;
+signal noc3_stop_out        : handshake_vec;
+signal noc4_data_n_in       : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
+signal noc4_data_s_in       : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
+signal noc4_data_w_in       : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
+signal noc4_data_e_in       : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
+signal noc4_data_void_in    : handshake_vec;
+signal noc4_stop_in         : handshake_vec;
+signal noc4_data_n_out      : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
+signal noc4_data_s_out      : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
+signal noc4_data_w_out      : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
+signal noc4_data_e_out      : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
+signal noc4_data_void_out   : handshake_vec;
+signal noc4_stop_out        : handshake_vec;
+signal noc5_data_n_in       : misc_noc_flit_vector(CFG_TILES_NUM-1 downto 0);
+signal noc5_data_s_in       : misc_noc_flit_vector(CFG_TILES_NUM-1 downto 0);
+signal noc5_data_w_in       : misc_noc_flit_vector(CFG_TILES_NUM-1 downto 0);
+signal noc5_data_e_in       : misc_noc_flit_vector(CFG_TILES_NUM-1 downto 0);
+signal noc5_data_void_in    : handshake_vec;
+signal noc5_stop_in         : handshake_vec;
+signal noc5_data_n_out      : misc_noc_flit_vector(CFG_TILES_NUM-1 downto 0);
+signal noc5_data_s_out      : misc_noc_flit_vector(CFG_TILES_NUM-1 downto 0);
+signal noc5_data_w_out      : misc_noc_flit_vector(CFG_TILES_NUM-1 downto 0);
+signal noc5_data_e_out      : misc_noc_flit_vector(CFG_TILES_NUM-1 downto 0);
+signal noc5_data_void_out   : handshake_vec;
+signal noc5_stop_out        : handshake_vec;
+signal noc6_data_n_in       : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
+signal noc6_data_s_in       : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
+signal noc6_data_w_in       : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
+signal noc6_data_e_in       : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
+signal noc6_data_void_in    : handshake_vec;
+signal noc6_stop_in         : handshake_vec;
+signal noc6_data_n_out      : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
+signal noc6_data_s_out      : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
+signal noc6_data_w_out      : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
+signal noc6_data_e_out      : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
+signal noc6_data_void_out   : handshake_vec;
+signal noc6_stop_out        : handshake_vec;
+
 
 -- TODO: remove this; IRQ will flow through the NoC
 signal irq : std_logic_vector(CFG_NCPU_TILE * 2 - 1 downto 0);
@@ -178,81 +254,10 @@ begin
   -- NOC CONNECTIONS
   -----------------------------------------------------------------------------
 
-  type handshake_vec is array (CFG_TILES_NUM-1 downto 0) of std_logic_vector(3 downto 0);
 
 
-  signal noc1_data_n_in       : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
-  signal noc1_data_s_in       : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
-  signal noc1_data_w_in       : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
-  signal noc1_data_e_in       : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
-  signal noc1_data_void_in_i  : handshake_vec;
-  signal noc1_stop_in_i       : handshake_vec;
-  signal noc1_data_n_out      : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
-  signal noc1_data_s_out      : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
-  signal noc1_data_w_out      : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
-  signal noc1_data_e_out      : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
-  signal noc1_data_void_out_i : handshake_vec;
-  signal noc1_stop_out_i      : handshake_vec;
-  signal noc2_data_n_in       : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
-  signal noc2_data_s_in       : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
-  signal noc2_data_w_in       : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
-  signal noc2_data_e_in       : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
-  signal noc2_data_void_in_i  : handshake_vec;
-  signal noc2_stop_in_i       : handshake_vec;
-  signal noc2_data_n_out      : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
-  signal noc2_data_s_out      : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
-  signal noc2_data_w_out      : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
-  signal noc2_data_e_out      : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
-  signal noc2_data_void_out_i : handshake_vec;
-  signal noc2_stop_out_i      : handshake_vec;
-  signal noc3_data_n_in       : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
-  signal noc3_data_s_in       : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
-  signal noc3_data_w_in       : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
-  signal noc3_data_e_in       : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
-  signal noc3_data_void_in_i  : handshake_vec;
-  signal noc3_stop_in_i       : handshake_vec;
-  signal noc3_data_n_out      : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
-  signal noc3_data_s_out      : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
-  signal noc3_data_w_out      : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
-  signal noc3_data_e_out      : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
-  signal noc3_data_void_out_i : handshake_vec;
-  signal noc3_stop_out_i      : handshake_vec;
-  signal noc4_data_n_in       : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
-  signal noc4_data_s_in       : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
-  signal noc4_data_w_in       : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
-  signal noc4_data_e_in       : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
-  signal noc4_data_void_in_i  : handshake_vec;
-  signal noc4_stop_in_i       : handshake_vec;
-  signal noc4_data_n_out      : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
-  signal noc4_data_s_out      : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
-  signal noc4_data_w_out      : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
-  signal noc4_data_e_out      : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
-  signal noc4_data_void_out_i : handshake_vec;
-  signal noc4_stop_out_i      : handshake_vec;
-  signal noc5_data_n_in       : misc_noc_flit_vector(CFG_TILES_NUM-1 downto 0);
-  signal noc5_data_s_in       : misc_noc_flit_vector(CFG_TILES_NUM-1 downto 0);
-  signal noc5_data_w_in       : misc_noc_flit_vector(CFG_TILES_NUM-1 downto 0);
-  signal noc5_data_e_in       : misc_noc_flit_vector(CFG_TILES_NUM-1 downto 0);
-  signal noc5_data_void_in_i  : handshake_vec;
-  signal noc5_stop_in_i       : handshake_vec;
-  signal noc5_data_n_out      : misc_noc_flit_vector(CFG_TILES_NUM-1 downto 0);
-  signal noc5_data_s_out      : misc_noc_flit_vector(CFG_TILES_NUM-1 downto 0);
-  signal noc5_data_w_out      : misc_noc_flit_vector(CFG_TILES_NUM-1 downto 0);
-  signal noc5_data_e_out      : misc_noc_flit_vector(CFG_TILES_NUM-1 downto 0);
-  signal noc5_data_void_out_i : handshake_vec;
-  signal noc5_stop_out_i      : handshake_vec;
-  signal noc6_data_n_in       : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
-  signal noc6_data_s_in       : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
-  signal noc6_data_w_in       : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
-  signal noc6_data_e_in       : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
-  signal noc6_data_void_in_i  : handshake_vec;
-  signal noc6_stop_in_i       : handshake_vec;
-  signal noc6_data_n_out      : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
-  signal noc6_data_s_out      : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
-  signal noc6_data_w_out      : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
-  signal noc6_data_e_out      : noc_flit_vector(CFG_TILES_NUM-1 downto 0);
-  signal noc6_data_void_out_i : handshake_vec;
-  signal noc6_stop_out_i      : handshake_vec;
+
+
 
   meshgen_y: for i in 0 to CFG_YLEN-1 generate
     meshgen_x: for j in 0 to CFG_XLEN-1 generate
@@ -260,177 +265,177 @@ begin
       y_0: if (i=0) generate
         -- North port is unconnected
         noc1_data_n_in(i*CFG_XLEN + j) <= (others => '0');
-        noc1_data_void_in_i(i*CFG_XLEN + j)(0) <= '1';
-        noc1_stop_in_i(i*CFG_XLEN + j)(0) <= '0';
+        noc1_data_void_in(i*CFG_XLEN + j)(0) <= '1';
+        noc1_stop_in(i*CFG_XLEN + j)(0) <= '0';
         noc2_data_n_in(i*CFG_XLEN + j) <= (others => '0');
-        noc2_data_void_in_i(i*CFG_XLEN + j)(0) <= '1';
-        noc2_stop_in_i(i*CFG_XLEN + j)(0) <= '0';
+        noc2_data_void_in(i*CFG_XLEN + j)(0) <= '1';
+        noc2_stop_in(i*CFG_XLEN + j)(0) <= '0';
         noc3_data_n_in(i*CFG_XLEN + j) <= (others => '0');
-        noc3_data_void_in_i(i*CFG_XLEN + j)(0) <= '1';
-        noc3_stop_in_i(i*CFG_XLEN + j)(0) <= '0';
+        noc3_data_void_in(i*CFG_XLEN + j)(0) <= '1';
+        noc3_stop_in(i*CFG_XLEN + j)(0) <= '0';
         noc4_data_n_in(i*CFG_XLEN + j) <= (others => '0');
-        noc4_data_void_in_i(i*CFG_XLEN + j)(0) <= '1';
-        noc4_stop_in_i(i*CFG_XLEN + j)(0) <= '0';
+        noc4_data_void_in(i*CFG_XLEN + j)(0) <= '1';
+        noc4_stop_in(i*CFG_XLEN + j)(0) <= '0';
         noc5_data_n_in(i*CFG_XLEN + j) <= (others => '0');
-        noc5_data_void_in_i(i*CFG_XLEN + j)(0) <= '1';
-        noc5_stop_in_i(i*CFG_XLEN + j)(0) <= '0';
+        noc5_data_void_in(i*CFG_XLEN + j)(0) <= '1';
+        noc5_stop_in(i*CFG_XLEN + j)(0) <= '0';
         noc6_data_n_in(i*CFG_XLEN + j) <= (others => '0');
-        noc6_data_void_in_i(i*CFG_XLEN + j)(0) <= '1';
-        noc6_stop_in_i(i*CFG_XLEN + j)(0) <= '0';
+        noc6_data_void_in(i*CFG_XLEN + j)(0) <= '1';
+        noc6_stop_in(i*CFG_XLEN + j)(0) <= '0';
       end generate y_0;
 
       y_non_0: if (i /= 0) generate
         -- North port is connected
-        noc1_data_n_in(i*CFG_XLEN + j)         <= noc1_data_s_out((i-1)*CFG_XLEN + j);
-        noc1_data_void_in_i(i*CFG_XLEN + j)(0) <= noc1_data_void_out_i((i-1)*CFG_XLEN + j)(1);
-        noc1_stop_in_i(i*CFG_XLEN + j)(0)      <= noc1_stop_out_i((i-1)*CFG_XLEN + j)(1);
-        noc2_data_n_in(i*CFG_XLEN + j)         <= noc2_data_s_out((i-1)*CFG_XLEN + j);
-        noc2_data_void_in_i(i*CFG_XLEN + j)(0) <= noc2_data_void_out_i((i-1)*CFG_XLEN + j)(1);
-        noc2_stop_in_i(i*CFG_XLEN + j)(0)      <= noc2_stop_out_i((i-1)*CFG_XLEN + j)(1);
-        noc3_data_n_in(i*CFG_XLEN + j)         <= noc3_data_s_out((i-1)*CFG_XLEN + j);
-        noc3_data_void_in_i(i*CFG_XLEN + j)(0) <= noc3_data_void_out_i((i-1)*CFG_XLEN + j)(1);
-        noc3_stop_in_i(i*CFG_XLEN + j)(0)      <= noc3_stop_out_i((i-1)*CFG_XLEN + j)(1);
-        noc4_data_n_in(i*CFG_XLEN + j)         <= noc4_data_s_out((i-1)*CFG_XLEN + j);
-        noc4_data_void_in_i(i*CFG_XLEN + j)(0) <= noc4_data_void_out_i((i-1)*CFG_XLEN + j)(1);
-        noc4_stop_in_i(i*CFG_XLEN + j)(0)      <= noc4_stop_out_i((i-1)*CFG_XLEN + j)(1);
-        noc5_data_n_in(i*CFG_XLEN + j)         <= noc5_data_s_out((i-1)*CFG_XLEN + j);
-        noc5_data_void_in_i(i*CFG_XLEN + j)(0) <= noc5_data_void_out_i((i-1)*CFG_XLEN + j)(1);
-        noc5_stop_in_i(i*CFG_XLEN + j)(0)      <= noc5_stop_out_i((i-1)*CFG_XLEN + j)(1);
-        noc6_data_n_in(i*CFG_XLEN + j)         <= noc6_data_s_out((i-1)*CFG_XLEN + j);
-        noc6_data_void_in_i(i*CFG_XLEN + j)(0) <= noc6_data_void_out_i((i-1)*CFG_XLEN + j)(1);
-        noc6_stop_in_i(i*CFG_XLEN + j)(0)      <= noc6_stop_out_i((i-1)*CFG_XLEN + j)(1);
+        noc1_data_n_in(i*CFG_XLEN + j)       <= noc1_data_s_out((i-1)*CFG_XLEN + j);
+        noc1_data_void_in(i*CFG_XLEN + j)(0) <= noc1_data_void_out((i-1)*CFG_XLEN + j)(1);
+        noc1_stop_in(i*CFG_XLEN + j)(0)      <= noc1_stop_out((i-1)*CFG_XLEN + j)(1);
+        noc2_data_n_in(i*CFG_XLEN + j)       <= noc2_data_s_out((i-1)*CFG_XLEN + j);
+        noc2_data_void_in(i*CFG_XLEN + j)(0) <= noc2_data_void_out((i-1)*CFG_XLEN + j)(1);
+        noc2_stop_in(i*CFG_XLEN + j)(0)      <= noc2_stop_out((i-1)*CFG_XLEN + j)(1);
+        noc3_data_n_in(i*CFG_XLEN + j)       <= noc3_data_s_out((i-1)*CFG_XLEN + j);
+        noc3_data_void_in(i*CFG_XLEN + j)(0) <= noc3_data_void_out((i-1)*CFG_XLEN + j)(1);
+        noc3_stop_in(i*CFG_XLEN + j)(0)      <= noc3_stop_out((i-1)*CFG_XLEN + j)(1);
+        noc4_data_n_in(i*CFG_XLEN + j)       <= noc4_data_s_out((i-1)*CFG_XLEN + j);
+        noc4_data_void_in(i*CFG_XLEN + j)(0) <= noc4_data_void_out((i-1)*CFG_XLEN + j)(1);
+        noc4_stop_in(i*CFG_XLEN + j)(0)      <= noc4_stop_out((i-1)*CFG_XLEN + j)(1);
+        noc5_data_n_in(i*CFG_XLEN + j)       <= noc5_data_s_out((i-1)*CFG_XLEN + j);
+        noc5_data_void_in(i*CFG_XLEN + j)(0) <= noc5_data_void_out((i-1)*CFG_XLEN + j)(1);
+        noc5_stop_in(i*CFG_XLEN + j)(0)      <= noc5_stop_out((i-1)*CFG_XLEN + j)(1);
+        noc6_data_n_in(i*CFG_XLEN + j)       <= noc6_data_s_out((i-1)*CFG_XLEN + j);
+        noc6_data_void_in(i*CFG_XLEN + j)(0) <= noc6_data_void_out((i-1)*CFG_XLEN + j)(1);
+        noc6_stop_in(i*CFG_XLEN + j)(0)      <= noc6_stop_out((i-1)*CFG_XLEN + j)(1);
       end generate y_non_0;
 
       y_YLEN: if (i=CFG_YLEN-1) generate
         -- South port is unconnected
         noc1_data_s_in(i*CFG_XLEN + j) <= (others => '0');
-        noc1_data_void_in_i(i*CFG_XLEN + j)(1) <= '1';
-        noc1_stop_in_i(i*CFG_XLEN + j)(1) <= '0';
+        noc1_data_void_in(i*CFG_XLEN + j)(1) <= '1';
+        noc1_stop_in(i*CFG_XLEN + j)(1) <= '0';
         noc2_data_s_in(i*CFG_XLEN + j) <= (others => '0');
-        noc2_data_void_in_i(i*CFG_XLEN + j)(1) <= '1';
-        noc2_stop_in_i(i*CFG_XLEN + j)(1) <= '0';
+        noc2_data_void_in(i*CFG_XLEN + j)(1) <= '1';
+        noc2_stop_in(i*CFG_XLEN + j)(1) <= '0';
         noc3_data_s_in(i*CFG_XLEN + j) <= (others => '0');
-        noc3_data_void_in_i(i*CFG_XLEN + j)(1) <= '1';
-        noc3_stop_in_i(i*CFG_XLEN + j)(1) <= '0';
+        noc3_data_void_in(i*CFG_XLEN + j)(1) <= '1';
+        noc3_stop_in(i*CFG_XLEN + j)(1) <= '0';
         noc4_data_s_in(i*CFG_XLEN + j) <= (others => '0');
-        noc4_data_void_in_i(i*CFG_XLEN + j)(1) <= '1';
-        noc4_stop_in_i(i*CFG_XLEN + j)(1) <= '0';
+        noc4_data_void_in(i*CFG_XLEN + j)(1) <= '1';
+        noc4_stop_in(i*CFG_XLEN + j)(1) <= '0';
         noc5_data_s_in(i*CFG_XLEN + j) <= (others => '0');
-        noc5_data_void_in_i(i*CFG_XLEN + j)(1) <= '1';
-        noc5_stop_in_i(i*CFG_XLEN + j)(1) <= '0';
+        noc5_data_void_in(i*CFG_XLEN + j)(1) <= '1';
+        noc5_stop_in(i*CFG_XLEN + j)(1) <= '0';
         noc6_data_s_in(i*CFG_XLEN + j) <= (others => '0');
-        noc6_data_void_in_i(i*CFG_XLEN + j)(1) <= '1';
-        noc6_stop_in_i(i*CFG_XLEN + j)(1) <= '0';
+        noc6_data_void_in(i*CFG_XLEN + j)(1) <= '1';
+        noc6_stop_in(i*CFG_XLEN + j)(1) <= '0';
       end generate y_YLEN;
 
       y_non_YLEN: if (i /= CFG_YLEN-1) generate
         -- south port is connected
-        noc1_data_s_in(i*CFG_XLEN + j)         <= noc1_data_n_out((i+1)*CFG_XLEN + j);
-        noc1_data_void_in_i(i*CFG_XLEN + j)(1) <= noc1_data_void_out_i((i+1)*CFG_XLEN + j)(0);
-        noc1_stop_in_i(i*CFG_XLEN + j)(1)      <= noc1_stop_out_i((i+1)*CFG_XLEN + j)(0);
-        noc2_data_s_in(i*CFG_XLEN + j)         <= noc2_data_n_out((i+1)*CFG_XLEN + j);
-        noc2_data_void_in_i(i*CFG_XLEN + j)(1) <= noc2_data_void_out_i((i+1)*CFG_XLEN + j)(0);
-        noc2_stop_in_i(i*CFG_XLEN + j)(1)      <= noc2_stop_out_i((i+1)*CFG_XLEN + j)(0);
-        noc3_data_s_in(i*CFG_XLEN + j)         <= noc3_data_n_out((i+1)*CFG_XLEN + j);
-        noc3_data_void_in_i(i*CFG_XLEN + j)(1) <= noc3_data_void_out_i((i+1)*CFG_XLEN + j)(0);
-        noc3_stop_in_i(i*CFG_XLEN + j)(1)      <= noc3_stop_out_i((i+1)*CFG_XLEN + j)(0);
-        noc4_data_s_in(i*CFG_XLEN + j)         <= noc4_data_n_out((i+1)*CFG_XLEN + j);
-        noc4_data_void_in_i(i*CFG_XLEN + j)(1) <= noc4_data_void_out_i((i+1)*CFG_XLEN + j)(0);
-        noc4_stop_in_i(i*CFG_XLEN + j)(1)      <= noc4_stop_out_i((i+1)*CFG_XLEN + j)(0);
-        noc5_data_s_in(i*CFG_XLEN + j)         <= noc5_data_n_out((i+1)*CFG_XLEN + j);
-        noc5_data_void_in_i(i*CFG_XLEN + j)(1) <= noc5_data_void_out_i((i+1)*CFG_XLEN + j)(0);
-        noc5_stop_in_i(i*CFG_XLEN + j)(1)      <= noc5_stop_out_i((i+1)*CFG_XLEN + j)(0);
-        noc6_data_s_in(i*CFG_XLEN + j)         <= noc6_data_n_out((i+1)*CFG_XLEN + j);
-        noc6_data_void_in_i(i*CFG_XLEN + j)(1) <= noc6_data_void_out_i((i+1)*CFG_XLEN + j)(0);
-        noc6_stop_in_i(i*CFG_XLEN + j)(1)      <= noc6_stop_out_i((i+1)*CFG_XLEN + j)(0);
+        noc1_data_s_in(i*CFG_XLEN + j)       <= noc1_data_n_out((i+1)*CFG_XLEN + j);
+        noc1_data_void_in(i*CFG_XLEN + j)(1) <= noc1_data_void_out((i+1)*CFG_XLEN + j)(0);
+        noc1_stop_in(i*CFG_XLEN + j)(1)      <= noc1_stop_out((i+1)*CFG_XLEN + j)(0);
+        noc2_data_s_in(i*CFG_XLEN + j)       <= noc2_data_n_out((i+1)*CFG_XLEN + j);
+        noc2_data_void_in(i*CFG_XLEN + j)(1) <= noc2_data_void_out((i+1)*CFG_XLEN + j)(0);
+        noc2_stop_in(i*CFG_XLEN + j)(1)      <= noc2_stop_out((i+1)*CFG_XLEN + j)(0);
+        noc3_data_s_in(i*CFG_XLEN + j)       <= noc3_data_n_out((i+1)*CFG_XLEN + j);
+        noc3_data_void_in(i*CFG_XLEN + j)(1) <= noc3_data_void_out((i+1)*CFG_XLEN + j)(0);
+        noc3_stop_in(i*CFG_XLEN + j)(1)      <= noc3_stop_out((i+1)*CFG_XLEN + j)(0);
+        noc4_data_s_in(i*CFG_XLEN + j)       <= noc4_data_n_out((i+1)*CFG_XLEN + j);
+        noc4_data_void_in(i*CFG_XLEN + j)(1) <= noc4_data_void_out((i+1)*CFG_XLEN + j)(0);
+        noc4_stop_in(i*CFG_XLEN + j)(1)      <= noc4_stop_out((i+1)*CFG_XLEN + j)(0);
+        noc5_data_s_in(i*CFG_XLEN + j)       <= noc5_data_n_out((i+1)*CFG_XLEN + j);
+        noc5_data_void_in(i*CFG_XLEN + j)(1) <= noc5_data_void_out((i+1)*CFG_XLEN + j)(0);
+        noc5_stop_in(i*CFG_XLEN + j)(1)      <= noc5_stop_out((i+1)*CFG_XLEN + j)(0);
+        noc6_data_s_in(i*CFG_XLEN + j)       <= noc6_data_n_out((i+1)*CFG_XLEN + j);
+        noc6_data_void_in(i*CFG_XLEN + j)(1) <= noc6_data_void_out((i+1)*CFG_XLEN + j)(0);
+        noc6_stop_in(i*CFG_XLEN + j)(1)      <= noc6_stop_out((i+1)*CFG_XLEN + j)(0);
       end generate y_non_YLEN;
 
       x_0: if (j=0) generate
         -- West port is unconnected
         noc1_data_w_in(i*CFG_XLEN + j) <= (others => '0');
-        noc1_data_void_in_i(i*CFG_XLEN + j)(2) <= '1';
-        noc1_stop_in_i(i*CFG_XLEN + j)(2) <= '0';
+        noc1_data_void_in(i*CFG_XLEN + j)(2) <= '1';
+        noc1_stop_in(i*CFG_XLEN + j)(2) <= '0';
         noc2_data_w_in(i*CFG_XLEN + j) <= (others => '0');
-        noc2_data_void_in_i(i*CFG_XLEN + j)(2) <= '1';
-        noc2_stop_in_i(i*CFG_XLEN + j)(2) <= '0';
+        noc2_data_void_in(i*CFG_XLEN + j)(2) <= '1';
+        noc2_stop_in(i*CFG_XLEN + j)(2) <= '0';
         noc3_data_w_in(i*CFG_XLEN + j) <= (others => '0');
-        noc3_data_void_in_i(i*CFG_XLEN + j)(2) <= '1';
-        noc3_stop_in_i(i*CFG_XLEN + j)(2) <= '0';
+        noc3_data_void_in(i*CFG_XLEN + j)(2) <= '1';
+        noc3_stop_in(i*CFG_XLEN + j)(2) <= '0';
         noc4_data_w_in(i*CFG_XLEN + j) <= (others => '0');
-        noc4_data_void_in_i(i*CFG_XLEN + j)(2) <= '1';
-        noc4_stop_in_i(i*CFG_XLEN + j)(2) <= '0';
+        noc4_data_void_in(i*CFG_XLEN + j)(2) <= '1';
+        noc4_stop_in(i*CFG_XLEN + j)(2) <= '0';
         noc5_data_w_in(i*CFG_XLEN + j) <= (others => '0');
-        noc5_data_void_in_i(i*CFG_XLEN + j)(2) <= '1';
-        noc5_stop_in_i(i*CFG_XLEN + j)(2) <= '0';
+        noc5_data_void_in(i*CFG_XLEN + j)(2) <= '1';
+        noc5_stop_in(i*CFG_XLEN + j)(2) <= '0';
         noc6_data_w_in(i*CFG_XLEN + j) <= (others => '0');
-        noc6_data_void_in_i(i*CFG_XLEN + j)(2) <= '1';
-        noc6_stop_in_i(i*CFG_XLEN + j)(2) <= '0';
+        noc6_data_void_in(i*CFG_XLEN + j)(2) <= '1';
+        noc6_stop_in(i*CFG_XLEN + j)(2) <= '0';
       end generate x_0;
 
       x_non_0: if (j /= 0) generate
         -- West port is connected
-        noc1_data_w_in(i*CFG_XLEN + j)         <= noc1_data_e_out(i*CFG_XLEN + j - 1);
-        noc1_data_void_in_i(i*CFG_XLEN + j)(2) <= noc1_data_void_out_i(i*CFG_XLEN + j - 1)(3);
-        noc1_stop_in_i(i*CFG_XLEN + j)(2)      <= noc1_stop_out_i(i*CFG_XLEN + j - 1)(3);
-        noc2_data_w_in(i*CFG_XLEN + j)         <= noc2_data_e_out(i*CFG_XLEN + j - 1);
-        noc2_data_void_in_i(i*CFG_XLEN + j)(2) <= noc2_data_void_out_i(i*CFG_XLEN + j - 1)(3);
-        noc2_stop_in_i(i*CFG_XLEN + j)(2)      <= noc2_stop_out_i(i*CFG_XLEN + j - 1)(3);
-        noc3_data_w_in(i*CFG_XLEN + j)         <= noc3_data_e_out(i*CFG_XLEN + j - 1);
-        noc3_data_void_in_i(i*CFG_XLEN + j)(2) <= noc3_data_void_out_i(i*CFG_XLEN + j - 1)(3);
-        noc3_stop_in_i(i*CFG_XLEN + j)(2)      <= noc3_stop_out_i(i*CFG_XLEN + j - 1)(3);
-        noc4_data_w_in(i*CFG_XLEN + j)         <= noc4_data_e_out(i*CFG_XLEN + j - 1);
-        noc4_data_void_in_i(i*CFG_XLEN + j)(2) <= noc4_data_void_out_i(i*CFG_XLEN + j - 1)(3);
-        noc4_stop_in_i(i*CFG_XLEN + j)(2)      <= noc4_stop_out_i(i*CFG_XLEN + j - 1)(3);
-        noc5_data_w_in(i*CFG_XLEN + j)         <= noc5_data_e_out(i*CFG_XLEN + j - 1);
-        noc5_data_void_in_i(i*CFG_XLEN + j)(2) <= noc5_data_void_out_i(i*CFG_XLEN + j - 1)(3);
-        noc5_stop_in_i(i*CFG_XLEN + j)(2)      <= noc5_stop_out_i(i*CFG_XLEN + j - 1)(3);
-        noc6_data_w_in(i*CFG_XLEN + j)         <= noc6_data_e_out(i*CFG_XLEN + j - 1);
-        noc6_data_void_in_i(i*CFG_XLEN + j)(2) <= noc6_data_void_out_i(i*CFG_XLEN + j - 1)(3);
-        noc6_stop_in_i(i*CFG_XLEN + j)(2)      <= noc6_stop_out_i(i*CFG_XLEN + j - 1)(3);
+        noc1_data_w_in(i*CFG_XLEN + j)       <= noc1_data_e_out(i*CFG_XLEN + j - 1);
+        noc1_data_void_in(i*CFG_XLEN + j)(2) <= noc1_data_void_out(i*CFG_XLEN + j - 1)(3);
+        noc1_stop_in(i*CFG_XLEN + j)(2)      <= noc1_stop_out(i*CFG_XLEN + j - 1)(3);
+        noc2_data_w_in(i*CFG_XLEN + j)       <= noc2_data_e_out(i*CFG_XLEN + j - 1);
+        noc2_data_void_in(i*CFG_XLEN + j)(2) <= noc2_data_void_out(i*CFG_XLEN + j - 1)(3);
+        noc2_stop_in(i*CFG_XLEN + j)(2)      <= noc2_stop_out(i*CFG_XLEN + j - 1)(3);
+        noc3_data_w_in(i*CFG_XLEN + j)       <= noc3_data_e_out(i*CFG_XLEN + j - 1);
+        noc3_data_void_in(i*CFG_XLEN + j)(2) <= noc3_data_void_out(i*CFG_XLEN + j - 1)(3);
+        noc3_stop_in(i*CFG_XLEN + j)(2)      <= noc3_stop_out(i*CFG_XLEN + j - 1)(3);
+        noc4_data_w_in(i*CFG_XLEN + j)       <= noc4_data_e_out(i*CFG_XLEN + j - 1);
+        noc4_data_void_in(i*CFG_XLEN + j)(2) <= noc4_data_void_out(i*CFG_XLEN + j - 1)(3);
+        noc4_stop_in(i*CFG_XLEN + j)(2)      <= noc4_stop_out(i*CFG_XLEN + j - 1)(3);
+        noc5_data_w_in(i*CFG_XLEN + j)       <= noc5_data_e_out(i*CFG_XLEN + j - 1);
+        noc5_data_void_in(i*CFG_XLEN + j)(2) <= noc5_data_void_out(i*CFG_XLEN + j - 1)(3);
+        noc5_stop_in(i*CFG_XLEN + j)(2)      <= noc5_stop_out(i*CFG_XLEN + j - 1)(3);
+        noc6_data_w_in(i*CFG_XLEN + j)       <= noc6_data_e_out(i*CFG_XLEN + j - 1);
+        noc6_data_void_in(i*CFG_XLEN + j)(2) <= noc6_data_void_out(i*CFG_XLEN + j - 1)(3);
+        noc6_stop_in(i*CFG_XLEN + j)(2)      <= noc6_stop_out(i*CFG_XLEN + j - 1)(3);
       end generate x_non_0;
 
       x_XLEN: if (j=CFG_XLEN-1) generate
         -- East port is unconnected
         noc1_data_e_in(i*CFG_XLEN + j) <= (others => '0');
-        noc1_data_void_in_i(i*CFG_XLEN + j)(3) <= '1';
-        noc1_stop_in_i(i*CFG_XLEN + j)(3) <= '0';
+        noc1_data_void_in(i*CFG_XLEN + j)(3) <= '1';
+        noc1_stop_in(i*CFG_XLEN + j)(3) <= '0';
         noc2_data_e_in(i*CFG_XLEN + j) <= (others => '0');
-        noc2_data_void_in_i(i*CFG_XLEN + j)(3) <= '1';
-        noc2_stop_in_i(i*CFG_XLEN + j)(3) <= '0';
+        noc2_data_void_in(i*CFG_XLEN + j)(3) <= '1';
+        noc2_stop_in(i*CFG_XLEN + j)(3) <= '0';
         noc3_data_e_in(i*CFG_XLEN + j) <= (others => '0');
-        noc3_data_void_in_i(i*CFG_XLEN + j)(3) <= '1';
-        noc3_stop_in_i(i*CFG_XLEN + j)(3) <= '0';
+        noc3_data_void_in(i*CFG_XLEN + j)(3) <= '1';
+        noc3_stop_in(i*CFG_XLEN + j)(3) <= '0';
         noc4_data_e_in(i*CFG_XLEN + j) <= (others => '0');
-        noc4_data_void_in_i(i*CFG_XLEN + j)(3) <= '1';
-        noc4_stop_in_i(i*CFG_XLEN + j)(3) <= '0';
+        noc4_data_void_in(i*CFG_XLEN + j)(3) <= '1';
+        noc4_stop_in(i*CFG_XLEN + j)(3) <= '0';
         noc5_data_e_in(i*CFG_XLEN + j) <= (others => '0');
-        noc5_data_void_in_i(i*CFG_XLEN + j)(3) <= '1';
-        noc5_stop_in_i(i*CFG_XLEN + j)(3) <= '0';
+        noc5_data_void_in(i*CFG_XLEN + j)(3) <= '1';
+        noc5_stop_in(i*CFG_XLEN + j)(3) <= '0';
         noc6_data_e_in(i*CFG_XLEN + j) <= (others => '0');
-        noc6_data_void_in_i(i*CFG_XLEN + j)(3) <= '1';
-        noc6_stop_in_i(i*CFG_XLEN + j)(3) <= '0';
+        noc6_data_void_in(i*CFG_XLEN + j)(3) <= '1';
+        noc6_stop_in(i*CFG_XLEN + j)(3) <= '0';
       end generate x_XLEN;
 
       x_non_XLEN: if (j /= CFG_XLEN-1) generate
         -- East port is connected
         noc1_data_e_in(i*CFG_XLEN + j)         <= noc1_data_w_out(i*CFG_XLEN + j + 1);
-        noc1_data_void_in_i(i*CFG_XLEN + j)(3) <= noc1_data_void_out_i(i*CFG_XLEN + j + 1)(2);
-        noc1_stop_in_i(i*CFG_XLEN + j)(3)      <= noc1_stop_out_i(i*CFG_XLEN + j + 1)(2);
+        noc1_data_void_in(i*CFG_XLEN + j)(3)   <= noc1_data_void_out(i*CFG_XLEN + j + 1)(2);
+        noc1_stop_in(i*CFG_XLEN + j)(3)        <= noc1_stop_out(i*CFG_XLEN + j + 1)(2);
         noc2_data_e_in(i*CFG_XLEN + j)         <= noc2_data_w_out(i*CFG_XLEN + j + 1);
-        noc2_data_void_in_i(i*CFG_XLEN + j)(3) <= noc2_data_void_out_i(i*CFG_XLEN + j + 1)(2);
-        noc2_stop_in_i(i*CFG_XLEN + j)(3)      <= noc2_stop_out_i(i*CFG_XLEN + j + 1)(2);
+        noc2_data_void_in(i*CFG_XLEN + j)(3)   <= noc2_data_void_out(i*CFG_XLEN + j + 1)(2);
+        noc2_stop_in(i*CFG_XLEN + j)(3)        <= noc2_stop_out(i*CFG_XLEN + j + 1)(2);
         noc3_data_e_in(i*CFG_XLEN + j)         <= noc3_data_w_out(i*CFG_XLEN + j + 1);
-        noc3_data_void_in_i(i*CFG_XLEN + j)(3) <= noc3_data_void_out_i(i*CFG_XLEN + j + 1)(2);
-        noc3_stop_in_i(i*CFG_XLEN + j)(3)      <= noc3_stop_out_i(i*CFG_XLEN + j + 1)(2);
+        noc3_data_void_in(i*CFG_XLEN + j)(3)   <= noc3_data_void_out(i*CFG_XLEN + j + 1)(2);
+        noc3_stop_in(i*CFG_XLEN + j)(3)        <= noc3_stop_out(i*CFG_XLEN + j + 1)(2);
         noc4_data_e_in(i*CFG_XLEN + j)         <= noc4_data_w_out(i*CFG_XLEN + j + 1);
-        noc4_data_void_in_i(i*CFG_XLEN + j)(3) <= noc4_data_void_out_i(i*CFG_XLEN + j + 1)(2);
-        noc4_stop_in_i(i*CFG_XLEN + j)(3)      <= noc4_stop_out_i(i*CFG_XLEN + j + 1)(2);
+        noc4_data_void_in(i*CFG_XLEN + j)(3)   <= noc4_data_void_out(i*CFG_XLEN + j + 1)(2);
+        noc4_stop_in(i*CFG_XLEN + j)(3)        <= noc4_stop_out(i*CFG_XLEN + j + 1)(2);
         noc5_data_e_in(i*CFG_XLEN + j)         <= noc5_data_w_out(i*CFG_XLEN + j + 1);
-        noc5_data_void_in_i(i*CFG_XLEN + j)(3) <= noc5_data_void_out_i(i*CFG_XLEN + j + 1)(2);
-        noc5_stop_in_i(i*CFG_XLEN + j)(3)      <= noc5_stop_out_i(i*CFG_XLEN + j + 1)(2);
+        noc5_data_void_in(i*CFG_XLEN + j)(3)   <= noc5_data_void_out(i*CFG_XLEN + j + 1)(2);
+        noc5_stop_in(i*CFG_XLEN + j)(3)        <= noc5_stop_out(i*CFG_XLEN + j + 1)(2);
         noc6_data_e_in(i*CFG_XLEN + j)         <= noc6_data_w_out(i*CFG_XLEN + j + 1);
-        noc6_data_void_in_i(i*CFG_XLEN + j)(3) <= noc6_data_void_out_i(i*CFG_XLEN + j + 1)(2);
-        noc6_stop_in_i(i*CFG_XLEN + j)(3)      <= noc6_stop_out_i(i*CFG_XLEN + j + 1)(2);
+        noc6_data_void_in(i*CFG_XLEN + j)(3)   <= noc6_data_void_out(i*CFG_XLEN + j + 1)(2);
+        noc6_stop_in(i*CFG_XLEN + j)(3)        <= noc6_stop_out(i*CFG_XLEN + j + 1)(2);
       end generate x_non_XLEN;
 
     end generate meshgen_x;
@@ -444,11 +449,12 @@ begin
  
     empty_tile: if tile_type(i) = 0 generate
     tile_empty_i: tile_empty
-      generic (
+      generic map (
         SIMULATION => SIMULATION,
         tile_id    => i,
         HAS_SYNC   => CFG_HAS_SYNC)
-      port (
+      port map (
+        rst                => rst,
 	sys_clk_int        => sys_clk_int(0),
 	noc1_data_n_in     => noc1_data_n_in(i),
 	noc1_data_s_in     => noc1_data_s_in(i),
@@ -528,8 +534,8 @@ begin
 	noc4_mon_noc_vec   => mon_noc_vec(4)(i),  
 	noc5_mon_noc_vec   => mon_noc_vec(5)(i),  
 	noc6_mon_noc_vec   => mon_noc_vec(6)(i),  
-	mon_dvfs_out       => mon_dvfs_out(i),
-	clk_tile           => clk_tile(i) );
+	mon_dvfs_out       => mon_dvfs_out(i));
+      clk_tile(i)  <= refclk_int(i);
     end generate empty_tile;
 
 
@@ -537,11 +543,11 @@ begin
       assert tile_cpu_id(i) /= -1 report "Undefined CPU ID for CPU tile" severity error;
       tile_cpu_i: tile_cpu
 
-      generic (
+      generic map (
         SIMULATION => SIMULATION,
         tile_id    => i,
         HAS_SYNC   => CFG_HAS_SYNC)
-      port (
+      port map (
         rst                => rst_int,
         srst               => srst,
         refclk             => refclk_int(i),
@@ -641,10 +647,10 @@ begin
     accelerator_tile: if tile_type(i) = 2 generate
       assert tile_device(i) /= 0 report "Undefined device ID for accelerator tile" severity error;
       tile_acc_i: tile_acc
-      generic (
+      generic map (
         tile_id  => i,
         HAS_SYNC => CFG_HAS_SYNC )
-      port (
+      port map (
         rst                => rst_int,
         refclk             => refclk_int(i),
         pllbypass          => pllbypass_int(i),
@@ -740,11 +746,11 @@ begin
  
     io_tile: if tile_type(i) = 3 generate
       tile_io_i : tile_io
-      generic (
+      generic map (
         SIMULATION => SIMULATION,
         tile_id    => i,
         HAS_SYNC   => CFG_HAS_SYNC)
-      port (
+      port map (
 	rst                => rst_int,
 	srst               => srst,
 	clk                => refclk_int(i),
@@ -854,10 +860,10 @@ begin
 
     mem_tile: if tile_type(i) = 4 generate
       tile_mem_i: tile_mem
-      generic (
+      generic map (
         tile_id  => i,
-        HAS_SYNC => CFG_HAS_SYN)
-      port (
+        HAS_SYNC => CFG_HAS_SYNC)
+      port map (
 	rst                => rst_int,
 	srst               => srst,
 	clk                => sys_clk_int(tile_mem_id(i)),

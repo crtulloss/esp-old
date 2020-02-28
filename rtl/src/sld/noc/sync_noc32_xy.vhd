@@ -100,12 +100,12 @@ architecture mesh of sync_noc32_xy is
 
   begin
 
-  data_void_in_i     <= sync_data_void_in & data_void_in(3 downto 0);
-  stop_in_i          <= sync_stop_in & stop_in(3 downto 0);
-  sync_data_void_out <= data_void_out_i(4);
-  data_void_out      <= data_void_out_i(3 downto 0);
-  sync_stop_out      <= stop_out_i(4);
-  stop_out           <= stop_out_i(3 downto 0);
+  data_void_in_i            <= sync_data_void_in & data_void_in(3 downto 0);
+  stop_in_i                 <= sync_stop_in & stop_in(3 downto 0);
+  sync_data_void_out        <= data_void_out_i(4);
+  data_void_out(3 downto 0) <= data_void_out_i(3 downto 0);
+  sync_stop_out             <= stop_out_i(4);
+  stop_out(3 downto 0)      <= stop_out_i(3 downto 0);
 
 ----------------------------------------------------------------------------------------------
 -- Router
@@ -139,7 +139,7 @@ architecture mesh of sync_noc32_xy is
 
     -- Monitor signals
     mon_noc.clk          <= clk;
-    mon_noc.tile_inject  <= not data_void_in;
+    mon_noc.tile_inject  <= not data_void_in(4);
 
     mon_noc.queue_full(4) <= data_void_out_i(4) nand data_void_in_i(4);
     mon_noc.queue_full(3) <= not data_void_out_i(3);
@@ -156,22 +156,23 @@ architecture mesh of sync_noc32_xy is
     sync_input_port <= input_port;
     sync_data_void_in <= data_void_in(4);
     sync_stop_in <= stop_in(4);
-    output_port(4) <= sync_output_port;
+    output_port  <= sync_output_port;
     data_void_out(4) <= sync_data_void_out;
     stop_out(4) <= sync_stop_out;
-    fwd_ack <= (others => '0');
-    fwd_req <= (others => '0');
-    fwd_chnl_stop <= (others => '0');
-    rev_ack <= (others => '0');
-    rev_req <= (others => '0');
-    rev_chnl_stop <= (others => '0');
+    fwd_ack <= '0';
+    fwd_req <= '0';
+    fwd_chnl_stop <= '0';
+    rev_ack <= '0';
+    rev_req <= '0';
+    rev_chnl_stop <= '0';
     fwd_chnl_data <= (others => '0');
     rev_chnl_data <= (others => '0');
 
   end generate no_synchronizers;
 
   inferred_async_fifos_gen: if HAS_SYNC /= 0 generate
-    tile_to_NoC:
+ --   begin
+--    tile_to_NoC: generate
     begin
       fwd_we_i    <= not data_void_in(4);
       stop_out(4) <= fwd_wr_full_o;-- when data_void_in = '0' else '0';
@@ -191,15 +192,15 @@ architecture mesh of sync_noc32_xy is
           rd_i       => fwd_rd_i,
           q_o        => sync_input_port,
           rd_empty_o => fwd_rd_empty_o);
-    end tile_to_NoC;
+--    end generate tile_to_NoC;
 
-    Noc_to_tile:
-    begin
+--    Noc_to_tile: generate
+--    begin
       rev_we_i         <= not sync_data_void_out;
       sync_stop_in     <= rev_wr_full_o when sync_data_void_out = '0' else '0';
-      rev_rd_i         <= not stop_in;
+      rev_rd_i         <= not stop_in(4);
       data_void_out(4) <= rev_rd_empty_o;-- when stop_in = '0' else '1';
-      inferred_async_fifo_1: inferred_async_fifo
+      inferred_async_fifo_2: inferred_async_fifo
         generic map (
           g_data_width => NOC_FLIT_SIZE,
           g_size       => 8)
@@ -213,7 +214,7 @@ architecture mesh of sync_noc32_xy is
           rd_i         => rev_rd_i,
           q_o          => output_port,
           rd_empty_o   => rev_rd_empty_o);
-    end Noc_to_tile;
+--    end generate Noc_to_tile;
 
   end generate inferred_async_fifos_gen;
 

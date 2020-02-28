@@ -106,9 +106,9 @@ entity sync_noc_set is
 
     -- Monitor output. Can be left unconnected
     noc1_mon_noc_vec   : out monitor_noc_type;
-    noc2_mon_noc_vec   : out monitor_noc_type
+    noc2_mon_noc_vec   : out monitor_noc_type;
     noc3_mon_noc_vec   : out monitor_noc_type;
-    noc4_mon_noc_vec   : out monitor_noc_type
+    noc4_mon_noc_vec   : out monitor_noc_type;
     noc5_mon_noc_vec   : out monitor_noc_type;
     noc6_mon_noc_vec   : out monitor_noc_type
 
@@ -184,10 +184,10 @@ begin
       PORTS    =>  PORTS,
       local_x  =>  local_x,
       local_y  =>  local_y,
-      has_sync =>  HAS_SYNC); --further, pass these param to module through CFG_HAS_SYNC parameter pkg file
-    port (
+      has_sync =>  HAS_SYNC) --further, pass these param to module through CFG_HAS_SYNC parameter pkg file
+    port map (
       clk           => clk,
-      ck_tile       => clk_tile,
+      clk_tile      => clk_tile,
       rst           => rst,
       data_n_in     => noc1_data_n_in,
       data_s_in     => noc1_data_s_in,
@@ -203,7 +203,7 @@ begin
       output_port   => noc1_output_port,
       data_void_out => noc1_data_void_out,
       stop_out      => noc1_stop_out,
-      mon_noc       => noc1_mon_noc
+      mon_noc       => noc1_mon_noc_vec
       );
 
   sync_noc_set_2: sync_noc_xy
@@ -211,10 +211,10 @@ begin
       PORTS    =>  PORTS,
       local_x  =>  local_x,
       local_y  =>  local_y,
-      has_sync =>  HAS_SYNC); --further, pass these param to module through CFG_HAS_SYNC parameter pkg file
-    port (
+      has_sync =>  HAS_SYNC) --further, pass these param to module through CFG_HAS_SYNC parameter pkg file
+    port map (
       clk           => clk,
-      ck_tile       => clk_tile,
+      clk_tile      => clk_tile,
       rst           => rst,
       data_n_in     => noc2_data_n_in,
       data_s_in     => noc2_data_s_in,
@@ -230,7 +230,7 @@ begin
       output_port   => noc2_output_port,
       data_void_out => noc2_data_void_out,
       stop_out      => noc2_stop_out,
-      mon_noc       => noc2_mon_noc
+      mon_noc       => noc2_mon_noc_vec
       );
 
   sync_noc_set_3: sync_noc_xy
@@ -238,10 +238,10 @@ begin
       PORTS    =>  PORTS,
       local_x  =>  local_x,
       local_y  =>  local_y,
-      has_sync =>  HAS_SYNC); --further, pass these param to module through CFG_HAS_SYNC parameter pkg file
-    port (
+      has_sync =>  HAS_SYNC) --further, pass these param to module through CFG_HAS_SYNC parameter pkg file
+    port map (
       clk           => clk,
-      ck_tile       => clk_tile,
+      clk_tile      => clk_tile,
       rst           => rst,
       data_n_in     => noc3_data_n_in,
       data_s_in     => noc3_data_s_in,
@@ -257,17 +257,17 @@ begin
       output_port   => noc3_output_port,
       data_void_out => noc3_data_void_out,
       stop_out      => noc3_stop_out,
-      mon_noc       => noc3_mon_noc
+      mon_noc       => noc3_mon_noc_vec
       );
   sync_noc_set_4: sync_noc_xy
     generic map (
       PORTS    =>  PORTS,
       local_x  =>  local_x,
       local_y  =>  local_y,
-      has_sync =>  HAS_SYNC); --further, pass these param to module through CFG_HAS_SYNC parameter pkg file
-    port (
+      has_sync =>  HAS_SYNC) --further, pass these param to module through CFG_HAS_SYNC parameter pkg file
+    port map (
       clk           => clk,
-      ck_tile       => clk_tile,
+      clk_tile      => clk_tile,
       rst           => rst,
       data_n_in     => noc4_data_n_in,
       data_s_in     => noc4_data_s_in,
@@ -283,7 +283,7 @@ begin
       output_port   => noc4_output_port,
       data_void_out => noc4_data_void_out,
       stop_out      => noc4_stop_out,
-      mon_noc       => noc4_mon_noc
+      mon_noc       => noc4_mon_noc_vec
       );
 
   sync_noc_set_5: sync_noc32_xy
@@ -291,10 +291,10 @@ begin
       PORTS    =>  PORTS,
       local_x  =>  local_x,
       local_y  =>  local_y,
-      has_sync =>  HAS_SYNC); --further, pass these param to module through CFG_HAS_SYNC parameter pkg file
-    port (
+      has_sync =>  HAS_SYNC) --further, pass these param to module through CFG_HAS_SYNC parameter pkg file
+    port map (
       clk           => clk,
-      ck_tile       => clk_tile,
+      clk_tile      => clk_tile,
       rst           => rst,
       data_n_in     => noc5_data_n_in,
       data_s_in     => noc5_data_s_in,
@@ -310,7 +310,7 @@ begin
       output_port   => noc5_output_port,
       data_void_out => noc5_data_void_out,
       stop_out      => noc5_stop_out,
-      mon_noc       => noc5_mon_noc
+      mon_noc       => noc5_mon_noc_vec
       );
 
   sync_noc_set_6: sync_noc_xy
@@ -318,10 +318,10 @@ begin
       PORTS    =>  PORTS,
       local_x  =>  local_x,
       local_y  =>  local_y,
-      has_sync =>  HAS_SYNC); --further, pass these param to module through CFG_HAS_SYNC parameter pkg file
-    port (
+      has_sync =>  HAS_SYNC) --further, pass these param to module through CFG_HAS_SYNC parameter pkg file
+    port map (
       clk           => clk,
-      ck_tile       => clk_tile,
+      clk_tile      => clk_tile,
       rst           => rst,
       data_n_in     => noc6_data_n_in,
       data_s_in     => noc6_data_s_in,
@@ -337,7 +337,7 @@ begin
       output_port   => noc6_output_port,
       data_void_out => noc6_data_void_out,
       stop_out      => noc6_stop_out,
-      mon_noc       => noc6_mon_noc
+      mon_noc       => noc6_mon_noc_vec
       );
 
 end;
