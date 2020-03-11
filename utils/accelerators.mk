@@ -275,7 +275,7 @@ ifeq ($(FFT_FX_WIDTH),)
 FFT_FX_WIDTH=32
 endif
 
-#JDW : TEMP REMOVED : EXTRA_CFLAGS += -DFFT_FX_WIDTH=$(FFT_FX_WIDTH)
+EXTRA_CFLAGS += -DFFT_FX_WIDTH=$(FFT_FX_WIDTH)
 
 $(ACCELERATORS-driver): sysroot linux-build/vmlinux
 	@if test -e $(DRIVERS)/$(@:-driver=)/linux/$(@:-driver=).c; then \
