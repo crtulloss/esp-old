@@ -32,7 +32,7 @@ void dummy::load_input()
         tokens = config.tokens;
         batch = config.batch;
 
-        ESP_REPORT_TIME(sc_time_stamp(), "Load config(): tokens = %d, batch = %d", ESP_TO_UINT64(tokens), ESP_TO_UINT64(batch));
+        ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Load config(): tokens = %d, batch = %d", ESP_TO_UINT64(tokens), ESP_TO_UINT64(batch));
     }
 
     // Load
@@ -43,23 +43,23 @@ LOAD_INPUT_BATCH_LOOP:
     for (int n = 0; n < batch; n++)
     {
 
-        ESP_REPORT_TIME(sc_time_stamp(), "Load load(): batch # %d start...", n+1);
+        ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Load load(): batch # %d start...", n+1);
 
 LOAD_INPUT_TOKENS_LOOP:
         for (int b = tokens; b > 0; b -= PLM_SIZE)
         {
             HLS_PROTO("load-dma");
 
-            ESP_REPORT_TIME(sc_time_stamp(), "Load load(): ping = %d", ping);
+            ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Load load(): ping = %d", ping);
 
             uint32_t len = b > PLM_SIZE ? PLM_SIZE : b;
 
-            ESP_REPORT_TIME(sc_time_stamp(), "Load load(): len = %d [max %d]", ESP_TO_UINT64(len), PLM_SIZE);
+            ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Load load(): len = %d [max %d]", ESP_TO_UINT64(len), PLM_SIZE);
 
             dma_info_t dma_info(offset * DMA_BEAT_PER_WORD, len * DMA_BEAT_PER_WORD, DMA_SIZE);
             offset += len;
 
-            ESP_REPORT_TIME(sc_time_stamp(), "Load load(): dma_info.index = %d, dma_info.length = %d, dma_info.size = %d", ESP_TO_UINT64(dma_info.index), ESP_TO_UINT64(dma_info.length), dma_info.size.to_uint64());
+            ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Load load(): dma_info.index = %d, dma_info.length = %d, dma_info.size = %d", ESP_TO_UINT64(dma_info.index), ESP_TO_UINT64(dma_info.length), dma_info.size.to_uint64());
 
 #ifdef DMA_SINGLE_PROCESS
 #if (__MNTR_CONNECTIONS__)
@@ -75,7 +75,7 @@ LOAD_INPUT_TOKENS_LOOP:
 #endif
 #endif
 
-            ESP_REPORT_TIME(sc_time_stamp(), "Load load(): dma_read_ctrl done!");
+            ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Load load(): dma_read_ctrl done!");
 
             plm_t plm_local;
 LOAD_INPUT_DATA_LOOP:
@@ -84,7 +84,7 @@ LOAD_INPUT_DATA_LOOP:
                 sc_dt::sc_bv<64> data_bv;
 
 #if (DMA_WIDTH == 64)
-                ESP_REPORT_TIME(sc_time_stamp(), "Load load(): dma_read_chnl...");
+                ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Load load(): dma_read_chnl...");
 
 #if (__MNTR_CONNECTIONS__)
                 data_bv = this->dma_read_chnl.Pop();
@@ -92,7 +92,7 @@ LOAD_INPUT_DATA_LOOP:
                 data_bv = this->dma_read_chnl.read();
 #endif
 
-                ESP_REPORT_TIME(sc_time_stamp(), "Load load(): dma_read_chnl done! (%lX)", data_bv.to_uint64());
+                ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Load load(): dma_read_chnl done! (%lX)", data_bv.to_uint64());
 
 #elif (DMA_WIDTH == 32)
 
@@ -114,26 +114,26 @@ LOAD_INPUT_DATA_LOOP:
                 plm_local.data[i] = data;
                 if (ping) {
 //                  plm0_local.data[i] = data;
-                    ESP_REPORT_TIME(sc_time_stamp(), "Load load(): plm0[%d] := %X", i, data);
+                    ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Load load(): plm0[%d] := %X", i, data);
                 } else {
 //                  plm1_local.data[i] = data;
-                    ESP_REPORT_TIME(sc_time_stamp(), "Load load(): plm1[%d] := %X", i, data);
+                    ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Load load(): plm1[%d] := %X", i, data);
                 }
             }
             if (ping) {
                 plm0.write(plm_local);
-//              ESP_REPORT_TIME(sc_time_stamp(), "Load load(): plm0[%d] := %X", i, data);
+//              ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Load load(): plm0[%d] := %X", i, data);
             } else {
                 plm1.write(plm_local);
-//              ESP_REPORT_TIME(sc_time_stamp(), "Load load(): plm1[%d] := %X", i, data);
+//              ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Load load(): plm1[%d] := %X", i, data);
             }
 
             this->load_compute_handshake();
-            ESP_REPORT_TIME(sc_time_stamp(), "Load load() --> compute()");
+            ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Load load() --> compute()");
 
             ping = !ping;
         }
-        ESP_REPORT_TIME(sc_time_stamp(), "Load load(): batch # %d done!", n+1);
+        ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Load load(): batch # %d done!", n+1);
     }
 
     // Conclude
@@ -165,7 +165,7 @@ void dummy::store_output()
         tokens = config.tokens;
         batch = config.batch;
 
-        ESP_REPORT_TIME(sc_time_stamp(), "Store config(): tokens = %d, batch = %d", ESP_TO_UINT64(tokens), ESP_TO_UINT64(batch));
+        ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Store config(): tokens = %d, batch = %d", ESP_TO_UINT64(tokens), ESP_TO_UINT64(batch));
     }
 
     // Store
@@ -176,26 +176,26 @@ STORE_OUTPUT_BATCH_LOOP:
     for (int n = 0; n < batch; n++)
     {
 
-        ESP_REPORT_TIME(sc_time_stamp(), "Store store(): batch # %d start...", n+1);
+        ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Store store(): batch # %d start...", n+1);
 
 STORE_OUTPUT_TOKENS_LOOP:
         for (int b = tokens; b > 0; b -= PLM_SIZE)
         {
             HLS_PROTO("store-dma");
 
-            ESP_REPORT_TIME(sc_time_stamp(), "Store store(): ping = %d", ping);
+            ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Store store(): ping = %d", ping);
 
             this->store_compute_handshake();
-            ESP_REPORT_TIME(sc_time_stamp(), "Store store() --> compute()");
+            ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Store store() --> compute()");
 
             uint32_t len = b > PLM_SIZE ? PLM_SIZE : b;
 
-            ESP_REPORT_TIME(sc_time_stamp(), "Store store(): len = %d [max %d]", ESP_TO_UINT64(len), PLM_SIZE);
+            ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Store store(): len = %d [max %d]", ESP_TO_UINT64(len), PLM_SIZE);
 
             dma_info_t dma_info(offset * DMA_BEAT_PER_WORD, len * DMA_BEAT_PER_WORD, DMA_SIZE);
             offset += len;
 
-            ESP_REPORT_TIME(sc_time_stamp(), "Store store(): dma_info.index = %d, dma_info.length = %d, dma_info.size = %d", ESP_TO_UINT64(dma_info.index), ESP_TO_UINT64(dma_info.length), dma_info.size.to_uint64());
+            ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Store store(): dma_info.index = %d, dma_info.length = %d, dma_info.size = %d", ESP_TO_UINT64(dma_info.index), ESP_TO_UINT64(dma_info.length), dma_info.size.to_uint64());
 
 #ifdef DMA_SINGLE_PROCESS
 #if (__MNTR_CONNECTIONS__)
@@ -224,10 +224,10 @@ STORE_OUTPUT_DATA_LOOP:
                 uint64_t data = plm_local.data[i];
                 if (ping) {
                     //data = plm0_local.data[i];
-                    ESP_REPORT_TIME(sc_time_stamp(), "Store store(): plm0.data[%d] -> %X", i, data);
+                    ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Store store(): plm0.data[%d] -> %X", i, data);
                 } else {
                     //data = plm1.data[i];
-                    ESP_REPORT_TIME(sc_time_stamp(), "Store store(): plm1[%d] -> %X", i, data);
+                    ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Store store(): plm1[%d] -> %X", i, data);
                 }
                 sc_dt::sc_bv<64> data_bv(data);
 
@@ -256,7 +256,7 @@ STORE_OUTPUT_DATA_LOOP:
             ping = !ping;
         }
 
-        ESP_REPORT_TIME(sc_time_stamp(), "Store store(): batch # %d done!", n+1);
+        ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Store store(): batch # %d done!", n+1);
     }
 
     // Conclude
@@ -291,11 +291,11 @@ COMPUTE_LOOP:
     {
 
         this->compute_load_handshake();
-        ESP_REPORT_TIME(sc_time_stamp(), "Compute compute() ---> load()");
-        ESP_REPORT_TIME(sc_time_stamp(), "Compute load() <---> store()");
+        ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Compute compute() ---> load()");
+        ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Compute load() <---> store()");
 
         this->compute_store_handshake();
-        ESP_REPORT_TIME(sc_time_stamp(), "Compute compute() ---> store()");
+        ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Compute compute() ---> store()");
     }
 }
 

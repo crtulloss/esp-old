@@ -15,7 +15,7 @@ void system_t::config_proc()
         wait();
     }
 
-    ESP_REPORT_INFO("reset done");
+    ESP_REPORT_TIME(VON, sc_time_stamp(), "reset done");
 
     // Config
     load_memory();
@@ -27,18 +27,18 @@ void system_t::config_proc()
         wait(); conf_info.write(config);
         conf_done.write(true);
 
-        ESP_REPORT_TIME(sc_time_stamp(), "config(): config.tokes = %d, config.batch = %d", config.tokens, config.batch);
+        ESP_REPORT_TIME(VOFF, sc_time_stamp(), "config(): config.tokes = %d, config.batch = %d", config.tokens, config.batch);
     }
 
-    ESP_REPORT_INFO("config done");
+    ESP_REPORT_TIME(VON, sc_time_stamp(), "config done");
 
     // Compute
     {
         // Print information about begin time
         sc_time begin_time = sc_time_stamp();
-        ESP_REPORT_TIME(begin_time, "BEGIN - dummy");
+        ESP_REPORT_TIME(VON, begin_time, "BEGIN - dummy");
 
-        ESP_REPORT_INFO("waiting for acc_done");
+        ESP_REPORT_TIME(VOFF, sc_time_stamp(), "waiting for acc_done");
 
         // Wait the termination of the accelerator
         do { wait(); } while (!acc_done.read());
@@ -46,7 +46,7 @@ void system_t::config_proc()
 
         // Print information about end time
         sc_time end_time = sc_time_stamp();
-        ESP_REPORT_TIME(end_time, "END - dummy");
+        ESP_REPORT_TIME(VON, end_time, "END - dummy");
 
 #if 0
         esc_log_latency(sc_object::basename(), clock_cycle(end_time - begin_time));
@@ -61,10 +61,10 @@ void system_t::config_proc()
         // check the results with the golden model
         if (validate())
         {
-            ESP_REPORT_ERROR("validation failed!");
+            ESP_REPORT_TIME(VON, sc_time_stamp(), "validation failed!");
         } else
         {
-            ESP_REPORT_INFO("validation passed!");
+            ESP_REPORT_TIME(VON, sc_time_stamp(), "validation passed!");
         }
         delete [] out;
     }
@@ -94,11 +94,11 @@ void system_t::load_memory()
         for (int j = 0; j < DMA_BEAT_PER_WORD; j++) {
             mem[DMA_BEAT_PER_WORD * i + j] = data_bv.range((j + 1) * DMA_WIDTH - 1, j * DMA_WIDTH);
 
-            ESP_REPORT_TIME(sc_time_stamp(), "mem[%d] := %lX", DMA_BEAT_PER_WORD * i + j, mem[DMA_BEAT_PER_WORD * i + j].to_uint64());
+            ESP_REPORT_TIME(VOFF, sc_time_stamp(), "mem[%d] := %lX", DMA_BEAT_PER_WORD * i + j, mem[DMA_BEAT_PER_WORD * i + j].to_uint64());
         }
     }
 
-    ESP_REPORT_INFO("load memory completed");
+    ESP_REPORT_TIME(VON, sc_time_stamp(), "load memory completed");
 }
 
 void system_t::dump_memory()
@@ -110,14 +110,14 @@ void system_t::dump_memory()
         for (int j = 0; j < DMA_BEAT_PER_WORD; j++) {
             data_bv.range((j + 1) * DMA_WIDTH - 1, j * DMA_WIDTH) = mem[DMA_BEAT_PER_WORD * i + j];
 
-            ESP_REPORT_TIME(sc_time_stamp(), "mem[%d] -> %lX", DMA_BEAT_PER_WORD * i + j, mem[DMA_BEAT_PER_WORD * i + j].to_uint64());
+            ESP_REPORT_TIME(VOFF, sc_time_stamp(), "mem[%d] -> %lX", DMA_BEAT_PER_WORD * i + j, mem[DMA_BEAT_PER_WORD * i + j].to_uint64());
         }
         out[i] = data_bv.to_uint64();
 
-        ESP_REPORT_TIME(sc_time_stamp(), "out[%d] -> %lX", i, out[i]);
+        ESP_REPORT_TIME(VOFF, sc_time_stamp(), "out[%d] -> %lX", i, out[i]);
     }
 
-    ESP_REPORT_INFO("dump memory completed");
+    ESP_REPORT_TIME(VON, sc_time_stamp(), "dump memory completed");
 }
 
 int system_t::validate()
@@ -128,7 +128,7 @@ int system_t::validate()
     for (int i = 0; i < MEM_SIZE / DMA_BEAT_PER_WORD; i++) {
         uint64_t expected = (0xfeed0bac00000000L | (uint64_t) i);
         if (out[i] != expected) {
-            ESP_REPORT_TIME(sc_time_stamp(), "[%d]: %lX (expected %lX)", i, out[i], expected);
+            ESP_REPORT_TIME(VON, sc_time_stamp(), "[%d]: %lX (expected %lX)", i, out[i], expected);
             errors++;
         }
     }
