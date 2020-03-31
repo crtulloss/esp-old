@@ -43,10 +43,11 @@ void system_t::config_proc()
         // Wait the termination of the accelerator
         do { wait(); } while (!acc_done.read());
         debug_info_t debug_code = debug.read();
-
         // Print information about end time
         sc_time end_time = sc_time_stamp();
         ESP_REPORT_TIME(VON, end_time, "END - dummy");
+
+        ESP_REPORT_TIME(VON, sc_time_stamp(), "debug code %u", debug_code);
 
 #if 0
         esc_log_latency(sc_object::basename(), clock_cycle(end_time - begin_time));
@@ -86,7 +87,7 @@ void system_t::load_memory()
     //  |  out data  |  | batch * tokens * sizeof(uint64_t)
     //  ==============  v
 
-    for (int i = 0; i < MEM_SIZE / DMA_BEAT_PER_WORD; i++) {
+    for (unsigned i = 0; i < MEM_SIZE / DMA_BEAT_PER_WORD; i++) {
 
         uint64_t data = 0xfeed0bac00000000L | (uint64_t) i;
         sc_dt::sc_bv<64> data_bv(data);
@@ -94,7 +95,7 @@ void system_t::load_memory()
         for (int j = 0; j < DMA_BEAT_PER_WORD; j++) {
             mem[DMA_BEAT_PER_WORD * i + j] = data_bv.range((j + 1) * DMA_WIDTH - 1, j * DMA_WIDTH);
 
-            ESP_REPORT_TIME(VOFF, sc_time_stamp(), "mem[%d] := %lX", DMA_BEAT_PER_WORD * i + j, mem[DMA_BEAT_PER_WORD * i + j].to_uint64());
+            ESP_REPORT_TIME(VOFF, sc_time_stamp(), "mem[%d] := %llX", DMA_BEAT_PER_WORD * i + j, mem[DMA_BEAT_PER_WORD * i + j].to_uint64());
         }
     }
 
@@ -104,17 +105,17 @@ void system_t::load_memory()
 void system_t::dump_memory()
 {
     // Get results from memory
-    for (int i = 0; i < MEM_SIZE / DMA_BEAT_PER_WORD; i++) {
+    for (unsigned i = 0; i < MEM_SIZE / DMA_BEAT_PER_WORD; i++) {
         sc_dt::sc_bv<64> data_bv;
 
-        for (int j = 0; j < DMA_BEAT_PER_WORD; j++) {
+        for (unsigned j = 0; j < DMA_BEAT_PER_WORD; j++) {
             data_bv.range((j + 1) * DMA_WIDTH - 1, j * DMA_WIDTH) = mem[DMA_BEAT_PER_WORD * i + j];
 
-            ESP_REPORT_TIME(VOFF, sc_time_stamp(), "mem[%d] -> %lX", DMA_BEAT_PER_WORD * i + j, mem[DMA_BEAT_PER_WORD * i + j].to_uint64());
+            ESP_REPORT_TIME(VOFF, sc_time_stamp(), "mem[%d] -> %llX", DMA_BEAT_PER_WORD * i + j, mem[DMA_BEAT_PER_WORD * i + j].to_uint64());
         }
         out[i] = data_bv.to_uint64();
 
-        ESP_REPORT_TIME(VOFF, sc_time_stamp(), "out[%d] -> %lX", i, out[i]);
+        ESP_REPORT_TIME(VOFF, sc_time_stamp(), "out[%d] -> %llX", i, out[i]);
     }
 
     ESP_REPORT_TIME(VON, sc_time_stamp(), "dump memory completed");
@@ -125,10 +126,10 @@ int system_t::validate()
     uint32_t errors = 0;
 
     // Check for mismatches
-    for (int i = 0; i < MEM_SIZE / DMA_BEAT_PER_WORD; i++) {
+    for (unsigned i = 0; i < MEM_SIZE / DMA_BEAT_PER_WORD; i++) {
         uint64_t expected = (0xfeed0bac00000000L | (uint64_t) i);
         if (out[i] != expected) {
-            ESP_REPORT_TIME(VON, sc_time_stamp(), "[%d]: %lX (expected %lX)", i, out[i], expected);
+            ESP_REPORT_TIME(VON, sc_time_stamp(), "[%d]: %llX (expected %llX)", i, out[i], expected);
             errors++;
         }
     }

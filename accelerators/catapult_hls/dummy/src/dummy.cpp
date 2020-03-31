@@ -32,7 +32,7 @@ void dummy::load_input()
         tokens = config.tokens;
         batch = config.batch;
 
-        ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Load config(): tokens = %d, batch = %d", ESP_TO_UINT64(tokens), ESP_TO_UINT64(batch));
+        ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Load config(): tokens = %llu, batch = %llu", ESP_TO_UINT64(tokens), ESP_TO_UINT64(batch));
     }
 
     // Load
@@ -40,7 +40,7 @@ void dummy::load_input()
     uint32_t offset = 0;
 
 LOAD_INPUT_BATCH_LOOP:
-    for (int n = 0; n < batch; n++)
+    for (unsigned n = 0; n < batch; n++)
     {
 
         ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Load load(): batch # %d start...", n+1);
@@ -54,12 +54,12 @@ LOAD_INPUT_TOKENS_LOOP:
 
             uint32_t len = b > PLM_SIZE ? PLM_SIZE : b;
 
-            ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Load load(): len = %d [max %d]", ESP_TO_UINT64(len), PLM_SIZE);
+            ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Load load(): len = %llu [max %d]", ESP_TO_UINT64(len), PLM_SIZE);
 
             dma_info_t dma_info(offset * DMA_BEAT_PER_WORD, len * DMA_BEAT_PER_WORD, DMA_SIZE);
             offset += len;
 
-            ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Load load(): dma_info.index = %d, dma_info.length = %d, dma_info.size = %d", ESP_TO_UINT64(dma_info.index), ESP_TO_UINT64(dma_info.length), dma_info.size.to_uint64());
+            ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Load load(): dma_info.index = %llu, dma_info.length = %llu, dma_info.size = %llu", ESP_TO_UINT64(dma_info.index), ESP_TO_UINT64(dma_info.length), dma_info.size.to_uint64());
 
 #ifdef DMA_SINGLE_PROCESS
 #if (__MNTR_CONNECTIONS__)
@@ -92,7 +92,7 @@ LOAD_INPUT_DATA_LOOP:
                 data_bv = this->dma_read_chnl.read();
 #endif
 
-                ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Load load(): dma_read_chnl done! (%lX)", data_bv.to_uint64());
+                ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Load load(): dma_read_chnl done! (%llX)", data_bv.to_uint64());
 
 #elif (DMA_WIDTH == 32)
 
@@ -114,10 +114,10 @@ LOAD_INPUT_DATA_LOOP:
                 plm_local.data[i] = data;
                 if (ping) {
 //                  plm0_local.data[i] = data;
-                    ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Load load(): plm0[%d] := %X", i, data);
+                    ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Load load(): plm0[%d] := %llX", i, data);
                 } else {
 //                  plm1_local.data[i] = data;
-                    ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Load load(): plm1[%d] := %X", i, data);
+                    ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Load load(): plm1[%d] := %llX", i, data);
                 }
             }
             if (ping) {
@@ -165,7 +165,7 @@ void dummy::store_output()
         tokens = config.tokens;
         batch = config.batch;
 
-        ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Store config(): tokens = %d, batch = %d", ESP_TO_UINT64(tokens), ESP_TO_UINT64(batch));
+        ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Store config(): tokens = %llu, batch = %llu", ESP_TO_UINT64(tokens), ESP_TO_UINT64(batch));
     }
 
     // Store
@@ -173,7 +173,7 @@ void dummy::store_output()
     uint32_t offset = 0;
 
 STORE_OUTPUT_BATCH_LOOP:
-    for (int n = 0; n < batch; n++)
+    for (unsigned n = 0; n < batch; n++)
     {
 
         ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Store store(): batch # %d start...", n+1);
@@ -190,12 +190,12 @@ STORE_OUTPUT_TOKENS_LOOP:
 
             uint32_t len = b > PLM_SIZE ? PLM_SIZE : b;
 
-            ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Store store(): len = %d [max %d]", ESP_TO_UINT64(len), PLM_SIZE);
+            ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Store store(): len = %llu [max %d]", ESP_TO_UINT64(len), PLM_SIZE);
 
             dma_info_t dma_info(offset * DMA_BEAT_PER_WORD, len * DMA_BEAT_PER_WORD, DMA_SIZE);
             offset += len;
 
-            ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Store store(): dma_info.index = %d, dma_info.length = %d, dma_info.size = %d", ESP_TO_UINT64(dma_info.index), ESP_TO_UINT64(dma_info.length), dma_info.size.to_uint64());
+            ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Store store(): dma_info.index = %llu, dma_info.length = %llu, dma_info.size = %llu", ESP_TO_UINT64(dma_info.index), ESP_TO_UINT64(dma_info.length), dma_info.size.to_uint64());
 
 #ifdef DMA_SINGLE_PROCESS
 #if (__MNTR_CONNECTIONS__)
@@ -224,10 +224,10 @@ STORE_OUTPUT_DATA_LOOP:
                 uint64_t data = plm_local.data[i];
                 if (ping) {
                     //data = plm0_local.data[i];
-                    ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Store store(): plm0.data[%d] -> %X", i, data);
+                    ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Store store(): plm0.data[%d] -> %llX", i, data);
                 } else {
                     //data = plm1.data[i];
-                    ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Store store(): plm1[%d] -> %X", i, data);
+                    ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Store store(): plm1[%d] -> %llX", i, data);
                 }
                 sc_dt::sc_bv<64> data_bv(data);
 
@@ -281,7 +281,7 @@ void dummy::compute_kernel()
     {
         HLS_PROTO("compute-config");
         wait_for_config(); // config process
-        conf_info_t config = this->conf_info.read();
+        //conf_info_t config = this->conf_info.read();
     }
 
 

@@ -36,6 +36,7 @@ CXXFLAGS += -std=c++11
 CXXFLAGS += -Wno-unknown-pragmas
 CXXFLAGS += -Wno-unused-variable
 CXXFLAGS += -Wno-unused-label
+CXXFLAGS += -Wall
 #CXXFLAGS += -DDMA_SINGLE_PROCESS
 
 LDLIBS :=

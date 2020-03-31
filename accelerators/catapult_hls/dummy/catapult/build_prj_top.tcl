@@ -10,8 +10,8 @@ array set opt {
     asic       0
     channels   1
     csim       1
-    hsynth     0
-    rtlsim     0
+    hsynth     1
+    rtlsim     1
     lsynth     0
 }
 

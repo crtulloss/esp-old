@@ -225,8 +225,8 @@ if {$opt(hsynth)} {
 
     # Loops
    
-    directive set /dummy/dummy:load_input/load_input/LOAD_INPUT_TOKENS_LOOP -PIPELINE_INIT_INTERVAL 1 
-    directive set /dummy/dummy:store_output/store_output/STORE_OUTPUT_TOKENS_LOOP -PIPELINE_INIT_INTERVAL 1
+    directive set /dummy/dummy:load_input/load_input/LOAD_INPUT_TOKENS_LOOP -PIPELINE_INIT_INTERVAL 0
+    directive set /dummy/dummy:store_output/store_output/STORE_OUTPUT_TOKENS_LOOP -PIPELINE_INIT_INTERVAL 0
 
     go architect
 
