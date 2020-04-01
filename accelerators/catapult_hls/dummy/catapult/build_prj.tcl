@@ -80,6 +80,11 @@ directive set -TRANSACTION_DONE_SIGNAL true
 #set CLOCK_PERIOD 25
 
 # Design specific options.
+
+#
+# Flags
+#
+
 if {$opt(asic) > 0} {
 solution options set Flows/QuestaSIM/SCCOM_OPTS {-g -x c++ -Wall -Wno-unused-label -Wno-unknown-pragmas -DDMA_WIDTH=64 -DCLOCK_PERIOD=25000}
 } else {
@@ -91,6 +96,10 @@ solution options set /Input/CompilerFlags {-DDMA_WIDTH=64 -DCLOCK_PERIOD=25000}
 } else {
 solution options set /Input/CompilerFlags {-DDMA_WIDTH=64 -DHLS_CATAPULT -D__MNTR_CONNECTIONS__ -DCLOCK_PERIOD=25000}
 }
+
+#
+# Output
+#
 
 solution options set /Input/SearchPath { \
     ../src \
@@ -108,6 +117,26 @@ solution file add ../tb/sc_main.cpp -type C++ -exclude true
 solution file add ../tb/system.cpp -type C++ -exclude true
 
 #solution file set ../tb/sc_main.cpp -args {-DDISABLE_PRINTF}
+
+
+#
+# Output
+#
+
+# Verilog only
+solution option set Output/OutputVHDL false
+solution option set Output/OutputVerilog true
+
+# Package output in Solution dir
+solution option set Output/PackageOutput true
+solution option set Output/PackageStaticFiles true
+
+# Add Prefix to library and generated sub-blocks
+solution option set Output/PrefixStaticFiles true
+solution options set Output/SubBlockNamePrefix "esp_acc_dummy_"
+
+# Do not modify names
+solution option set Output/DoNotModifyNames true
 
 go new
 
@@ -129,6 +158,8 @@ go analyze
 
 # 10.5
 solution design set dummy -top
+
+#directive set PRESERVE_STRUCTS false
 
 #
 #
@@ -201,32 +232,39 @@ if {$opt(hsynth)} {
 
     directive set /dummy/dummy:load_input/plm0:cns -MAP_TO_MODULE ccs_ioport.ccs_out_wait
     directive set /dummy/dummy:load_input/plm0:cns -PACKING_MODE sidebyside
-    directive set /dummy/dummy:load_input/plm0 -WORD_WIDTH 32768
+    #directive set /dummy/dummy:load_input/plm0 -WORD_WIDTH 32768
 
     directive set /dummy/dummy:load_input/plm1:cns -MAP_TO_MODULE mgc_ioport.mgc_out_stdreg_wait
     directive set /dummy/dummy:load_input/plm1:cns -PACKING_MODE sidebyside
-    directive set /dummy/dummy:load_input/plm1 -WORD_WIDTH 32768
+    #directive set /dummy/dummy:load_input/plm1 -WORD_WIDTH 32768
 
     directive set /dummy/dummy:store_output/plm0:cns -MAP_TO_MODULE ccs_ioport.ccs_in_wait
     directive set /dummy/dummy:store_output/plm0:cns -PACKING_MODE sidebyside
-    directive set /dummy/dummy:store_output/plm0 -WORD_WIDTH 32768
+    #directive set /dummy/dummy:store_output/plm0 -WORD_WIDTH 32768
 
     directive set /dummy/dummy:store_output/plm1:cns -MAP_TO_MODULE mgc_ioport.mgc_chan_in
     directive set /dummy/dummy:store_output/plm1:cns -PACKING_MODE sidebyside
-    directive set /dummy/dummy:store_output/plm1 -WORD_WIDTH 32768
+    #directive set /dummy/dummy:store_output/plm1 -WORD_WIDTH 32768
 
     directive set /dummy/plm0:cns -MAP_TO_MODULE ccs_ioport.ccs_pipe
     directive set /dummy/plm0:cns -PACKING_MODE sidebyside
-    directive set /dummy/plm0 -WORD_WIDTH 32768
+    #directive set /dummy/plm0 -WORD_WIDTH 32768
 
     directive set /dummy/plm1:cns -MAP_TO_MODULE mgc_ioport.mgc_pipe
     directive set /dummy/plm1:cns -PACKING_MODE sidebyside
-    directive set /dummy/plm1 -WORD_WIDTH 32768
+    #directive set /dummy/plm1 -WORD_WIDTH 32768
 
     # Loops
    
-    directive set /dummy/dummy:load_input/load_input/LOAD_INPUT_TOKENS_LOOP -PIPELINE_INIT_INTERVAL 0
-    directive set /dummy/dummy:store_output/store_output/STORE_OUTPUT_TOKENS_LOOP -PIPELINE_INIT_INTERVAL 0
+    directive set /dummy/dummy:load_input/load_input/LOAD_INPUT_DATA_LOOP -PIPELINE_INIT_INTERVAL 1
+    directive set /dummy/dummy:store_output/store_output/STORE_OUTPUT_DATA_LOOP -PIPELINE_INIT_INTERVAL 1
+
+    # Area vs Latency Goals
+
+    directive set /dummy/dummy:load_input/load_input -DESIGN_GOAL Latency
+    directive set /dummy/dummy:store_output/store_output -DESIGN_GOAL Latency
+    directive set /dummy/config_accelerator -DESIGN_GOAL Latency
+    directive set /dummy/compute_kernel -DESIGN_GOAL Latency
 
     go architect
 
@@ -247,8 +285,8 @@ if {$opt(hsynth)} {
     #
 
     if {$opt(rtlsim)} {
-        flow run /SCVerify/launch_make ./scverify/Verify_rtl_v_msim.mk {} SIMTOOL=msim sim
-        #flow run /SCVerify/launch_make ./scverify/Verify_rtl_v_msim.mk {} SIMTOOL=msim simgui
+        #flow run /SCVerify/launch_make ./scverify/Verify_concat_sim_dummy_v_msim.mk {} SIMTOOL=msim sim
+        flow run /SCVerify/launch_make ./scverify/Verify_concat_sim_dummy_v_msim.mk {} SIMTOOL=msim simgui
     }
 
     if {$opt(lsynth)} {

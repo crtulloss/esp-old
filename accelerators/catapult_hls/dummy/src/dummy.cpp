@@ -101,22 +101,18 @@ LOAD_INPUT_DATA_LOOP:
 #else
                 data_bv.range(31, 0) = this->dma_read_chnl.read();
 #endif
-                wait();
 #if (__MNTR_CONNECTIONS__)
                 data_bv.range(63, 32) = this->dma_read_chnl.Pop();
 #else
                 data_bv.range(63, 32) = this->dma_read_chnl.read();
 #endif
 #endif
-                wait();
                 data = data_bv.to_uint64();
 
                 plm_local.data[i] = data;
                 if (ping) {
-//                  plm0_local.data[i] = data;
                     ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Load load(): plm0[%d] := %llX", i, data);
                 } else {
-//                  plm1_local.data[i] = data;
                     ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Load load(): plm1[%d] := %llX", i, data);
                 }
             }
@@ -220,7 +216,6 @@ STORE_OUTPUT_TOKENS_LOOP:
 STORE_OUTPUT_DATA_LOOP:
             for (uint16_t i = 0; i < len; i++) {
 
-                wait();
                 uint64_t data = plm_local.data[i];
                 if (ping) {
                     //data = plm0_local.data[i];
@@ -243,11 +238,9 @@ STORE_OUTPUT_DATA_LOOP:
 
 #if (__MNTR_CONNECTIONS__)
                 this->dma_write_chnl.Push(data_bv.range(31, 0));
-                wait();
                 this->dma_write_chnl.Push(data_bv.range(64, 32));
 #else
                 this->dma_write_chnl.write(data_bv.range(31, 0));
-                wait();
                 this->dma_write_chnl.write(data_bv.range(64, 32));
 #endif
 

@@ -11,7 +11,7 @@
 
 //#include "esp_templates.hpp"
 
-const size_t MEM_SIZE = 2048;
+const size_t MEM_SIZE = 64;
 
 #include "core/systems/esp_system.hpp"
 
