@@ -257,6 +257,12 @@ STORE_OUTPUT_DATA_LOOP:
     }
 }
 
+void compute(unsigned len, plm_t *plm_local) {
+    for (unsigned i = 0; i < len; i++) {
+        plm_local->data[i]++;
+    }
+}
+
 
 void dummy::compute_kernel()
 {
@@ -308,9 +314,7 @@ COMPUTE_TOKENS_LOOP:
                 plm_local = plm1_in.read();
             }
 
-            for (unsigned i = 0; i < len; i++) {
-                plm_local.data[i]++;
-            }
+            compute(len, &plm_local);
 
             if (ping) {
                 plm0_out.write(plm_local);
