@@ -77,7 +77,7 @@ directive set -TRANSACTION_DONE_SIGNAL true
 #directive set -CLUSTER_TYPE combinational
 #directive set -COMPGRADE fast
 
-#set CLOCK_PERIOD 25
+#set CLOCK_PERIOD 12.5
 
 # Design specific options.
 
@@ -86,15 +86,15 @@ directive set -TRANSACTION_DONE_SIGNAL true
 #
 
 if {$opt(asic) > 0} {
-solution options set Flows/QuestaSIM/SCCOM_OPTS {-g -x c++ -Wall -Wno-unused-label -Wno-unknown-pragmas -DDMA_WIDTH=64 -DCLOCK_PERIOD=25000}
+solution options set Flows/QuestaSIM/SCCOM_OPTS {-g -x c++ -Wall -Wno-unused-label -Wno-unknown-pragmas -DDMA_WIDTH=64 -DCLOCK_PERIOD=12500}
 } else {
-solution options set Flows/QuestaSIM/SCCOM_OPTS {-g -x c++ -Wall -Wno-unused-label -Wno-unknown-pragmas -DDMA_WIDTH=64 -DCLOCK_PERIOD=25000}
+solution options set Flows/QuestaSIM/SCCOM_OPTS {-g -x c++ -Wall -Wno-unused-label -Wno-unknown-pragmas -DDMA_WIDTH=64 -DCLOCK_PERIOD=12500}
 }
 
 if {$opt(channels) == 0} {
-solution options set /Input/CompilerFlags {-DDMA_WIDTH=64 -DCLOCK_PERIOD=25000}
+solution options set /Input/CompilerFlags {-DDMA_WIDTH=64 -DCLOCK_PERIOD=12500}
 } else {
-solution options set /Input/CompilerFlags {-DDMA_WIDTH=64 -DHLS_CATAPULT -D__MNTR_CONNECTIONS__ -DCLOCK_PERIOD=25000}
+solution options set /Input/CompilerFlags {-DDMA_WIDTH=64 -DHLS_CATAPULT -D__MNTR_CONNECTIONS__ -DCLOCK_PERIOD=12500}
 }
 
 #
@@ -189,8 +189,7 @@ if {$opt(hsynth)} {
         puts "ERROR: Cadence Genus is not supported"
         exit 1
     } else {
-        
-        
+
         solution library add mgc_Xilinx-VIRTEX-uplus-2_beh -- -rtlsyntool Vivado -manufacturer Xilinx -family VIRTEX-uplus -speed -2 -part xcvu9p-flga2104-2-e
         #solution library add mgc_Xilinx-VIRTEX-u-2_beh -- -rtlsyntool Vivado -manufacturer Xilinx -family VIRTEX-u -speed -2 -part xcvu440-flga2892-2-e
         #solution library add mgc_Xilinx-VIRTEX-7-2_beh -- -rtlsyntool Vivado -manufacturer Xilinx -family VIRTEX-7 -speed -2 -part xc7v2000tflg1925-2
@@ -209,8 +208,8 @@ if {$opt(hsynth)} {
 
     directive set -CLOCKS { \
         clk { \
-            -CLOCK_PERIOD 25 \
-            -CLOCK_HIGH_TIME 12.5 \
+            -CLOCK_PERIOD 12.5 \
+            -CLOCK_HIGH_TIME 6.25 \
             -CLOCK_OFFSET 0.000000 \
             -CLOCK_UNCERTAINTY 0.0 \
         } \
@@ -255,7 +254,7 @@ if {$opt(hsynth)} {
     #directive set /dummy/plm1 -WORD_WIDTH 32768
 
     # Loops
-   
+
     directive set /dummy/dummy:load_input/load_input/LOAD_INPUT_DATA_LOOP -PIPELINE_INIT_INTERVAL 1
     directive set /dummy/dummy:store_output/store_output/STORE_OUTPUT_DATA_LOOP -PIPELINE_INIT_INTERVAL 1
 
