@@ -36,7 +36,7 @@ void system_t::config_proc()
     {
         // Print information about begin time
         sc_time begin_time = sc_time_stamp();
-        ESP_REPORT_TIME(VON, begin_time, "BEGIN - dummy");
+        ESP_REPORT_TIME(VON, begin_time, "run dummy: BEGIN");
 
         ESP_REPORT_TIME(VOFF, sc_time_stamp(), "waiting for acc_done");
 
@@ -45,9 +45,9 @@ void system_t::config_proc()
         debug_info_t debug_code = debug.read();
         // Print information about end time
         sc_time end_time = sc_time_stamp();
-        ESP_REPORT_TIME(VON, end_time, "END - dummy");
+        ESP_REPORT_TIME(VON, end_time, "run dummy: END");
 
-        ESP_REPORT_TIME(VON, sc_time_stamp(), "debug code %u", debug_code);
+        ESP_REPORT_TIME(VON, sc_time_stamp(), "debug code: %u", debug_code);
 
 #if 0
         esc_log_latency(sc_object::basename(), clock_cycle(end_time - begin_time));
@@ -62,10 +62,10 @@ void system_t::config_proc()
         // check the results with the golden model
         if (validate())
         {
-            ESP_REPORT_TIME(VON, sc_time_stamp(), "validation failed!");
+            ESP_REPORT_TIME(VON, sc_time_stamp(), "validation: FAIL");
         } else
         {
-            ESP_REPORT_TIME(VON, sc_time_stamp(), "validation passed!");
+            ESP_REPORT_TIME(VON, sc_time_stamp(), "validation: PASS");
         }
         delete [] out;
     }
@@ -99,6 +99,7 @@ void system_t::load_memory()
         }
     }
 
+    ESP_REPORT_TIME(VON, sc_time_stamp(), "memory size: %lu", MEM_SIZE);
     ESP_REPORT_TIME(VON, sc_time_stamp(), "load memory completed");
 }
 
