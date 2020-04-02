@@ -10,9 +10,6 @@ unsigned DMA_WORD_PER_BEAT(unsigned _st)
 	return (sizeof(void *) / _st);
 }
 
-static contig_handle_t contig;
-static pthread_t *thread;
-
 void *accelerator_thread( void *ptr )
 {
 	esp_thread_info_t *info = (esp_thread_info_t *) ptr;
@@ -66,18 +63,24 @@ void *accelerator_thread( void *ptr )
 	return NULL;
 }
 
-void *esp_alloc(size_t size)
-{
-	return contig_alloc(size, &contig);
+void *esp_alloc_policy(struct contig_alloc_params params, size_t size, contig_handle_t *handle){
+    void* contig_ptr = contig_alloc_policy(params, size, handle); 
+    return contig_ptr;
 }
 
-static void esp_prepare(struct esp_access *esp)
+void *esp_alloc(size_t size, contig_handle_t *handle)
 {
-	esp->contig = contig_to_khandle(contig);
+    void* contig_ptr = contig_alloc(size, handle);
+    return contig_ptr;
+}
+
+static void esp_prepare(struct esp_access *esp, contig_handle_t *handle)
+{
+	esp->contig = contig_to_khandle(*handle);
 	esp->run = true;
 }
 
-static void esp_config(esp_thread_info_t cfg[], unsigned nacc)
+static void esp_config(esp_thread_info_t cfg[], unsigned nacc, contig_handle_t *handle)
 {
 	int i;
 	for (i = 0; i < nacc; i++) {
@@ -89,40 +92,40 @@ static void esp_config(esp_thread_info_t cfg[], unsigned nacc)
 		switch (info->type) {
 		// <<--esp-prepare-->>
 		case fftaccelerator :
-			esp_prepare(&info->desc.fftaccelerator_desc.esp);
+			esp_prepare(&info->desc.fftaccelerator_desc.esp, handle);
 			break;
 		case adderaccelerator :
-			esp_prepare(&info->desc.adderaccelerator_desc.esp);
+			esp_prepare(&info->desc.adderaccelerator_desc.esp, handle);
 			break;
 		case fft :
-			esp_prepare(&info->desc.fft_desc.esp);
+			esp_prepare(&info->desc.fft_desc.esp, handle);
 			break;
 		case adder:
-			esp_prepare(&info->desc.adder_desc.esp);
+			esp_prepare(&info->desc.adder_desc.esp, handle);
 			break;
 		case CounterAccelerator:
-			esp_prepare(&info->desc.CounterAccelerator_desc.esp);
+			esp_prepare(&info->desc.CounterAccelerator_desc.esp, handle);
 			break;
 		case dummy:
-			esp_prepare(&info->desc.dummy_desc.esp);
+			esp_prepare(&info->desc.dummy_desc.esp, handle);
 			break;
 		case sort:
-			esp_prepare(&info->desc.sort_desc.esp);
+			esp_prepare(&info->desc.sort_desc.esp, handle);
 			break;
 		case spmv:
-			esp_prepare(&info->desc.spmv_desc.esp);
+			esp_prepare(&info->desc.spmv_desc.esp, handle);
 			break;
 		case synth:
-			esp_prepare(&info->desc.synth_desc.esp);
+			esp_prepare(&info->desc.synth_desc.esp, handle);
 			break;
 		case visionchip:
-			esp_prepare(&info->desc.visionchip_desc.esp);
+			esp_prepare(&info->desc.visionchip_desc.esp, handle);
 			break;
 		case vitbfly2:
-			esp_prepare(&info->desc.vitbfly2_desc.esp);
+			esp_prepare(&info->desc.vitbfly2_desc.esp, handle);
 			break;
 		default :
-			contig_free(contig);
+			contig_free(*handle);
 			die("Error: accelerator type specified for accelerator %s not supported\n", info->devname);
 			break;
 		}
@@ -140,31 +143,30 @@ static void print_time_info(esp_thread_info_t info[], unsigned long long hw_ns, 
 			printf("    - %s time: %llu ns\n", info[i].devname, info[i].hw_ns);
 }
 
-void esp_run(esp_thread_info_t cfg[], unsigned nacc)
+void esp_run(esp_thread_info_t cfg[], unsigned nacc, contig_handle_t *handle)
 {
 	int i;
 	struct timespec th_start;
 	struct timespec th_end;
-	thread = malloc(nacc * sizeof(pthread_t));
+	pthread_t *thread = malloc(nacc * sizeof(pthread_t));
 	int rc = 0;
 
-	esp_config(cfg, nacc);
-
-	for (i = 0; i < nacc; i++) {
+    esp_config(cfg, nacc, handle);
+    for (i = 0; i < nacc; i++) {
 		esp_thread_info_t *info = &cfg[i];
-		char path[70];
 		const char *prefix = "/dev/";
-
-		if (strlen(info->devname) > 64) {
-			contig_free(contig);
+	    char path[70];
+        
+        if (strlen(info->devname) > 64) {
+			contig_free(*handle);
 			die("Error: device name %s exceeds maximum length of 64 characters\n", info->devname);
 		}
 
 		sprintf(path, "%s%s", prefix, info->devname);
-
+        
 		info->fd = open(path, O_RDWR, 0);
 		if (info->fd < 0) {
-			contig_free(contig);
+			contig_free(*handle);
 			die_errno("fopen failed\n");
 		}
 	}
@@ -176,17 +178,17 @@ void esp_run(esp_thread_info_t cfg[], unsigned nacc)
 		if (!info->run)
 			continue;
 
-		rc = pthread_create(&thread[i], NULL, accelerator_thread, (void*) info);
+        rc = pthread_create(&thread[i], NULL, accelerator_thread, (void*) info);
 		if(rc != 0) {
 			perror("pthread_create");
-		}
+	    }	
 	}
 	for (i = 0; i < nacc; i++) {
 		esp_thread_info_t *info = &cfg[i];
 
 		if (!info->run)
 			continue;
-
+        
 		rc = pthread_join(thread[i], NULL);
 		if(rc != 0) {
 			perror("pthread_join");
@@ -201,7 +203,7 @@ void esp_run(esp_thread_info_t cfg[], unsigned nacc)
 }
 
 
-void esp_cleanup()
+void esp_cleanup(contig_handle_t *handle)
 {
-	contig_free(contig);
+    contig_free(*handle);
 }

@@ -5,7 +5,6 @@
 
 #ifndef __ESPLIB_H__
 #define __ESPLIB_H__
-
 #include <assert.h>
 #include <fcntl.h>
 #include <math.h>
@@ -89,8 +88,9 @@ struct esp_accelerator_thread_info {
 
 typedef struct esp_accelerator_thread_info esp_thread_info_t;
 
-void *esp_alloc(size_t size);
-void esp_run(esp_thread_info_t cfg[], unsigned nacc);
-void esp_cleanup();
+void *esp_alloc_policy(struct contig_alloc_params params, size_t size, contig_handle_t *handle);
+void *esp_alloc(size_t size, contig_handle_t *handle);
+void esp_run(esp_thread_info_t cfg[], unsigned nacc, contig_handle_t *handle);
+void esp_cleanup(contig_handle_t *handle);
 
 #endif /* __ESPLIB_H__ */
