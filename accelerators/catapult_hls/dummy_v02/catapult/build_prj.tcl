@@ -98,7 +98,13 @@ solution options set /Input/CompilerFlags {-DDMA_WIDTH=64 -DHLS_CATAPULT -D__MNT
 }
 
 #
-# Output
+# Accelerator
+#
+
+set ACCELERATOR "dummy"
+
+#
+# Input
 #
 
 solution options set /Input/SearchPath { \
@@ -133,7 +139,7 @@ solution option set Output/PackageStaticFiles true
 
 # Add Prefix to library and generated sub-blocks
 solution option set Output/PrefixStaticFiles true
-solution options set Output/SubBlockNamePrefix "esp_acc_dummy_"
+solution options set Output/SubBlockNamePrefix "esp_acc_${ACCELERATOR}_"
 
 # Do not modify names
 solution option set Output/DoNotModifyNames true
@@ -154,10 +160,10 @@ go analyze
 # Set the top module and inline all of the other functions.
 
 # 10.4c
-#directive set -DESIGN_HIERARCHY dummy
+#directive set -DESIGN_HIERARCHY ${ACCELERATOR}
 
 # 10.5
-solution design set dummy -top
+solution design set ${ACCELERATOR} -top
 
 #directive set PRESERVE_STRUCTS false
 
@@ -217,7 +223,7 @@ if {$opt(hsynth)} {
 
     # BUGFIX: This prevents the creation of the empty module CGHpart. In the
     # next releases of Catapult HLS, this may be fixed.
-    directive set /dummy -GATE_EFFORT normal
+    directive set /${ACCELERATOR} -GATE_EFFORT normal
 
     go assembly
 
@@ -229,81 +235,63 @@ if {$opt(hsynth)} {
 
     # Arrays
 
-    directive set /dummy/dummy:load_input/load_input/LOAD_INPUT_TOKENS_LOOP:plm_local.data:rsc -MAP_TO_MODULE Xilinx_RAMS.BLOCK_1R1W_RBW
+    directive set /${ACCELERATOR}/${ACCELERATOR}:load_input/load_input/LOAD_INPUT_TOKENS_LOOP:plm_local.data:rsc -MAP_TO_MODULE Xilinx_RAMS.BLOCK_1R1W_RBW
 
-#    directive set /dummy/dummy:load_input/plm0_in:cns -MAP_TO_MODULE ccs_ioport.ccs_out_wait
-#    directive set /dummy/dummy:load_input/plm0_in:cns -PACKING_MODE sidebyside
-#    #directive set /dummy/dummy:load_input/plm0 -WORD_WIDTH 32768
-#
-#    directive set /dummy/dummy:load_input/plm1:cns -MAP_TO_MODULE mgc_ioport.mgc_out_stdreg_wait
-#    directive set /dummy/dummy:load_input/plm1:cns -PACKING_MODE sidebyside
-#    #directive set /dummy/dummy:load_input/plm1 -WORD_WIDTH 32768
-#
-#    directive set /dummy/dummy:store_output/plm0:cns -MAP_TO_MODULE ccs_ioport.ccs_in_wait
-#    directive set /dummy/dummy:store_output/plm0:cns -PACKING_MODE sidebyside
-#    #directive set /dummy/dummy:store_output/plm0 -WORD_WIDTH 32768
-#
-#    directive set /dummy/dummy:store_output/plm1:cns -MAP_TO_MODULE mgc_ioport.mgc_chan_in
-#    directive set /dummy/dummy:store_output/plm1:cns -PACKING_MODE sidebyside
-#    #directive set /dummy/dummy:store_output/plm1 -WORD_WIDTH 32768
-#
-#    directive set /dummy/plm0:cns -MAP_TO_MODULE ccs_ioport.ccs_pipe
-#    directive set /dummy/plm0:cns -PACKING_MODE sidebyside
-#    #directive set /dummy/plm0 -WORD_WIDTH 32768
-#
-#    directive set /dummy/plm1:cns -MAP_TO_MODULE mgc_ioport.mgc_pipe
-#    directive set /dummy/plm1:cns -PACKING_MODE sidebyside
-#    #directive set /dummy/plm1 -WORD_WIDTH 32768
+#    directive set /${ACCELERATOR}/plm0_in:cns -MAP_TO_MODULE Xilinx_FIFO.FIFO_block
+#    directive set /${ACCELERATOR}/plm1_in:cns -MAP_TO_MODULE Xilinx_FIFO.FIFO_block
+#    directive set /${ACCELERATOR}/plm0_out:cns -MAP_TO_MODULE Xilinx_FIFO.FIFO_block
+#    directive set /${ACCELERATOR}/plm1_out:cns -MAP_TO_MODULE Xilinx_FIFO.FIFO_block
 
     # Loops
 
-    directive set /dummy/dummy:load_input/load_input/LOAD_INPUT_DATA_LOOP -PIPELINE_INIT_INTERVAL 1
-    directive set /dummy/dummy:store_output/store_output/STORE_OUTPUT_DATA_LOOP -PIPELINE_INIT_INTERVAL 1
+    directive set /${ACCELERATOR}/${ACCELERATOR}:load_input/load_input/LOAD_INPUT_DATA_LOOP -PIPELINE_INIT_INTERVAL 1
+    directive set /${ACCELERATOR}/${ACCELERATOR}:store_output/store_output/STORE_OUTPUT_DATA_LOOP -PIPELINE_INIT_INTERVAL 1
 
     # Area vs Latency Goals
 
-    directive set /dummy/config_accelerator -DESIGN_GOAL latency
-    directive set /dummy/dummy:load_input/load_input -DESIGN_GOAL latency
-    directive set /dummy/dummy:compute_kernel/compute_kernel -DESIGN_GOAL latency
-    directive set /dummy/dummy:store_output/store_output -DESIGN_GOAL latency
+    directive set /${ACCELERATOR}/config_accelerator -DESIGN_GOAL latency
+    directive set /${ACCELERATOR}/${ACCELERATOR}:load_input/load_input -DESIGN_GOAL latency
+    directive set /${ACCELERATOR}/${ACCELERATOR}:compute_kernel/compute_kernel -DESIGN_GOAL latency
+    directive set /${ACCELERATOR}/${ACCELERATOR}:store_output/store_output -DESIGN_GOAL latency
 
-#    go architect
-#
-#    #
-#    #
-#    #
-#
-#    go allocate
-#
-#    #
-#    # RTL
-#    #
-#
-#    go extract
-#
-#    #
-#    #
-#    #
-#
-#    if {$opt(rtlsim)} {
-#        #flow run /SCVerify/launch_make ./scverify/Verify_concat_sim_dummy_v_msim.mk {} SIMTOOL=msim sim
-#        flow run /SCVerify/launch_make ./scverify/Verify_concat_sim_dummy_v_msim.mk {} SIMTOOL=msim simgui
-#    }
-#
-#    if {$opt(lsynth)} {
-#
-#        if {$opt(asic) == 1} {
-#            flow run /DesignCompiler/dc_shell ./concat_rtl.v.dc v
-#        } elseif {$opt(asic) == 2} {
-#            flow run /RTLCompiler/rc ./concat_rtl.v.rc v
-#        } elseif {$opt(asic) == 3} {
-#            puts "ERROR: Cadence Genus is not supported"
-#            exit 1
-#        } else {
-#            flow run /Vivado/synthesize -shell vivado_concat_v/concat_rtl.v.xv
-#        }
-#
-#    }
+    go architect
+
+    #
+    #
+    #
+
+    go allocate
+
+    #
+    # RTL
+    #
+
+    go extract
+
+    #
+    #
+    #
+
+    if {$opt(rtlsim)} {
+        #flow run /SCVerify/launch_make ./scverify/Verify_concat_sim_${ACCELERATOR}_v_msim.mk {} SIMTOOL=msim sim
+        flow run /SCVerify/launch_make ./scverify/Verify_concat_sim_${ACCELERATOR}_v_msim.mk {} SIMTOOL=msim simgui
+    }
+
+    if {$opt(lsynth)} {
+
+        if {$opt(asic) == 1} {
+            flow run /DesignCompiler/dc_shell ./concat_${ACCELERATOR}.v.dc v
+        } elseif {$opt(asic) == 2} {
+            flow run /RTLCompiler/rc ./concat_${ACCELERATOR}.v.rc v
+        } elseif {$opt(asic) == 3} {
+            puts "ERROR: Cadence Genus is not supported"
+            exit 1
+        } else {
+            flow run /Vivado/synthesize -shell vivado_concat_v/concat_${ACCELERATOR}.v.xv
+            #flow run /Vivado/synthesize vivado_concat_v/concat_${ACCELERATOR}.v.xv
+        }
+
+    }
 }
 
 project save

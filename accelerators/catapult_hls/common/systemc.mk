@@ -80,6 +80,6 @@ run: $(TARGET)
 	$(QUIET_RUN) LD_LIBRARY_PATH=$(LD_LIBRARY_PATH):$(SYSTEMC)/lib-linux64 ./$< $(RUN_ARGS)
 
 clean:
-	$(QUIET_CLEAN)rm -f *.o $(TARGET)
+	$(QUIET_CLEAN)rm -f *.o *.txt *.vcd $(TARGET)
 
 .PHONY: all clean run
