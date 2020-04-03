@@ -1,3 +1,18 @@
+#
+# Accelerator
+#
+
+set ACCELERATOR "dummy"
+set PLM_HEIGHT [expr 16*1024]
+set PLM_WIDTH 64
+set PLM_SIZE [expr ${PLM_WIDTH}*${PLM_HEIGHT}]
+
+set DMA_WIDTH ${PLM_WIDTH}
+
+#
+# Technology
+#
+
 if {$opt(asic) > 0} {
     project new -name Catapult_asic
     set CSIM_RESULTS "./tb_data/catapult_asic_csim_results.log"
@@ -89,13 +104,13 @@ directive set -TRANSACTION_DONE_SIGNAL true
 #
 
 if {$opt(asic) > 0} {
-solution options set Flows/QuestaSIM/SCCOM_OPTS {-g -x /usr/bin/g++-5 -Wall -Wno-unused-label -Wno-unknown-pragmas -DDMA_WIDTH=64 -DCLOCK_PERIOD=12500}
-#solution options set Flows/NCSIM/SCCOM_OPTS {-g -x c++ -Wall -Wno-unused-label -Wno-unknown-pragmas -DDMA_WIDTH=64 -DCLOCK_PERIOD=12500}
+solution options set Flows/QuestaSIM/SCCOM_OPTS {-g -x /usr/bin/g++-5 -Wall -Wno-unused-label -Wno-unknown-pragmas -DDMA_WITDH=64 -DCLOCK_PERIOD=12500}
+#solution options set Flows/NCSIM/SCCOM_OPTS {-g -x c++ -Wall -Wno-unused-label -Wno-unknown-pragmas -D=64 -DCLOCK_PERIOD=12500}
 } else {
 solution options set Flows/QuestaSIM/SCCOM_OPTS {-64 -g -x c++ -Wall -Wno-unused-label -Wno-unknown-pragmas -DDMA_WIDTH=64 -DCLOCK_PERIOD=12500}
 
-    #solution options set Flows/QuestaSIM/SCCOM_OPTS {-cpppath /usr/bin/g++-5 -g -x c++ -Wall -Wno-unused-label -Wno-unknown-pragmas -DDMA_WIDTH=64 -DCLOCK_PERIOD=12500}
-#solution options set Flows/NCSIM/SCCOM_OPTS {-g -x c++ -Wall -Wno-unused-label -Wno-unknown-pragmas -DDMA_WIDTH=64 -DCLOCK_PERIOD=12500}
+    #solution options set Flows/QuestaSIM/SCCOM_OPTS {-cpppath /usr/bin/g++-5 -g -x c++ -Wall -Wno-unused-label -Wno-unknown-pragmas -D=64 -DCLOCK_PERIOD=12500}
+#solution options set Flows/NCSIM/SCCOM_OPTS {-g -x c++ -Wall -Wno-unused-label -Wno-unknown-pragmas -D=64 -DCLOCK_PERIOD=12500}
 }
 
 if {$opt(channels) == 0} {
@@ -104,12 +119,6 @@ solution options set /Input/CompilerFlags {-DDMA_WIDTH=64 -DCLOCK_PERIOD=12500}
 solution options set /Input/CompilerFlags {-DDMA_WIDTH=64 -DHLS_CATAPULT -D__MNTR_CONNECTIONS__ -DCLOCK_PERIOD=12500}
 }
 
-#
-# Accelerator
-#
-
-set ACCELERATOR "dummy"
-set PLM_SIZE 64*256
 #
 # Input
 #
