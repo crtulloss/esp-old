@@ -26,6 +26,9 @@ solution options set Cache/UserCacheHome "catapult_105c_cache"
 solution options set Cache/DefaultCacheHomeEnabled false
 
 flow package require /SCVerify
+flow package option set /SCVerify/USE_QUESTASIM true
+flow package option set /SCVerify/USE_NCSIM true
+
 #options set Flows/OSCI/GCOV true
 #flow package require /CCOV
 #flow package require /SLEC
@@ -86,9 +89,13 @@ directive set -TRANSACTION_DONE_SIGNAL true
 #
 
 if {$opt(asic) > 0} {
-solution options set Flows/QuestaSIM/SCCOM_OPTS {-g -x c++ -Wall -Wno-unused-label -Wno-unknown-pragmas -DDMA_WIDTH=64 -DCLOCK_PERIOD=12500}
+solution options set Flows/QuestaSIM/SCCOM_OPTS {-g -x /usr/bin/g++-5 -Wall -Wno-unused-label -Wno-unknown-pragmas -DDMA_WIDTH=64 -DCLOCK_PERIOD=12500}
+#solution options set Flows/NCSIM/SCCOM_OPTS {-g -x c++ -Wall -Wno-unused-label -Wno-unknown-pragmas -DDMA_WIDTH=64 -DCLOCK_PERIOD=12500}
 } else {
-solution options set Flows/QuestaSIM/SCCOM_OPTS {-g -x c++ -Wall -Wno-unused-label -Wno-unknown-pragmas -DDMA_WIDTH=64 -DCLOCK_PERIOD=12500}
+solution options set Flows/QuestaSIM/SCCOM_OPTS {-64 -g -x c++ -Wall -Wno-unused-label -Wno-unknown-pragmas -DDMA_WIDTH=64 -DCLOCK_PERIOD=12500}
+
+    #solution options set Flows/QuestaSIM/SCCOM_OPTS {-cpppath /usr/bin/g++-5 -g -x c++ -Wall -Wno-unused-label -Wno-unknown-pragmas -DDMA_WIDTH=64 -DCLOCK_PERIOD=12500}
+#solution options set Flows/NCSIM/SCCOM_OPTS {-g -x c++ -Wall -Wno-unused-label -Wno-unknown-pragmas -DDMA_WIDTH=64 -DCLOCK_PERIOD=12500}
 }
 
 if {$opt(channels) == 0} {
@@ -102,7 +109,7 @@ solution options set /Input/CompilerFlags {-DDMA_WIDTH=64 -DHLS_CATAPULT -D__MNT
 #
 
 set ACCELERATOR "dummy"
-
+set PLM_SIZE 64*256
 #
 # Input
 #
@@ -237,10 +244,25 @@ if {$opt(hsynth)} {
 
     directive set /${ACCELERATOR}/${ACCELERATOR}:load_input/load_input/LOAD_INPUT_TOKENS_LOOP:plm_local.data:rsc -MAP_TO_MODULE Xilinx_RAMS.BLOCK_1R1W_RBW
 
-#    directive set /${ACCELERATOR}/plm0_in:cns -MAP_TO_MODULE Xilinx_FIFO.FIFO_block
-#    directive set /${ACCELERATOR}/plm1_in:cns -MAP_TO_MODULE Xilinx_FIFO.FIFO_block
-#    directive set /${ACCELERATOR}/plm0_out:cns -MAP_TO_MODULE Xilinx_FIFO.FIFO_block
-#    directive set /${ACCELERATOR}/plm1_out:cns -MAP_TO_MODULE Xilinx_FIFO.FIFO_block
+    directive set /dummy/plm0_in:cns -MAP_TO_MODULE Xilinx_FIFO.FIFO
+    directive set /dummy/plm0_in:cns -PACKING_MODE sidebyside
+    directive set /dummy/plm0_in:cns -STAGE_REPLICATION 0
+    directive set /dummy/plm0_in -WORD_WIDTH ${PLM_SIZE}
+
+    directive set /dummy/plm1_in:cns -MAP_TO_MODULE Xilinx_FIFO.FIFO
+    directive set /dummy/plm1_in:cns -PACKING_MODE sidebyside
+    directive set /dummy/plm1_in:cns -STAGE_REPLICATION 0
+    directive set /dummy/plm1_in -WORD_WIDTH ${PLM_SIZE}
+
+    directive set /dummy/plm0_out:cns -MAP_TO_MODULE Xilinx_FIFO.FIFO
+    directive set /dummy/plm0_out:cns -PACKING_MODE sidebyside
+    directive set /dummy/plm0_out:cns -STAGE_REPLICATION 0
+    directive set /dummy/plm0_out -WORD_WIDTH ${PLM_SIZE}
+
+    directive set /dummy/plm1_out:cns -MAP_TO_MODULE Xilinx_FIFO.FIFO
+    directive set /dummy/plm1_out:cns -PACKING_MODE sidebyside
+    directive set /dummy/plm1_out:cns -STAGE_REPLICATION 0
+    directive set /dummy/plm1_out -WORD_WIDTH ${PLM_SIZE}
 
     # Loops
 
@@ -273,8 +295,8 @@ if {$opt(hsynth)} {
     #
 
     if {$opt(rtlsim)} {
-        #flow run /SCVerify/launch_make ./scverify/Verify_concat_sim_${ACCELERATOR}_v_msim.mk {} SIMTOOL=msim sim
-        flow run /SCVerify/launch_make ./scverify/Verify_concat_sim_${ACCELERATOR}_v_msim.mk {} SIMTOOL=msim simgui
+        flow run /SCVerify/launch_make ./scverify/Verify_concat_sim_${ACCELERATOR}_v_msim.mk {} SIMTOOL=msim sim
+        #flow run /SCVerify/launch_make ./scverify/Verify_concat_sim_${ACCELERATOR}_v_msim.mk {} SIMTOOL=msim simgui
     }
 
     if {$opt(lsynth)} {

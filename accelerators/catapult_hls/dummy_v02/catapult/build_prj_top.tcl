@@ -11,7 +11,7 @@ array set opt {
     channels   1
     csim       1
     hsynth     1
-    rtlsim     1
+    rtlsim     0
     lsynth     0
 }
 

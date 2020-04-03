@@ -36,7 +36,7 @@ public:
         : esp_system<DMA_WIDTH, MEM_SIZE>(name)
 #ifndef __CUSTOM_SIM__
         , acc("dummy")
-#endif        
+#endif
     {
 
 #ifdef __CUSTOM_SIM__

@@ -18,7 +18,7 @@
 
 #include <ac_channel.h>
 
-#define PLM_SIZE 8
+#define PLM_SIZE 256
 
 typedef struct {
     uint64_t data[PLM_SIZE];
