@@ -121,9 +121,10 @@ void fft::load_input()
 #endif
 
             // Write to PLM (all DMA_WORD_PER_BEAT words in one cycle)
+            std::cout << DMA_WORD_PER_BEAT << std::endl;
+#pragma hls_unroll yes
             for (uint16_t k = 0; k < DMA_WORD_PER_BEAT; k++)
             {
-                HLS_UNROLL_SIMPLE;
                 plm_local.data[i + k] = dataBv.range((k+1) * DATA_WIDTH - 1, k * DATA_WIDTH).to_int64();
 
                 //ESP_REPORT_TIME(VON, sc_time_stamp(), "Load load(): plm_local.data[%llu] := %llX", i+k, dataBv.range((k+1) * DATA_WIDTH - 1, k * DATA_WIDTH).to_int64());
