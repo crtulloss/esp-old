@@ -37,7 +37,7 @@ void fft::load_input()
         log_len = config.log_len;
         len = 1 << log_len;
 
-        ESP_REPORT_TIME(VON, sc_time_stamp(), "Load config(): log_len = %lld, len = %lld", ESP_TO_INT64(log_len), ESP_TO_INT64(len));
+        ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Load config(): log_len = %lld, len = %lld", ESP_TO_INT64(log_len), ESP_TO_INT64(len));
     }
 
     // Load
@@ -59,7 +59,7 @@ void fft::load_input()
 #endif
         offset += length;
 
-        ESP_REPORT_TIME(VON, sc_time_stamp(), "Load load(): dma_info.index = %llu, dma_info.length = %llu, dma_info.size = %llu", ESP_TO_UINT64(dma_info.index), ESP_TO_UINT64(dma_info.length), dma_info.size.to_uint64());
+        ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Load load(): dma_info.index = %llu, dma_info.length = %llu, dma_info.size = %llu", ESP_TO_UINT64(dma_info.index), ESP_TO_UINT64(dma_info.length), dma_info.size.to_uint64());
 
 #ifdef DMA_SINGLE_PROCESS
 #if (__MNTR_CONNECTIONS__)
@@ -75,13 +75,13 @@ void fft::load_input()
 #endif
 #endif
 
-        ESP_REPORT_TIME(VON, sc_time_stamp(), "Load load(): dma_read_ctrl done!");
+        ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Load load(): dma_read_ctrl done!");
 
         // Local PLM for the load process.
 
         plm_t plm_local;
 
-        ESP_REPORT_TIME(VON, sc_time_stamp(), "Load load(): local PLM size %u", PLM_IN_WORD);
+        ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Load load(): local PLM size %u", PLM_IN_WORD);
 
 #if (DMA_WORD_PER_BEAT == 0)
         // data word is wider than NoC links
@@ -91,7 +91,7 @@ void fft::load_input()
 
             for (uint16_t k = 0; k < DMA_BEAT_PER_WORD; k++)
             {
-                ESP_REPORT_TIME(VON, sc_time_stamp(), "Load load(): dma_read_chnl...");
+                ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Load load(): dma_read_chnl...");
 
 #if (__MNTR_CONNECTIONS__)
                 dataBv.range((k+1) * DMA_WIDTH - 1, k * DMA_WIDTH) = this->dma_read_chnl.Pop();
@@ -99,20 +99,20 @@ void fft::load_input()
                 dataBv.range((k+1) * DMA_WIDTH - 1, k * DMA_WIDTH) = this->dma_read_chnl.read();
 #endif
 
-                ESP_REPORT_TIME(VON, sc_time_stamp(), "Load load(): dma_read_chnl done! (%016llX)", data_bv.to_uint64());
+                ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Load load(): dma_read_chnl done! (%016llX)", data_bv.to_uint64());
             }
 
             // Write to PLM
             plm_local.data[i] = dataBv.to_int64();
 
-            ESP_REPORT_TIME(VON, sc_time_stamp(), "Load load(): plm_local.data[%d] := %llX", i, dataBv.to_int64());
+            ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Load load(): plm_local.data[%d] := %llX", i, dataBv.to_int64());
         }
 #else
         for (uint16_t i = 0; i < length; i += DMA_WORD_PER_BEAT)
         {
             sc_dt::sc_bv<DMA_WIDTH> dataBv;
 
-            ESP_REPORT_TIME(VON, sc_time_stamp(), "Load load(): dma_read_chnl...");
+            ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Load load(): dma_read_chnl...");
 
 #if (__MNTR_CONNECTIONS__)
             dataBv = this->dma_read_chnl.Pop();
@@ -121,26 +121,25 @@ void fft::load_input()
 #endif
 
             // Write to PLM (all DMA_WORD_PER_BEAT words in one cycle)
-            std::cout << DMA_WORD_PER_BEAT << std::endl;
 #pragma hls_unroll yes
             for (uint16_t k = 0; k < DMA_WORD_PER_BEAT; k++)
             {
                 plm_local.data[i + k] = dataBv.range((k+1) * DATA_WIDTH - 1, k * DATA_WIDTH).to_int64();
 
-                //ESP_REPORT_TIME(VON, sc_time_stamp(), "Load load(): plm_local.data[%llu] := %llX", i+k, dataBv.range((k+1) * DATA_WIDTH - 1, k * DATA_WIDTH).to_int64());
+                //ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Load load(): plm_local.data[%llu] := %llX", i+k, dataBv.range((k+1) * DATA_WIDTH - 1, k * DATA_WIDTH).to_int64());
             }
 
-            ESP_REPORT_TIME(VON, sc_time_stamp(), "Loat load(): dma_read_chnl done! (%016llX)", dataBv.to_uint64());
+            ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Loat load(): dma_read_chnl done! (%016llX)", dataBv.to_uint64());
 
         }
 #endif
         plm_in.write(plm_local);
 
-        ESP_REPORT_TIME(VON, sc_time_stamp(), "Load load() --> compute(): pending...");
+        ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Load load() --> compute(): pending...");
 
         this->load_compute_handshake();
 
-        ESP_REPORT_TIME(VON, sc_time_stamp(), "Load load() --> compute(): done!");
+        ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Load load() --> compute(): done!");
     }
 
     // Conclude
@@ -177,7 +176,7 @@ void fft::store_output()
         log_len = config.log_len;
         len = 1 << log_len;
 
-        ESP_REPORT_TIME(VON, sc_time_stamp(), "Store config(): log_len = %lld, len = %lld", ESP_TO_INT64(log_len), ESP_TO_INT64(len));
+        ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Store config(): log_len = %lld, len = %lld", ESP_TO_INT64(log_len), ESP_TO_INT64(len));
     }
 
     // Store
@@ -195,11 +194,11 @@ void fft::store_output()
         uint32_t length = round_up(2 * len, DMA_WORD_PER_BEAT);
 #endif
 
-        ESP_REPORT_TIME(VON, sc_time_stamp(), "Store store() --> compute(): pending...");
+        ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Store store() --> compute(): pending...");
 
         this->store_compute_handshake();
 
-        ESP_REPORT_TIME(VON, sc_time_stamp(), "Store store() --> compute(): done!");
+        ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Store store() --> compute(): done!");
 
         // Configure DMA transaction
 #if (DMA_WORD_PER_BEAT == 0)
@@ -210,7 +209,7 @@ void fft::store_output()
 #endif
         offset += length;
 
-        ESP_REPORT_TIME(VON, sc_time_stamp(), "Stoare store(): dma_info.index = %llu, dma_info.length = %llu, dma_info.size = %llu", ESP_TO_UINT64(dma_info.index), ESP_TO_UINT64(dma_info.length), dma_info.size.to_uint64());
+        ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Stoare store(): dma_info.index = %llu, dma_info.length = %llu, dma_info.size = %llu", ESP_TO_UINT64(dma_info.index), ESP_TO_UINT64(dma_info.length), dma_info.size.to_uint64());
 
 #ifdef DMA_SINGLE_PROCESS
 #if (__MNTR_CONNECTIONS__)
@@ -226,7 +225,7 @@ void fft::store_output()
 #endif
 #endif
 
-        ESP_REPORT_TIME(VON, sc_time_stamp(), "Stoare store(): dma_write_ctrl done!");
+        ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Stoare store(): dma_write_ctrl done!");
 
         plm_t plm_local = plm_out.read();
 
@@ -243,7 +242,7 @@ void fft::store_output()
             uint16_t k = 0;
             for (k = 0; k < DMA_BEAT_PER_WORD - 1; k++)
             {
-                ESP_REPORT_TIME(VON, sc_time_stamp(), "Store store(): dma_write_chnl...");
+                ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Store store(): dma_write_chnl...");
 
 #if (__MNTR_CONNECTIONS__)
                 this->dma_write_chnl.Push(dataBv.range((k+1) * DMA_WIDTH - 1, k * DMA_WIDTH));
@@ -251,7 +250,7 @@ void fft::store_output()
                 this->dma_write_chnl.write(dataBv.range((k+1) * DMA_WIDTH - 1, k * DMA_WIDTH));
 #endif
 
-                ESP_REPORT_TIME(VON, sc_time_stamp(), "Store store(): dma_write_chnl done! (%016llX)", data_bv.to_uint64());
+                ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Store store(): dma_write_chnl done! (%016llX)", data_bv.to_uint64());
 
             }
             // Last beat on the bus does not require wait(), which is
@@ -263,7 +262,7 @@ void fft::store_output()
         {
             sc_dt::sc_bv<DMA_WIDTH> dataBv;
 
-            ESP_REPORT_TIME(VON, sc_time_stamp(), "Store store(): dma_write_chnl...");
+            ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Store store(): dma_write_chnl...");
 
             // Read from PLM
             for (uint16_t k = 0; k < DMA_WORD_PER_BEAT; k++)
@@ -271,7 +270,7 @@ void fft::store_output()
                 dataBv.range((k+1) * DATA_WIDTH - 1, k * DATA_WIDTH) = plm_local.data[i + k];
             }
 
-            ESP_REPORT_TIME(VON, sc_time_stamp(), "Store store(): dma_write_chnl done! (%016llX)", dataBv.to_uint64());
+            ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Store store(): dma_write_chnl done! (%016llX)", dataBv.to_uint64());
 
 #if (__MNTR_CONNECTIONS__)
             this->dma_write_chnl.Push(dataBv);
@@ -318,7 +317,7 @@ void fft::compute_kernel()
         log_len = config.log_len;
         len = 1 << log_len;
 
-        ESP_REPORT_TIME(VON, sc_time_stamp(), "Compute config(): log_len = %lld, len = %lld", ESP_TO_INT64(log_len), ESP_TO_INT64(len));
+        ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Compute config(): log_len = %lld, len = %lld", ESP_TO_INT64(log_len), ESP_TO_INT64(len));
 
 #ifndef STRATUS_HLS
         sc_assert(log_len < LOG_LEN_MAX);
@@ -328,11 +327,11 @@ void fft::compute_kernel()
         do_bitrev = config.do_bitrev;
     }
 
-    ESP_REPORT_TIME(VON, sc_time_stamp(), "Compute compute() <---> load(): pending...");
+    ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Compute compute() <---> load(): pending...");
 
     this->compute_load_handshake();
 
-    ESP_REPORT_TIME(VON, sc_time_stamp(), "Compute compute() <---> load(): done!");
+    ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Compute compute() <---> load(): done!");
 
 
     plm_t plm_local = plm_in.read();
@@ -402,11 +401,11 @@ void fft::compute_kernel()
 
     plm_out.write(plm_local);
 
-    ESP_REPORT_TIME(VON, sc_time_stamp(), "Compute compute() ---> store(): pending...");
+    ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Compute compute() ---> store(): pending...");
 
     this->compute_store_handshake();
 
-    ESP_REPORT_TIME(VON, sc_time_stamp(), "Compute compute() ---> store(): done!");
+    ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Compute compute() ---> store(): done!");
 
 
     // Conclude

@@ -142,10 +142,10 @@ void system_t::load_memory()
         sc_dt::sc_bv<DMA_WIDTH> data_bv;
         for (unsigned j = 0; j < DMA_WORD_PER_BEAT; j++) {
             data_bv.range((j+1) * DATA_WIDTH - 1, j * DATA_WIDTH) = fp2bv<FPDATA, WORD_SIZE>(FPDATA(in[i * DMA_WORD_PER_BEAT + j]));
-            ESP_REPORT_TIME(VON, sc_time_stamp(), "mem[%i] := %f", i, in[i * DMA_WORD_PER_BEAT + j]);
+            ESP_REPORT_TIME(VOFF, sc_time_stamp(), "mem[%i] := %f", i, in[i * DMA_WORD_PER_BEAT + j]);
         }
         mem[i] = data_bv;
-        ESP_REPORT_TIME(VON, sc_time_stamp(), "mem[%i] := %016llX", i, mem[i].to_uint64());
+        ESP_REPORT_TIME(VOFF, sc_time_stamp(), "mem[%i] := %016llX", i, mem[i].to_uint64());
     }
 #endif
 
@@ -195,10 +195,10 @@ int system_t::validate()
             errors++;
         }
 
-        ESP_REPORT_TIME(VON, sc_time_stamp(), "[%d]: %f (expected %f): %s", j, out[j], gold[j], (flag_error?" !!!":""));
+        ESP_REPORT_TIME(VOFF, sc_time_stamp(), "[%d]: %f (expected %f): %s", j, out[j], gold[j], (flag_error?" !!!":""));
     }
 
-    ESP_REPORT_TIME(VON, sc_time_stamp(), "relative error > %.02f for %llu output values out of %llu\n", ERR_TH, ESP_TO_UINT64(errors), 2*len);
+    ESP_REPORT_TIME(VON, sc_time_stamp(), "relative error > %.02f for %llu output values out of %llu", ERR_TH, ESP_TO_UINT64(errors), 2*len);
 
     delete [] in;
     delete [] out;
