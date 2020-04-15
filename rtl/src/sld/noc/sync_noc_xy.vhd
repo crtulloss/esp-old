@@ -171,8 +171,6 @@ architecture mesh of sync_noc_xy is
   end generate no_synchronizers;
 
   inferred_async_fifos_gen: if HAS_SYNC /= 0 generate
---    begin
---    tile_to_NoC: generate
     begin
       fwd_we_i    <= not data_void_in(4);
       stop_out(4) <= fwd_wr_full_o;-- when data_void_in = '0' else '0';
@@ -192,10 +190,7 @@ architecture mesh of sync_noc_xy is
           rd_i       => fwd_rd_i,
           q_o        => sync_input_port,
           rd_empty_o => fwd_rd_empty_o);
---    end generate tile_to_NoC;
 
---    Noc_to_tile: generate
---    begin
       rev_we_i         <= not sync_data_void_out;
       sync_stop_in     <= rev_wr_full_o when sync_data_void_out = '0' else '0';
       rev_rd_i         <= not stop_in(4);
@@ -214,7 +209,6 @@ architecture mesh of sync_noc_xy is
           rd_i         => rev_rd_i,
           q_o          => output_port,
           rd_empty_o   => rev_rd_empty_o);
----    end generate Noc_to_tile;
 
   end generate inferred_async_fifos_gen;
 

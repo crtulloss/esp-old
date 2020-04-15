@@ -4,7 +4,7 @@
 library ieee;
 use ieee.std_logic_1164.all;
 
-use ieee.numeric_std.all; 
+use ieee.numeric_std.all;
 
 use work.esp_global.all;
 
@@ -253,7 +253,7 @@ package nocpackage is
     large_flit : noc_flit_type)
     return misc_noc_flit_type;
 
-  function set_router_ports (    
+  function set_router_ports (
     constant CFG_XLEN : integer;
     constant CFG_YLEN : integer;
     constant local_x : local_yx;
@@ -483,53 +483,9 @@ package body nocpackage is
   end large_to_narrow_flit;
 
 ----------------------------------------------------------------------------------------
--- Remove the loops and use conditionals of local_x and local_y to find required ports
+-- Use conditionals of local_x and local_y to find required ports
 -- Same port generation must be used in tiles ports
 -- This function will go to top and ROUTER_PORTS will be passed through parameter
-
-
---  type ports_vec is array (CFG_TILES_NUM-1 downto 0) of std_logic_vector(4 downto 0);
-
-
---  function set_router_ports(
---    constant CFG_XLEN : integer;
---    constant CFG_YLEN : integer)
---    return ports_vec is
---    variable ports : ports_vec;
---  begin
---    ports := (others => (others => '0'));
-    --   0,0    - 0,1 - 0,2 - ... -    0,XLEN-1
-    --    |        |     |     |          |
-    --   1,0    - ...   ...   ... -    1,XLEN-1
-    --    |        |     |     |          |
-    --   ...    - ...   ...   ... -      ...
-    --    |        |     |     |          |
-    -- YLEN-1,0 - ...   ...   ... - YLEN-1,XLEN-1
---    for i in 0 to YLEN-1 loop
---      for j in 0 to XLEN-1 loop
---        -- local ports are all set
---        ports(i * XLEN + j)(4) := '1';
---        if j /= XLEN-1 then
---          -- east ports
---          ports(i * XLEN + j)(3) := '1';
---        end if;
---        if j /= 0 then
---          -- west ports
---          ports(i * XLEN + j)(2) := '1';
---        end if;
---        if i /= YLEN-1 then
---          -- south ports
---          ports(i * XLEN + j)(1) := '1';
---        end if;
---        if i /= 0 then
---          -- nord ports
---          ports(i * XLEN + j)(0) := '1';
---        end if;
---      end loop;  -- j
---    end loop;  -- i
---    return ports;
---  end set_router_ports;
-
 
   function set_router_ports (
     constant CFG_XLEN : integer;
