@@ -2,13 +2,15 @@
 #include "synth.h"
 #include "synth_cfg.h"
 
-#define DEBUG 0
+#define DEBUG 1
 #define dprintf if(DEBUG) printf
 
-#define NPHASES_MAX 20
+#define NPHASES_MAX 100
 #define NTHREADS_MAX 12
 #define NDEV_MAX 12
 #define IRREGULAR_SEED_MAX 2048
+
+unsigned long long total_alloc = 0;
 
 typedef struct accelerator_thread_info {
     int tid; 
@@ -136,7 +138,7 @@ static void config_threads(FILE* f, accelerator_thread_info_t **thread_info, int
             } else if (!strncmp(pattern, "STRIDED", 7)){
                 cfg_synth[devid][0].desc.synth_desc.pattern = PATTERN_STRIDED;
             } else if (!strncmp(pattern, "IRREGULAR", 9)){
-                cfg_synth[devid][0].desc.synth_desc.pattern = PATTERN_STRIDED;
+                cfg_synth[devid][0].desc.synth_desc.pattern = PATTERN_IRREGULAR;
             }
             fscanf(f, "%d %d %d %d %d %d %d", 
                 &cfg_synth[devid][0].desc.synth_desc.access_factor,
@@ -231,6 +233,7 @@ static void alloc_phase(accelerator_thread_info_t **thread_info, int nthreads, s
             params.policy = CONTIG_ALLOC_LEAST_LOADED;
             params.pol.lloaded.threshold = 4;
         }
+        total_alloc += thread_info[i]->memsz;
         buffers[i] = (uint32_t *) esp_alloc_policy(params, thread_info[i]->memsz, &(thread_info[i]->mem));  
         if ( buffers[i] == NULL){
             die_errno("error: cannot allocate %zu contig bytes", thread_info[i]->memsz);   
@@ -253,6 +256,7 @@ void *acc_chain(void *ptr){
     gettime(&thread->th_start); 
 
     for (int acc = 0; acc < thread->ndev; acc++){
+        dprintf("starting accelerator %d\n", thread->chain[acc]);
         esp_run(cfg_synth[thread->chain[acc]], 1, &thread->mem);
     }
 
@@ -355,6 +359,8 @@ int main (int argc, char** argv)
                 die_errno("pthread: cannot join thread %d", t);
         }
 
+        gettime(&th_end); 
+        
         for (int t = 0; t < nthreads; t++){
             int errors = validate_buffer(thread_info[p][t], buffers[t]);
             if (errors)
@@ -362,8 +368,7 @@ int main (int argc, char** argv)
             else 
                 printf("[PASS] Thread %d.%d\n", p, t);  
         }
-        gettime(&th_end); 
-
+        
         hw_ns = ts_subtract(&th_start, &th_end);
         hw_ns_total += hw_ns; 
         hw_s = (float) hw_ns / 1000000000;
@@ -371,7 +376,7 @@ int main (int argc, char** argv)
         sleep(1); 
         printf("PHASE.%d %.4f s\n", p, hw_s);
         sleep(1);
-
+        
         free_phase(thread_info[p], nthreads);
     }
     hw_s_total = (float) hw_ns_total / 1000000000;
