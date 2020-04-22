@@ -1,0 +1,5 @@
+Catapult_*
+*.txt
+*.vcd
+catapult.pinfo
+catapult_*_cache
