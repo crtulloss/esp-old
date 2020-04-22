@@ -93,7 +93,7 @@ void system_t::load_memory()
 
     for (unsigned i = 0; i < BATCH*SIZE; i++) {
 
-        FPDATA_IN data = i + 0.25;
+        FPDATA_IN data = (i % 32) + 0.25;
 
         sc_dt::sc_bv<32> data_bv(data.template slc<32>(0));
 
@@ -149,44 +149,44 @@ double abs_double(const double &input)
 int system_t::validate()
 {
     uint32_t errors = 0;
-  
+
     double allowed_error = 0.001;
 
     for (unsigned b = 0; b < BATCH; b++) {
         FPDATA_IN data_in[SIZE];
         double data_golden_out[SIZE];
-    
+
         for (unsigned s = 0; s < SIZE; s++) {
-            FPDATA_IN data = b * SIZE + s + 0.25;
+            FPDATA_IN data = ((b * SIZE + s) % 32) + 0.25;
             data_in[s] = data;
         }
-    
+
         softmax_tb(data_in, data_golden_out);
-    
+
         // Get results from memory
         for (unsigned s = 0; s < SIZE; s++) {
-    
+
             float gold = data_golden_out[s];
-    
+
             // Get accelerator results from memory and compare.
             FPDATA_OUT data;
             unsigned index = SIZE * BATCH + b * SIZE + s;
             ac_int<32, false> data_i = out[index].to_uint();
             data.template set_slc(0, data_i);
-     
+
             // Calculate absolute error
             double error_it = abs_double(data.to_double() - gold);
-    
+
             if (error_it > allowed_error) {
-                ESP_REPORT_TIME(VON, sc_time_stamp(), "[%lu]: %f (expected %f)", b * SIZE + s, data.to_double(), gold);
+                //ESP_REPORT_TIME(VON, sc_time_stamp(), "[%lu]: %f (expected %f)", b * SIZE + s, data.to_double(), gold);
                 errors++;
             }
+            ESP_REPORT_TIME(VOFF, sc_time_stamp(), "[%lu] softmax(%f) = %f (expected %f)%s", b * SIZE + s, data_in[s].to_double(), data.to_double(), gold, (error_it > allowed_error) ? ": ERROR" : "");
 
         }
     }
 
-    ESP_REPORT_TIME(VON, sc_time_stamp(), "total errors = %llu", ESP_TO_UINT64(errors));
-
+    ESP_REPORT_TIME(VON, sc_time_stamp(), "total errors = %llu / %lu", ESP_TO_UINT64(errors), BATCH * SIZE);
 
     return errors;
 }

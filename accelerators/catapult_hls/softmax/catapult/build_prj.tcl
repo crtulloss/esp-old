@@ -3,8 +3,8 @@
 #
 
 set ACCELERATOR "softmax"
-set PLM_HEIGHT [expr 16*1024]
-set PLM_WIDTH 64
+set PLM_HEIGHT [expr 16]
+set PLM_WIDTH 32
 set PLM_SIZE [expr ${PLM_WIDTH}*${PLM_HEIGHT}]
 
 set DMA_WIDTH ${PLM_WIDTH}
@@ -180,6 +180,7 @@ go analyze
 
 # 10.5
 solution design set ${ACCELERATOR} -top
+#solution design set {ac_math::ac_softmax_pwl<AC_TRN, false, 0, 0, AC_TRN, AC_WRAP, false, 0, 0, AC_TRN, AC_WRAP, 16U, 32, 6, true, AC_TRN, AC_WRAP, 32, 2, AC_TRN, AC_WRAP>} -block
 
 #directive set PRESERVE_STRUCTS false
 
@@ -269,43 +270,44 @@ if {$opt(hsynth)} {
     directive set /${ACCELERATOR}/${ACCELERATOR}:compute_kernel/compute_kernel -DESIGN_GOAL latency
     directive set /${ACCELERATOR}/${ACCELERATOR}:store_output/store_output -DESIGN_GOAL latency
 
-    go architect
+    if {$opt(debug) != 1} {
+        go architect
 
-    #
-    #
-    #
-
-    go allocate
-
-    #
-    # RTL
-    #
-
-    go extract
-
-    #
-    #
-    #
-
-    if {$opt(rtlsim)} {
-        flow run /SCVerify/launch_make ./scverify/Verify_concat_sim_${ACCELERATOR}_v_msim.mk {} SIMTOOL=msim sim
-        #flow run /SCVerify/launch_make ./scverify/Verify_concat_sim_${ACCELERATOR}_v_msim.mk {} SIMTOOL=msim simgui
-    }
-
-    if {$opt(lsynth)} {
-
-        if {$opt(asic) == 1} {
-            flow run /DesignCompiler/dc_shell ./concat_${ACCELERATOR}.v.dc v
-        } elseif {$opt(asic) == 2} {
-            flow run /RTLCompiler/rc ./concat_${ACCELERATOR}.v.rc v
-        } elseif {$opt(asic) == 3} {
-            puts "ERROR: Cadence Genus is not supported"
-            exit 1
-        } else {
-            flow run /Vivado/synthesize -shell vivado_concat_v/concat_${ACCELERATOR}.v.xv
-            #flow run /Vivado/synthesize vivado_concat_v/concat_${ACCELERATOR}.v.xv
+        #
+        #
+        #
+    
+        go allocate
+    
+        #
+        # RTL
+        #
+    
+        go extract
+    
+        #
+        #
+        #
+    
+        if {$opt(rtlsim)} {
+            flow run /SCVerify/launch_make ./scverify/Verify_concat_sim_${ACCELERATOR}_v_msim.mk {} SIMTOOL=msim sim
+            #flow run /SCVerify/launch_make ./scverify/Verify_concat_sim_${ACCELERATOR}_v_msim.mk {} SIMTOOL=msim simgui
         }
-
+    
+        if {$opt(lsynth)} {
+    
+            if {$opt(asic) == 1} {
+                flow run /DesignCompiler/dc_shell ./concat_${ACCELERATOR}.v.dc v
+            } elseif {$opt(asic) == 2} {
+                flow run /RTLCompiler/rc ./concat_${ACCELERATOR}.v.rc v
+            } elseif {$opt(asic) == 3} {
+                puts "ERROR: Cadence Genus is not supported"
+                exit 1
+            } else {
+                flow run /Vivado/synthesize -shell vivado_concat_v/concat_${ACCELERATOR}.v.xv
+                #flow run /Vivado/synthesize vivado_concat_v/concat_${ACCELERATOR}.v.xv
+            }
+        }
     }
 }
 
