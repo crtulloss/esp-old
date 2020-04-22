@@ -54,61 +54,68 @@ void softmax::load_input() {
 
     // Load-process config
     uint32_t size;
+    uint32_t batch;
+    uint32_t in_offset;
+    uint32_t out_offset;
     {
         wait_for_config(); // config process
         conf_info_t config = this->conf_info.read();
 
         size = config.size;
+        batch = config.batch;
+        in_offset = config.in_offset;
+        out_offset = config.out_offset;
 
-        ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Load config(): size = %llu", ESP_TO_UINT64(size));
+        ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Load config(): size = %llu, batch = %llu, in_offset = %llu, out_offset = %llu", ESP_TO_UINT64(size), ESP_TO_UINT64(batch), ESP_TO_UINT64(in_offset), ESP_TO_UINT64(out_offset));
     }
 
-    uint32_t offset = 0;
+    uint32_t offset = in_offset;
 
     // Load-process body
+LOAD_BATCH_LOOP:
+    for (uint32_t b = 0; b < batch; b++) {
 LOAD_DATA_OUTER_LOOP:
-    for (uint32_t b = size; b > 0; b -= PLM_SIZE) {
+        for (uint32_t s = size; s > 0; s -= PLM_SIZE) {
 
-        //ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Load load(): ping = %d", ping);
+            uint32_t len = s > uint32_t(PLM_SIZE) ? uint32_t(PLM_SIZE) : s;
 
-        uint32_t len = b > uint32_t(PLM_SIZE) ? uint32_t(PLM_SIZE) : b;
+            ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Load load(): len = %llu [max %d]", ESP_TO_UINT64(len), PLM_SIZE);
 
-        ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Load load(): len = %llu [max %d]", ESP_TO_UINT64(len), PLM_SIZE);
+            dma_info_t dma_info(offset, len, 32);
 
-        dma_info_t dma_info(offset, len, 32);
-        offset += len;
+            offset += len;
 
-        ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Load load(): dma_info.index = %llu, dma_info.length = %llu, dma_info.size = %llu", ESP_TO_UINT64(dma_info.index), ESP_TO_UINT64(dma_info.length), dma_info.size.to_uint64());
+            ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Load load(): dma_info.index = %llu, dma_info.length = %llu, dma_info.size = %llu", ESP_TO_UINT64(dma_info.index), ESP_TO_UINT64(dma_info.length), dma_info.size.to_uint64());
 
 #if (__MNTR_CONNECTIONS__)
-        this->dma_read_ctrl.Push(dma_info);
+            this->dma_read_ctrl.Push(dma_info);
 #else
-        this->dma_read_ctrl.write(dma_info);
+            this->dma_read_ctrl.write(dma_info);
 #endif
 
-        ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Load load(): dma_read_ctrl done!");
+            ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Load load(): dma_read_ctrl done!");
 
-        plm_t<FPDATA_IN, 16> plm_local;
+            plm_t<FPDATA_IN, 16> plm_local;
 LOAD_DATA_INNER_LOOP:
-        for (uint16_t i = 0; i < len; i++) {
-            FPDATA_IN data;
-            sc_dt::sc_bv<32> data_bv;
-            ac_int<32> data_ac;
+            for (uint16_t i = 0; i < len; i++) {
+                FPDATA_IN data;
+                sc_dt::sc_bv<32> data_bv;
+                ac_int<32> data_ac;
 
 #if (__MNTR_CONNECTIONS__)
-            data_bv = this->dma_read_chnl.Pop();
+               data_bv = this->dma_read_chnl.Pop();
 #else
-            data_bv = this->dma_read_chnl.read();
+                data_bv = this->dma_read_chnl.read();
 #endif
-            data_ac = ac_int<32>(data_bv.to_uint());
-            data.set_slc(0, data_ac);
-            plm_local.data[i] = data;
-        }
-        plm_in.write(plm_local);
-//      ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Load load(): plm0[%d] := %X", i, data);
+                data_ac = ac_int<32>(data_bv.to_uint());
+                data.set_slc(0, data_ac);
+                plm_local.data[i] = data;
+            }
+            plm_in.write(plm_local);
 
-        this->load_compute_handshake();
-        ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Load load() --> compute()");
+            this->load_compute_handshake();
+            ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Load load() --> compute()");
+        }
     }
 
     // Load-process done
@@ -127,34 +134,44 @@ void softmax::compute_kernel() {
 
     // Compute-process config
     uint32_t size;
+    uint32_t batch;
+    uint32_t in_offset;
+    uint32_t out_offset;
     {
         wait_for_config(); // config process
         conf_info_t config = this->conf_info.read();
 
         size = config.size;
+        batch = config.batch;
+        in_offset = config.in_offset;
+        out_offset = config.out_offset;
 
-        ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Compute config(): size = %llu", ESP_TO_UINT64(size));
+        ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Compute config(): size = %llu, batch = %llu, in_offset = %llu, out_offset = %llu", ESP_TO_UINT64(size), ESP_TO_UINT64(batch), ESP_TO_UINT64(in_offset), ESP_TO_UINT64(out_offset));
     }
 
     // Compute-process body
+COMPUTE_BATCH_LOOP:
+    for (uint32_t b = 0; b < batch; b++) {
 COMPUTE_OUTER_LOOP:
-    for (int b = size; b > 0; b -= PLM_SIZE) {
-        this->compute_load_handshake();
-        ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Compute compute() <---> load()");
+        for (uint32_t s = size; s > 0; s -= PLM_SIZE) {
 
-        uint32_t len = b > PLM_SIZE ? PLM_SIZE : b;
-
-        plm_t<FPDATA_IN, 16> plm_local_in;
-        plm_t<FPDATA_OUT, 16> plm_local_out;
-
-        plm_local_in = plm_in.read();
-
-        compute<FPDATA_IN, 16, FPDATA_OUT, 16>(len, &plm_local_in, &plm_local_out);
-
-        plm_out.write(plm_local_out);
-
-        this->compute_store_handshake();
-        ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Compute compute() ---> store()");
+            this->compute_load_handshake();
+            ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Compute compute() <---> load()");
+    
+            uint32_t len = s > uint32_t(PLM_SIZE) ? uint32_t(PLM_SIZE) : s;
+    
+            plm_t<FPDATA_IN, 16> plm_local_in;
+            plm_t<FPDATA_OUT, 16> plm_local_out;
+    
+            plm_local_in = plm_in.read();
+    
+            compute<FPDATA_IN, 16, FPDATA_OUT, 16>(len, &plm_local_in, &plm_local_out);
+    
+            plm_out.write(plm_local_out);
+    
+            this->compute_store_handshake();
+            ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Compute compute() ---> store()");
+        }
     }
 
     // Compute-process done
@@ -173,53 +190,64 @@ void softmax::store_output() {
 
     // Store-process config
     uint32_t size;
+    uint32_t batch;
+    uint32_t in_offset;
+    uint32_t out_offset;
     {
         wait_for_config(); // config process
         conf_info_t config = this->conf_info.read();
 
         size = config.size;
+        batch = config.batch;
+        in_offset = config.in_offset;
+        out_offset = config.out_offset;
 
-        ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Store config(): size = %llu", ESP_TO_UINT64(size));
+        ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Store config(): size = %llu, batch = %llu, in_offset = %llu, out_offset = %llu", ESP_TO_UINT64(size), ESP_TO_UINT64(batch), ESP_TO_UINT64(in_offset), ESP_TO_UINT64(out_offset));
     }
 
+    uint32_t offset = out_offset;
+
     // Store-process body
-    uint32_t offset = 0;
+COMPUTE_BATCH_LOOP:
+    for (uint32_t b = 0; b < batch; b++) {
 STORE_MAIN_LOOP:
-    for (int b = size; b > 0; b -= PLM_SIZE) {
+        for (uint32_t s = size; s > 0; s -= PLM_SIZE) {
+    
+            this->store_compute_handshake();
+            ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Store store() --> compute()");
+    
+            uint32_t len = s > uint32_t(PLM_SIZE) ? uint32_t(PLM_SIZE) : s;
+    
+            ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Store store(): len = %llu [max %d]", ESP_TO_UINT64(len), PLM_SIZE);
+    
+            dma_info_t dma_info(offset, len, 32);
 
-        this->store_compute_handshake();
-        ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Store store() --> compute()");
-
-        uint32_t len = b > PLM_SIZE ? PLM_SIZE : b;
-
-        ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Store store(): len = %llu [max %d]", ESP_TO_UINT64(len), PLM_SIZE);
-
-        dma_info_t dma_info(offset, len, 32);
-        offset += len;
-
-        ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Store store(): dma_info.index = %llu, dma_info.length = %llu, dma_info.size = %llu", ESP_TO_UINT64(dma_info.index), ESP_TO_UINT64(dma_info.length), dma_info.size.to_uint64());
+            offset += len;
+    
+            ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Store store(): dma_info.index = %llu, dma_info.length = %llu, dma_info.size = %llu", ESP_TO_UINT64(dma_info.index), ESP_TO_UINT64(dma_info.length), dma_info.size.to_uint64());
 
 #if (__MNTR_CONNECTIONS__)
-        this->dma_write_ctrl.Push(dma_info);
+            this->dma_write_ctrl.Push(dma_info);
 #else
-        this->dma_write_ctrl.write(dma_info);
+            this->dma_write_ctrl.write(dma_info);
 #endif
  
-        plm_t<FPDATA_OUT, 16> plm_local;
-        plm_local = plm_out.read();
+            plm_t<FPDATA_OUT, 16> plm_local;
+            plm_local = plm_out.read();
 
 STORE_OUTPUT_INNER_LOOP:
-        for (uint16_t i = 0; i < len; i++) {
+            for (uint16_t i = 0; i < len; i++) {
 
-            FPDATA_OUT data = plm_local.data[i];
-            //ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Store store(): plm_out.data[%d] -> %llX", i, data);
-            sc_dt::sc_bv<32> data_bv(data.template slc<32>(0));
+                FPDATA_OUT data = plm_local.data[i];
+                //ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Store store(): plm_out.data[%d] -> %llX", i, data);
+                sc_dt::sc_bv<32> data_bv(data.template slc<32>(0));
 
 #if (__MNTR_CONNECTIONS__)
-            this->dma_write_chnl.Push(data_bv);
+                this->dma_write_chnl.Push(data_bv);
 #else
-            this->dma_write_chnl.write(data_bv);
+                this->dma_write_chnl.write(data_bv);
 #endif
+            }
         }
     }
 

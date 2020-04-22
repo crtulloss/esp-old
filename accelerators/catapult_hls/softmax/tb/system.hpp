@@ -8,7 +8,10 @@
 #include "softmax_debug_info.hpp"
 #include "softmax.hpp"
 
-const size_t MEM_SIZE = 16;
+const size_t SIZE = 16;
+const size_t BATCH = 2;
+
+const size_t MEM_SIZE = 2 * SIZE * BATCH;
 
 #include "core/systems/esp_system.hpp"
 
