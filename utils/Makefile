@@ -180,6 +180,9 @@ include $(ESP_ROOT)/utils/accelerators.mk
 ### Include targets to generate caches RTL with HLS ###
 include $(ESP_ROOT)/utils/sc_components.mk
 
+### Include targets to compile example applications ###
+include $(ESP_ROOT)/utils/examples.mk
+
 .PHONY: all help
 
 ### SoC configuration for ESP ###
@@ -264,7 +267,11 @@ NCUPDATE = ncupdate
 VIVADO_BATCH_OPT = -mode batch -quiet -notrace
 
 ### proFPGA include paths ###
+ifneq ($(findstring profpga, $(BOARD)),)
 PROFPGA_INCDIR = $(PROFPGA)/hdl/generic_hdl $(PROFPGA)/hdl/mmi64 $(PROFPGA)/hdl/profpga_user $(PROFPGA)/hdl/pd_muxdemux2
+else
+PROFPGA_INCDIR =
+endif
 
 ### RTL caches include paths ###
 ESP_CACHES_INCDIR = $(ESP_ROOT)/rtl/src/sld/caches/esp-caches/common/defs $(DESIGN_PATH)
@@ -1001,7 +1008,7 @@ xcelium/xmready: xcelium/xilinx_lib check_all_srcs.old $(PKG_LIST)
 	echo $(SPACES)"### Compile SystemVerilog source files ###"; \
 		for rtl in $(SVLOG_SRCS); do \
 			echo $(SPACES)"$(XLOG) -SV $$rtl"; \
-			$(XLOG) -SV -work work $(THIRDPARTY_INCDIR_XCELIUM) $$rtl || exit; \
+			$(XLOG) -SV -work work $(INCDIR_XCELIUM) $(THIRDPARTY_INCDIR_XCELIUM) $$rtl || exit; \
 		done; \
 	echo $(SPACES)"### Compile IPs simulation files ###"; \
 	echo $(SPACES)"$(XLOG) -work work $(XILINX_VIVADO)/data/verilog/src/glbl.v"; \
@@ -1016,6 +1023,7 @@ xcelium/xmready: xcelium/xilinx_lib check_all_srcs.old $(PKG_LIST)
 xcelium/xmsim.in:
 	$(QUIET_BUILD)echo set severity_pack_assert_off {warning} > $@
 	@echo set pack_assert_off { std_logic_arith numeric_std } >> $@
+	@echo set intovf_severity_level {ignore} >> $@
 
 xmsim-compile: sldgen check_all_srcs soft xcelium/xmready xcelium/xmsim.in
 	$(QUIET_MAKE) \
@@ -1119,7 +1127,7 @@ incisive/ncready: incisive/xilinx_lib check_all_srcs.old $(PKG_LIST)
 				echo $(SPACES)"### Skip Ariane source files ###"; \
 			else \
 				echo $(SPACES)"$(NCLOG) -SV $$rtl"; \
-				$(NCLOG) -SV -work work $(THIRDPARTY_INCDIR_INCISIVE) $$rtl || exit; \
+				$(NCLOG) -SV -work work $(INCDIR_INCISIVE) $(THIRDPARTY_INCDIR_INCISIVE) $$rtl || exit; \
 			fi; \
 		done; \
 	echo $(SPACES)"### Compile IPs simulation files ###"; \
@@ -1135,8 +1143,12 @@ incisive/ncready: incisive/xilinx_lib check_all_srcs.old $(PKG_LIST)
 incisive/ncsim.in:
 	$(QUIET_BUILD)echo set severity_pack_assert_off {warning} > $@
 	@echo set pack_assert_off { std_logic_arith numeric_std } >> $@
+	@echo set intovf_severity_level {ignore} >> $@
 
 ncsim-compile: sldgen check_all_srcs soft incisive/ncready incisive/ncsim.in
+	@for dat in $(DAT_SRCS); do \
+		cp $$dat incisive; \
+	done; \
 	$(QUIET_MAKE) \
 	cd incisive; \
 	echo $(SPACES)"$(NCUPDATE) $(SIMTOP)"; \
@@ -1253,6 +1265,9 @@ modelsim/vsim.mk: modelsim/xilinx_lib check_all_srcs.old $(PKG_LIST)
 	cd ../;
 
 sim-compile: sldgen check_all_srcs modelsim/vsim.mk soft
+	@for dat in $(DAT_SRCS); do \
+		cp $$dat modelsim; \
+	done;
 	$(QUIET_MAKE)make -C modelsim -f vsim.mk
 
 sim: sim-compile
@@ -1646,6 +1661,7 @@ distclean:	check_all_srcs-distclean 	\
 		soft-distclean 			\
 		linux-distclean			\
 		barec-distclean			\
+		examples-clean			\
 		xilinx_lib-distclean 		\
 		sim-distclean			\
 		ncsim-distclean			\
