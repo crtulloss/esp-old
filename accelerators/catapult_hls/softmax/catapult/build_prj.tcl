@@ -259,9 +259,9 @@ if {$opt(hsynth)} {
 
     # Loops
 
-    directive set /${ACCELERATOR}/${ACCELERATOR}:load_input/load_input/LOAD_DATA_INNER_LOOP -PIPELINE_INIT_INTERVAL 1
-    directive set /${ACCELERATOR}/${ACCELERATOR}:compute_kernel/compute_kernel/COMPUTE_OUTER_LOOP -PIPELINE_INIT_INTERVAL 1
-    directive set /${ACCELERATOR}/${ACCELERATOR}:store_output/store_output/STORE_OUTPUT_INNER_LOOP -PIPELINE_INIT_INTERVAL 1
+#    directive set /${ACCELERATOR}/${ACCELERATOR}:load_input/load_input/LOAD_DATA_INNER_LOOP -PIPELINE_INIT_INTERVAL 1
+#    directive set /${ACCELERATOR}/${ACCELERATOR}:compute_kernel/compute_kernel/COMPUTE_OUTER_LOOP -PIPELINE_INIT_INTERVAL 1
+#    directive set /${ACCELERATOR}/${ACCELERATOR}:store_output/store_output/STORE_OUTPUT_INNER_LOOP -PIPELINE_INIT_INTERVAL 1
 
     # Area vs Latency Goals
 
