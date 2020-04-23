@@ -155,8 +155,10 @@ void softmax::compute_kernel() {
 COMPUTE_BATCH_LOOP:
     for (uint32_t b = 0; b < batch; b++) {
 
-COMPUTE_OUTER_LOOP:
+#if 0
 #pragma hls_pipeline_init_interval 1
+#endif
+COMPUTE_OUTER_LOOP:
         for (uint32_t s = size; s > 0; s -= PLM_SIZE) {
 
             this->compute_load_handshake();

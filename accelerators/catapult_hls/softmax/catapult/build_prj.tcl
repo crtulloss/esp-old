@@ -3,7 +3,7 @@
 #
 
 set ACCELERATOR "softmax"
-set PLM_HEIGHT [expr 16]
+set PLM_HEIGHT 256
 set PLM_WIDTH 32
 set PLM_SIZE [expr ${PLM_WIDTH}*${PLM_HEIGHT}]
 
@@ -36,8 +36,8 @@ solution options set Flows/DesignCompiler/OutNetlistFormat verilog
 solution options set /Input/CppStandard c++11
 #solution options set /Input/TargetPlatform x86_64
 
-solution options set Cache/UserCacheHome "catapult_105c_cache"
-#solution options set Cache/UserCacheHome "catapul_105beta_cache"
+set CATAPULT_VERSION  [string map { / - } [string map { . - } [application get /SYSTEM/RELEASE_VERSION]]]
+solution options set Cache/UserCacheHome "catapult_cache_$CATAPULT_VERSION"
 solution options set Cache/DefaultCacheHomeEnabled false
 
 flow package require /SCVerify
@@ -180,7 +180,6 @@ go analyze
 
 # 10.5
 solution design set ${ACCELERATOR} -top
-#solution design set {ac_math::ac_softmax_pwl<AC_TRN, false, 0, 0, AC_TRN, AC_WRAP, false, 0, 0, AC_TRN, AC_WRAP, 16U, 32, 6, true, AC_TRN, AC_WRAP, 32, 2, AC_TRN, AC_WRAP>} -block
 
 #directive set PRESERVE_STRUCTS false
 
@@ -222,7 +221,7 @@ if {$opt(hsynth)} {
         solution library add Xilinx_ROMS
         solution library add Xilinx_FIFO
     }
-
+ 
     go libraries
 
     #
@@ -252,16 +251,41 @@ if {$opt(hsynth)} {
 
     # Arrays
 
-    directive set /${ACCELERATOR}/${ACCELERATOR}:load_input/load_input/LOAD_DATA_OUTER_LOOP:plm_local.data:rsc -MAP_TO_MODULE {[Register]}
-    directive set /${ACCELERATOR}/${ACCELERATOR}:compute_kernel/compute_kernel/COMPUTE_OUTER_LOOP:plm_local_in.data:rsc -MAP_TO_MODULE {[Register]}
-    directive set /${ACCELERATOR}/${ACCELERATOR}:compute_kernel/compute_kernel/COMPUTE_OUTER_LOOP:plm_local_out.data:rsc -MAP_TO_MODULE {[Register]}
-    directive set /${ACCELERATOR}/${ACCELERATOR}:store_output/store_output/STORE_MAIN_LOOP:plm_local.data:rsc -MAP_TO_MODULE {[Register]}
+    directive set /${ACCELERATOR}/plm_in:cns -MAP_TO_MODULE Xilinx_FIFO.FIFO
+    directive set /${ACCELERATOR}/plm_in:cns -PACKING_MODE sidebyside
+#    directive set /${ACCELERATOR}/plm_in:cns -STAGE_REPLICATION 0
+    directive set /${ACCELERATOR}/plm_in -WORD_WIDTH ${PLM_SIZE}
+
+    directive set /${ACCELERATOR}/plm_out:cns -MAP_TO_MODULE Xilinx_FIFO.FIFO
+    directive set /${ACCELERATOR}/plm_out:cns -PACKING_MODE sidebyside
+#    directive set /${ACCELERATOR}/plm_out:cns -STAGE_REPLICATION 0
+    directive set /${ACCELERATOR}/plm_out -WORD_WIDTH ${PLM_SIZE}
+
+    # as BRAMs
+    directive set /${ACCELERATOR}/${ACCELERATOR}:load_input/load_input/LOAD_DATA_OUTER_LOOP:plm_local.data:rsc -MAP_TO_MODULE Xilinx_RAMS.BLOCK_1R1W_RBW
+    directive set /${ACCELERATOR}/${ACCELERATOR}:load_input/load_input/LOAD_DATA_OUTER_LOOP:plm_local.data:rsc -GEN_EXTERNAL_ENABLE true
+ 
+    directive set /${ACCELERATOR}/${ACCELERATOR}:compute_kernel/compute_kernel/COMPUTE_OUTER_LOOP:plm_local_in.data:rsc -MAP_TO_MODULE Xilinx_RAMS.BLOCK_1R1W_RBW
+    directive set /${ACCELERATOR}/${ACCELERATOR}:compute_kernel/compute_kernel/COMPUTE_OUTER_LOOP:plm_local_in.data:rsc -GEN_EXTERNAL_ENABLE true
+
+    directive set /${ACCELERATOR}/${ACCELERATOR}:compute_kernel/compute_kernel/COMPUTE_OUTER_LOOP:plm_local_out.data:rsc -MAP_TO_MODULE Xilinx_RAMS.BLOCK_1R1W_RBW
+    directive set /${ACCELERATOR}/${ACCELERATOR}:compute_kernel/compute_kernel/COMPUTE_OUTER_LOOP:plm_local_out.data:rsc -GEN_EXTERNAL_ENABLE true
+
+    directive set /${ACCELERATOR}/${ACCELERATOR}:store_output/store_output/STORE_MAIN_LOOP:plm_local.data:rsc -MAP_TO_MODULE Xilinx_RAMS.BLOCK_1R1W_RBW
+    directive set /${ACCELERATOR}/${ACCELERATOR}:store_output/store_output/STORE_MAIN_LOOP:plm_local.data:rsc -GEN_EXTERNAL_ENABLE true
+
+    # as registers
+    #directive set /${ACCELERATOR}/${ACCELERATOR}:load_input/load_input/LOAD_DATA_OUTER_LOOP:plm_local.data:rsc -MAP_TO_MODULE {[Register]}
+    #directive set /${ACCELERATOR}/${ACCELERATOR}:compute_kernel/compute_kernel/COMPUTE_OUTER_LOOP:plm_local_in.data:rsc -MAP_TO_MODULE {[Register]}
+    #directive set /${ACCELERATOR}/${ACCELERATOR}:compute_kernel/compute_kernel/COMPUTE_OUTER_LOOP:plm_local_out.data:rsc -MAP_TO_MODULE {[Register]}
+    #directive set /${ACCELERATOR}/${ACCELERATOR}:store_output/store_output/STORE_MAIN_LOOP:plm_local.data:rsc -MAP_TO_MODULE {[Register]}
 
     # Loops
 
-#    directive set /${ACCELERATOR}/${ACCELERATOR}:load_input/load_input/LOAD_DATA_INNER_LOOP -PIPELINE_INIT_INTERVAL 1
-#    directive set /${ACCELERATOR}/${ACCELERATOR}:compute_kernel/compute_kernel/COMPUTE_OUTER_LOOP -PIPELINE_INIT_INTERVAL 1
-#    directive set /${ACCELERATOR}/${ACCELERATOR}:store_output/store_output/STORE_OUTPUT_INNER_LOOP -PIPELINE_INIT_INTERVAL 1
+    # TODO Added as pragmas
+    #directive set /${ACCELERATOR}/${ACCELERATOR}:load_input/load_input/LOAD_DATA_INNER_LOOP -PIPELINE_INIT_INTERVAL 1
+    #directive set /${ACCELERATOR}/${ACCELERATOR}:compute_kernel/compute_kernel/COMPUTE_OUTER_LOOP -PIPELINE_INIT_INTERVAL 1
+    #directive set /${ACCELERATOR}/${ACCELERATOR}:store_output/store_output/STORE_OUTPUT_INNER_LOOP -PIPELINE_INIT_INTERVAL 1
 
     # Area vs Latency Goals
 
@@ -283,6 +307,8 @@ if {$opt(hsynth)} {
         # RTL
         #
     
+        #directive set ENABLE_PHYSICAL true
+        
         go extract
     
         #
