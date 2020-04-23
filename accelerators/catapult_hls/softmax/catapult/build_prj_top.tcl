@@ -4,9 +4,16 @@ array set opt {
     # = 1 -> Mentor Design Compiler
     # = 2 -> Cadence Encounter RTL Compiler
     # = 3 -> Cadence Genus
-    # the 'channels' flag enable Catapult HLS communication channels:
-    # = 0 -> p2p
-    # = 1 -> Connections
+    #
+    # The 'channels' flag enables Catapult HLS communication channels:
+    # = 0 -> Legacy P2P
+    # = 1 -> MatchLib Connections
+    #
+    # The 'csim' flag enables C simulation.
+    # The 'hsynth' flag enables HLS.
+    # The 'rtlsim' flag enable RTL simulation.
+    # The 'lsynth' flag enable logic synthesis.
+    # The 'debug' flag stops Catapult HLS before the architect step.
     asic       0
     channels   1
     csim       1

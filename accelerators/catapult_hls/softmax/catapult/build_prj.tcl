@@ -116,7 +116,7 @@ solution options set Flows/QuestaSIM/SCCOM_OPTS {-64 -g -x c++ -Wall -Wno-unused
 if {$opt(channels) == 0} {
 solution options set /Input/CompilerFlags {-DDMA_WIDTH=64 -DCLOCK_PERIOD=12500}
 } else {
-solution options set /Input/CompilerFlags {-DDMA_WIDTH=64 -DHLS_CATAPULT -D__MNTR_CONNECTIONS__ -DCLOCK_PERIOD=12500}
+solution options set /Input/CompilerFlags {-DDMA_WIDTH=64 -DHLS_CATAPULT -D__MATCHLIB_CONNECTIONS__ -DCLOCK_PERIOD=12500}
 }
 
 #
