@@ -305,88 +305,38 @@ inline void softmax::reset_accelerator_done()
 // Functions
 //
 
-inline void softmax::reset_load_input()
-{
-#if defined(__MATCHLIB_CONNECTIONS__)
+inline void softmax::reset_load_input() {
     input_ready.reset_req();
-#else
-    input_ready.req.reset_req();
-#endif
     this->reset_dma_read();
 }
 
-inline void softmax::reset_compute_kernel()
-{
-#if defined(__MATCHLIB_CONNECTIONS__)
+inline void softmax::reset_compute_kernel() {
     input_ready.reset_ack();
     output_ready.reset_req();
-#else
-    input_ready.ack.reset_ack();
-    output_ready.req.reset_req();
-#endif
 }
 
 inline void softmax::reset_store_output()
 {
-#if defined(__MATCHLIB_CONNECTIONS__)
     output_ready.reset_ack();
-#else
-    output_ready.ack.reset_ack();
-#endif
     this->reset_accelerator_done();
     this->reset_dma_write();
 }
 
-//#pragma design modulario
-inline void softmax::load_compute_handshake()
-{
-    {
-        //HLS_DEFINE_PROTOCOL("load-compute-handshake");
-#if defined(__MATCHLIB_CONNECTIONS__)
-        input_ready.req();
-#else
-        input_ready.req.req();
-#endif
-    }
+inline void softmax::load_compute_handshake() {
+    input_ready.req();
 }
 
-//#pragma design modulario
-inline void softmax::compute_load_handshake()
-{
-    {
-        //HLS_DEFINE_PROTOCOL("compute-load-handshake");
-#if defined(__MATCHLIB_CONNECTIONS__)
-        input_ready.ack();
-#else
-        input_ready.ack.ack();
-#endif
-    }
+inline void softmax::compute_load_handshake() {
+    input_ready.ack();
 }
 
-//#pragma design modulario
-inline void softmax::compute_store_handshake()
-{
-    {
-        //HLS_DEFINE_PROTOCOL("compute-store-handshake");
-#if defined(__MATCHLIB_CONNECTIONS__)
-        output_ready.req();
-#else
-        output_ready.req.req();
-#endif
-    }
+inline void softmax::compute_store_handshake() {
+    output_ready.req();
 }
 
-//#pragma design modulario
 inline void softmax::store_compute_handshake()
 {
-    {
-        //HLS_DEFINE_PROTOCOL("store-compute-handshake");
-#if defined(__MATCHLIB_CONNECTIONS__)
-        output_ready.ack();
-#else
-        output_ready.ack.ack();
-#endif
-    }
+    output_ready.ack();
 }
 
 inline void softmax::wait_for_config()
@@ -396,19 +346,15 @@ WAIT_FOR_CONFIG_LOOP:
     while (!done.read()) { wait(); }
 }
 
-//#pragma design modulario
 inline void softmax::process_done()
 {
-    //HLS_DEFINE_PROTOCOL("process-done");
 #pragma hls_unroll no
 PROCESS_DONE_LOOP:
     do { wait(); } while (true);
 }
 
-//#pragma design modulario
 inline void softmax::accelerator_done()
 {
-    //HLS_DEFINE_PROTOCOL("accelerator-done");
     acc_done.write(true); wait();
     acc_done.write(false);
 }
