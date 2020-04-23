@@ -3,7 +3,7 @@
 #
 
 set ACCELERATOR "softmax"
-set PLM_HEIGHT 256
+set PLM_HEIGHT 128
 set PLM_WIDTH 32
 set PLM_SIZE [expr ${PLM_WIDTH}*${PLM_HEIGHT}]
 
@@ -316,8 +316,8 @@ if {$opt(hsynth)} {
         #
     
         if {$opt(rtlsim)} {
-            flow run /SCVerify/launch_make ./scverify/Verify_concat_sim_${ACCELERATOR}_v_msim.mk {} SIMTOOL=msim sim
-            #flow run /SCVerify/launch_make ./scverify/Verify_concat_sim_${ACCELERATOR}_v_msim.mk {} SIMTOOL=msim simgui
+            #flow run /SCVerify/launch_make ./scverify/Verify_concat_sim_${ACCELERATOR}_v_msim.mk {} SIMTOOL=msim sim
+            flow run /SCVerify/launch_make ./scverify/Verify_concat_sim_${ACCELERATOR}_v_msim.mk {} SIMTOOL=msim simgui
         }
     
         if {$opt(lsynth)} {

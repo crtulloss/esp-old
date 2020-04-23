@@ -95,7 +95,7 @@ LOAD_DATA_OUTER_LOOP:
 
             ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Load load(): dma_read_ctrl done!");
 
-            plm_t<FPDATA_IN, 16> plm_local;
+            plm_t<FPDATA_IN, PLM_SIZE> plm_local;
 
 LOAD_DATA_INNER_LOOP:
 #pragma hls_pipeline_init_interval 1
@@ -105,7 +105,7 @@ LOAD_DATA_INNER_LOOP:
                 ac_int<32> data_ac;
 
 #if (__MNTR_CONNECTIONS__)
-               data_bv = this->dma_read_chnl.Pop();
+                data_bv = this->dma_read_chnl.Pop();
 #else
                 data_bv = this->dma_read_chnl.read();
 #endif
@@ -155,9 +155,7 @@ void softmax::compute_kernel() {
 COMPUTE_BATCH_LOOP:
     for (uint32_t b = 0; b < batch; b++) {
 
-#if 0
-#pragma hls_pipeline_init_interval 1
-#endif
+//#pragma hls_pipeline_init_interval 1
 COMPUTE_OUTER_LOOP:
         for (uint32_t s = size; s > 0; s -= PLM_SIZE) {
 
@@ -166,12 +164,12 @@ COMPUTE_OUTER_LOOP:
     
             uint32_t len = s > uint32_t(PLM_SIZE) ? uint32_t(PLM_SIZE) : s;
     
-            plm_t<FPDATA_IN, 16> plm_local_in;
-            plm_t<FPDATA_OUT, 16> plm_local_out;
+            plm_t<FPDATA_IN, PLM_SIZE> plm_local_in;
+            plm_t<FPDATA_OUT, PLM_SIZE> plm_local_out;
     
             plm_local_in = plm_in.read();
     
-            compute<FPDATA_IN, 16, FPDATA_OUT, 16>(len, &plm_local_in, &plm_local_out);
+            compute<FPDATA_IN, PLM_SIZE, FPDATA_OUT, PLM_SIZE>(len, &plm_local_in, &plm_local_out);
     
             plm_out.write(plm_local_out);
     
@@ -238,7 +236,7 @@ STORE_MAIN_LOOP:
             this->dma_write_ctrl.write(dma_info);
 #endif
  
-            plm_t<FPDATA_OUT, 16> plm_local;
+            plm_t<FPDATA_OUT, PLM_SIZE> plm_local;
             plm_local = plm_out.read();
 
 STORE_OUTPUT_INNER_LOOP:

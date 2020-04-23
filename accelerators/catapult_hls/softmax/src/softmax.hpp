@@ -14,7 +14,7 @@
 
 #include <ac_channel.h>
 
-#define PLM_SIZE (16)
+#define PLM_SIZE (128)
 
 template <class T, unsigned S>
 struct plm_t {
@@ -182,8 +182,8 @@ public:
     // Private local memories
     //
 
-    ac_channel<plm_t<FPDATA_IN, 16> > plm_in;
-    ac_channel<plm_t<FPDATA_OUT, 16> > plm_out;
+    ac_channel<plm_t<FPDATA_IN, PLM_SIZE> > plm_in;
+    ac_channel<plm_t<FPDATA_OUT, PLM_SIZE> > plm_out;
 };
 
 #endif /* __SOFTMAX_HPP__ */
