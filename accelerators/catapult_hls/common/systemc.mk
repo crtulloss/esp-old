@@ -26,6 +26,7 @@ INCDIR += -I$(ESP_ROOT)/accelerators/catapult_hls/common/syn-templates
 
 CXXFLAGS ?=
 CXXFLAGS += -g
+CXXFLAGS += -O0
 CXXFLAGS += $(INCDIR)
 CXXFLAGS += -DDMA_WIDTH=$(DMA_WIDTH)
 CXXFLAGS += -DCLOCK_PERIOD=10000
