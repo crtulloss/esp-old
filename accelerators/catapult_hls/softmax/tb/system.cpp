@@ -117,7 +117,7 @@ void system_t::dump_memory()
 
         data_bv = mem[offset + i];
 
-        ESP_REPORT_TIME(VOFF, sc_time_stamp(), "mem[%d] -> %X", offset + i, ESP_TO_UINT32(mem[offset + i]));
+        ESP_REPORT_TIME(VOFF, sc_time_stamp(), "mem[%d] -> %llX", offset + i, mem[offset + i].to_uint64());
 
         out[offset + i] = data_bv.to_uint();
 
@@ -171,7 +171,7 @@ int system_t::validate()
             // Get accelerator results from memory and compare.
             FPDATA_OUT data;
             unsigned index = SIZE * BATCH + b * SIZE + s;
-            ac_int<32, false> data_i = out[index].to_uint();
+            ac_int<32, false> data_i = ESP_TO_UINT32(out[index]);
             data.template set_slc(0, data_i);
 
             // Calculate absolute error
@@ -186,7 +186,7 @@ int system_t::validate()
         }
     }
 
-    ESP_REPORT_TIME(VON, sc_time_stamp(), "total errors = %llu / %lu", ESP_TO_UINT64(errors), BATCH * SIZE);
+    ESP_REPORT_TIME(VON, sc_time_stamp(), "total errors = %u / %lu", ESP_TO_UINT32(errors), BATCH * SIZE);
 
     return errors;
 }

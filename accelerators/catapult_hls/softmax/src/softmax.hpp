@@ -55,7 +55,7 @@ public:
     // Data-transfer channels
     //
 
-#if defined(__MNTR_CONNECTIONS__)
+#if defined(__MATCHLIB_CONNECTIONS__)
     // DMA read control (non blocking)
     Connections::Out<dma_info_t> dma_read_ctrl;
 

@@ -38,6 +38,12 @@ public:
         , acc("softmax")
 #endif
     {
+#if defined(__MATCHLIB_CONNECTIONS__)
+        ESP_REPORT_TIME(VON, sc_time_stamp(), "enable MatchLib Connections");
+#else
+        ESP_REPORT_TIME(VON, sc_time_stamp(), "enable Legacy P2P");
+#endif
+
         // Binding the accelerator
 #ifdef __CUSTOM_SIM__
         acc = new softmax("softmax");

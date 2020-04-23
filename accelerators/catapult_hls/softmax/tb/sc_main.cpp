@@ -26,8 +26,8 @@ int sc_main(int argc, char *argv[]) {
 	sc_clock        clk("clk", CLOCK_PERIOD, SC_PS);
 	sc_signal<bool> rst("rst");
 
-#if defined(__MNTR_COMMUNICATIONS__)
-    set_sim_clk(clk);
+#if defined(__MATCHLIB_CONNECTIONS__)
+    //Connections::set_sim_clk(&clk);
 #endif
 
 	testbench->clk(clk);
