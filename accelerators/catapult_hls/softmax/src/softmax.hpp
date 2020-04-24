@@ -22,6 +22,18 @@ public:
    T data[S];
 };
 
+#if defined(__MATCHLIB_CONNECTIONS__)
+#define DMA_READ_RESET(channel) channel.Reset()
+#define DMA_WRITE_RESET(channel) channel.Reset()
+#define DMA_READ(data, channel) data = channel.Pop()
+#define DMA_WRITE(data, channel) channel.Push(data)
+#else
+#define DMA_READ_RESET(channel) channel.reset_read()
+#define DMA_WRITE_RESET(channel) channel.reset_write()
+#define DMA_READ(data, channel) data = channel.read()
+#define DMA_WRITE(data, channel) channel.write(data)
+#endif
+
 SC_MODULE(softmax) {
 public:
 

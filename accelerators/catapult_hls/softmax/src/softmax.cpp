@@ -17,9 +17,8 @@ void compute(unsigned len, plm_t<T1,S1> *input, plm_t<T2,S2> *output) {
 //
 // Processes
 //
-
-void softmax::config_accelerator()
-{
+#pragma design modulario<sync>
+void softmax::config_accelerator() {
     // HLS_DEFINE_PROTOCOL("config");
     done.write(false); wait();
     //ESP_REPORT_INFO("start configuration");
@@ -87,11 +86,7 @@ LOAD_DATA_OUTER_LOOP:
 
             ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Load load(): dma_info.index = %u, dma_info.length = %u, dma_info.size = %llu", ESP_TO_UINT32(dma_info.index), ESP_TO_UINT32(dma_info.length), dma_info.size.to_uint64());
 
-#if (__MATCHLIB_CONNECTIONS__)
-            this->dma_read_ctrl.Push(dma_info);
-#else
-            this->dma_read_ctrl.write(dma_info);
-#endif
+            DMA_WRITE(dma_info, this->dma_read_ctrl);
 
             ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Load load(): dma_read_ctrl done!");
 
@@ -104,11 +99,8 @@ LOAD_DATA_INNER_LOOP:
                 sc_dt::sc_bv<32> data_bv;
                 ac_int<32> data_ac;
 
-#if (__MATCHLIB_CONNECTIONS__)
-                data_bv = this->dma_read_chnl.Pop();
-#else
-                data_bv = this->dma_read_chnl.read();
-#endif
+                DMA_READ(data_bv, this->dma_read_chnl);
+
                 data_ac = ac_int<32>(data_bv.to_uint());
                 data.set_slc(0, data_ac);
                 plm_local.data[i] = data;
@@ -230,11 +222,7 @@ STORE_MAIN_LOOP:
     
             ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Store store(): dma_info.index = %u, dma_info.length = %u, dma_info.size = %llu", ESP_TO_UINT32(dma_info.index), ESP_TO_UINT32(dma_info.length), dma_info.size.to_uint64());
 
-#if (__MATCHLIB_CONNECTIONS__)
-            this->dma_write_ctrl.Push(dma_info);
-#else
-            this->dma_write_ctrl.write(dma_info);
-#endif
+            DMA_WRITE(dma_info, this->dma_write_ctrl);
  
             plm_t<FPDATA_OUT, PLM_SIZE> plm_local;
             plm_local = plm_out.read();
@@ -246,11 +234,7 @@ STORE_OUTPUT_INNER_LOOP:
                 FPDATA_OUT data = plm_local.data[i];
                 sc_dt::sc_bv<32> data_bv(data.template slc<32>(0));
 
-#if (__MATCHLIB_CONNECTIONS__)
-                this->dma_write_chnl.Push(data_bv);
-#else
-                this->dma_write_chnl.write(data_bv);
-#endif
+                DMA_WRITE(data_bv, this->dma_write_chnl);
             }
         }
     }
@@ -270,34 +254,17 @@ STORE_OUTPUT_INNER_LOOP:
 // Reset functions
 //
 
-inline void softmax::reset_dma_read()
-{
-#if defined(__MATCHLIB_CONNECTIONS__)
-    // Reset
-    dma_read_ctrl.Reset();
-    dma_read_chnl.Reset();
-#else
-    // Reset
-    dma_read_ctrl.reset_write();
-    dma_read_chnl.reset_read();
-#endif
+inline void softmax::reset_dma_read() {
+    DMA_WRITE_RESET(dma_read_ctrl);
+    DMA_READ_RESET(dma_read_chnl);
 }
 
-inline void softmax::reset_dma_write()
-{
-#if defined(__MATCHLIB_CONNECTIONS__)
-    // Reset
-    dma_write_ctrl.Reset();
-    dma_write_chnl.Reset();
-#else
-    // Reset
-    dma_write_ctrl.reset_write();
-    dma_write_chnl.reset_write();
-#endif
+inline void softmax::reset_dma_write() {
+    DMA_WRITE_RESET(dma_write_ctrl);
+    DMA_WRITE_RESET(dma_write_chnl);
 }
 
-inline void softmax::reset_accelerator_done()
-{
+inline void softmax::reset_accelerator_done() {
     acc_done.write(false);
 }
 
@@ -339,22 +306,19 @@ inline void softmax::store_compute_handshake()
     output_ready.ack();
 }
 
-inline void softmax::wait_for_config()
-{
+inline void softmax::wait_for_config() {
 #pragma hls_unroll no
 WAIT_FOR_CONFIG_LOOP:
     while (!done.read()) { wait(); }
 }
 
-inline void softmax::process_done()
-{
+inline void softmax::process_done() {
 #pragma hls_unroll no
 PROCESS_DONE_LOOP:
     do { wait(); } while (true);
 }
 
-inline void softmax::accelerator_done()
-{
+inline void softmax::accelerator_done() {
     acc_done.write(true); wait();
     acc_done.write(false);
 }
