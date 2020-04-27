@@ -93,7 +93,7 @@ LOAD_DATA_OUTER_LOOP:
             plm_t<FPDATA_IN, PLM_SIZE> plm_local;
 
 LOAD_DATA_INNER_LOOP:
-#pragma hls_pipeline_init_interval 1
+//#pragma hls_pipeline_init_interval 1
             for (uint16_t i = 0; i < len; i++) {
                 FPDATA_IN data;
                 sc_dt::sc_bv<32> data_bv;
@@ -147,8 +147,8 @@ void softmax::compute_kernel() {
 COMPUTE_BATCH_LOOP:
     for (uint32_t b = 0; b < batch; b++) {
 
-//#pragma hls_pipeline_init_interval 1
 COMPUTE_OUTER_LOOP:
+//#pragma hls_pipeline_init_interval 1
         for (uint32_t s = size; s > 0; s -= PLM_SIZE) {
 
             this->compute_load_handshake();
@@ -228,7 +228,7 @@ STORE_MAIN_LOOP:
             plm_local = plm_out.read();
 
 STORE_OUTPUT_INNER_LOOP:
-#pragma hls_pipeline_init_interval 1
+//#pragma hls_pipeline_init_interval 1
             for (uint16_t i = 0; i < len; i++) {
 
                 FPDATA_OUT data = plm_local.data[i];
