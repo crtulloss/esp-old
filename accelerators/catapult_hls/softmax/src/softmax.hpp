@@ -113,7 +113,7 @@ public:
           , clk("clk")
           , rst("rst")
           , conf_info("conf_info")
-          , conf_done("conf_done") 
+          , conf_done("conf_done")
           , acc_done("acc_done")
           , debug("debug")
           , dma_read_ctrl("dma_read_ctrl")
@@ -194,8 +194,10 @@ public:
     // Private local memories
     //
 
-    ac_channel<plm_t<FPDATA_IN, PLM_SIZE> > plm_in;
-    ac_channel<plm_t<FPDATA_OUT, PLM_SIZE> > plm_out;
+    ac_channel<plm_t<FPDATA_IN, PLM_SIZE> > plm0_in;
+    ac_channel<plm_t<FPDATA_IN, PLM_SIZE> > plm1_in;
+    ac_channel<plm_t<FPDATA_OUT, PLM_SIZE> > plm0_out;
+    ac_channel<plm_t<FPDATA_OUT, PLM_SIZE> > plm1_out;
 };
 
 #endif /* __SOFTMAX_HPP__ */

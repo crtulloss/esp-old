@@ -70,6 +70,8 @@ void softmax::load_input() {
 
     uint32_t offset = in_offset;
 
+    bool ping = true;
+
     // Load-process body
 LOAD_BATCH_LOOP:
     for (uint32_t b = 0; b < batch; b++) {
@@ -105,10 +107,17 @@ LOAD_DATA_INNER_LOOP:
                 data.set_slc(0, data_ac);
                 plm_local.data[i] = data;
             }
-            plm_in.write(plm_local);
+
+            if (ping) {
+                plm0_in.write(plm_local);
+            } else {
+                plm1_in.write(plm_local);
+            }
 
             this->load_compute_handshake();
             ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Load load() --> compute()");
+
+            ping = !ping;
         }
     }
 
@@ -143,6 +152,8 @@ void softmax::compute_kernel() {
         ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Compute config(): size = %u, batch = %u, in_offset = %u, out_offset = %u", ESP_TO_UINT32(size), ESP_TO_UINT32(batch), ESP_TO_UINT32(in_offset), ESP_TO_UINT32(out_offset));
     }
 
+    bool ping = true;
+
     // Compute-process body
 COMPUTE_BATCH_LOOP:
     for (uint32_t b = 0; b < batch; b++) {
@@ -153,20 +164,30 @@ COMPUTE_OUTER_LOOP:
 
             this->compute_load_handshake();
             ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Compute compute() <---> load()");
-    
+
             uint32_t len = (s > (uint32_t)PLM_SIZE) ? (uint32_t)PLM_SIZE : s;
-    
+
             plm_t<FPDATA_IN, PLM_SIZE> plm_local_in;
             plm_t<FPDATA_OUT, PLM_SIZE> plm_local_out;
-    
-            plm_local_in = plm_in.read();
-    
+
+            if (ping) {
+                plm_local_in = plm0_in.read();
+            } else {
+                plm_local_in = plm1_in.read();
+            }
+
             compute<FPDATA_IN, PLM_SIZE, FPDATA_OUT, PLM_SIZE>(len, &plm_local_in, &plm_local_out);
-    
-            plm_out.write(plm_local_out);
-    
+
+            if (ping) {
+                plm0_out.write(plm_local_out);
+            } else {
+                plm1_out.write(plm_local_out);
+            }
+
             this->compute_store_handshake();
             ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Compute compute() ---> store()");
+
+            ping = !ping;
         }
     }
 
@@ -203,29 +224,36 @@ void softmax::store_output() {
 
     uint32_t offset = out_offset;
 
+    bool ping = true;
+
     // Store-process body
 COMPUTE_BATCH_LOOP:
     for (uint32_t b = 0; b < batch; b++) {
 STORE_MAIN_LOOP:
         for (uint32_t s = size; s > 0; s -= PLM_SIZE) {
-    
+
             this->store_compute_handshake();
             ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Store store() --> compute()");
-    
+
             uint32_t len = (s > (uint32_t)PLM_SIZE) ? (uint32_t)PLM_SIZE : s;
-    
+
             ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Store store(): len = %u [max %d]", ESP_TO_UINT32(len), PLM_SIZE);
-    
+
             dma_info_t dma_info(offset, len, 32);
 
             offset += len;
-    
+
             ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Store store(): dma_info.index = %u, dma_info.length = %u, dma_info.size = %llu", ESP_TO_UINT32(dma_info.index), ESP_TO_UINT32(dma_info.length), dma_info.size.to_uint64());
 
             DMA_WRITE(dma_info, this->dma_write_ctrl);
- 
+
             plm_t<FPDATA_OUT, PLM_SIZE> plm_local;
-            plm_local = plm_out.read();
+
+            if (ping) {
+                plm_local = plm0_out.read();
+            } else {
+                plm_local = plm1_out.read();
+            }
 
 STORE_OUTPUT_INNER_LOOP:
 //#pragma hls_pipeline_init_interval 1
@@ -236,6 +264,8 @@ STORE_OUTPUT_INNER_LOOP:
 
                 DMA_WRITE(data_bv, this->dma_write_chnl);
             }
+
+            ping = !ping;
         }
     }
 
