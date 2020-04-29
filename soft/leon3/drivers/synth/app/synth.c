@@ -2,7 +2,7 @@
 #include "synth.h"
 #include "synth_cfg.h"
 
-#define DEBUG 1
+#define DEBUG 0
 #define dprintf if(DEBUG) printf
 
 #define NPHASES_MAX 100
@@ -140,15 +140,16 @@ static void config_threads(FILE* f, accelerator_thread_info_t **thread_info, int
             } else if (!strncmp(pattern, "IRREGULAR", 9)){
                 cfg_synth[devid][0].desc.synth_desc.pattern = PATTERN_IRREGULAR;
             }
-            fscanf(f, "%d %d %d %d %d %d %d", 
+            fscanf(f, "%d %d %d %d %d %d %d %d", 
                 &cfg_synth[devid][0].desc.synth_desc.access_factor,
                 &cfg_synth[devid][0].desc.synth_desc.burst_len,
                 &cfg_synth[devid][0].desc.synth_desc.compute_bound_factor,
                 &cfg_synth[devid][0].desc.synth_desc.reuse_factor,
                 &cfg_synth[devid][0].desc.synth_desc.ld_st_ratio,
                 &cfg_synth[devid][0].desc.synth_desc.stride_len,
-                &cfg_synth[devid][0].desc.synth_desc.in_place);
-        
+                &cfg_synth[devid][0].desc.synth_desc.in_place,
+                &cfg_synth[devid][0].desc.synth_desc.wr_data);
+            
             if (cfg_synth[devid][0].desc.synth_desc.pattern == PATTERN_IRREGULAR)
                 cfg_synth[devid][0].desc.synth_desc.irregular_seed = rand() % IRREGULAR_SEED_MAX;
         
@@ -268,18 +269,27 @@ void *acc_chain(void *ptr){
 static int validate_buffer(accelerator_thread_info_t *thread_info, uint32_t *buf){
     int errors = 0; 
     for (int i = 0; i < thread_info->ndev; i++){
-        
+            
         int devid = thread_info->chain[i];
         int offset = cfg_synth[devid][0].desc.synth_desc.offset;
         int in_size = cfg_synth[devid][0].desc.synth_desc.in_size;
         int out_size = cfg_synth[devid][0].desc.synth_desc.out_size;
         int in_place = cfg_synth[devid][0].desc.synth_desc.in_place;
+        int wr_data = cfg_synth[devid][0].desc.synth_desc.wr_data;
         
+        int next_in_place, next_devid;
+        if (i != thread_info->ndev - 1){
+           next_devid = thread_info->chain[i+1];
+           next_in_place = cfg_synth[next_devid][0].desc.synth_desc.in_place;
+           if (next_in_place)
+               continue;
+        }
+
         if (!in_place)
             offset += in_size; 
         
         for (int j = offset; j < offset + out_size; j++){
-            if (buf[j] != 0xdade0123){
+            if (buf[j] != wr_data){
                 errors++;
             }
         }
@@ -314,6 +324,8 @@ int main (int argc, char** argv)
             coherence = ACC_COH_LLC; 
         else if (!strcmp(argv[2], "full"))
             coherence = ACC_COH_FULL;
+        else if (!strcmp(argv[2], "recall"))
+            coherence = ACC_COH_RECALL;
         else if (!strcmp(argv[2], "auto"))
             coherence = ACC_COH_AUTO;
     }
@@ -360,7 +372,6 @@ int main (int argc, char** argv)
         }
 
         gettime(&th_end); 
-        
         for (int t = 0; t < nthreads; t++){
             int errors = validate_buffer(thread_info[p][t], buffers[t]);
             if (errors)

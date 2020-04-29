@@ -36,6 +36,7 @@
 #define SYNTH_STRIDE_LEN_REG 0x64
 #define SYNTH_OUT_SIZE_REG 0x68
 #define SYNTH_IN_PLACE_REG 0x6c
+#define SYNTH_WR_DATA_REG 0x70
 
 // Accelerator-specific buffe size
 #define IN_SIZE 524288
@@ -43,7 +44,8 @@
 #define ACCESS_FACTOR 0
 #define OUT_SIZE ((IN_SIZE / LD_ST_RATIO) >> ACCESS_FACTOR)
 #define SYNTH_BUF_SIZE ((IN_SIZE + OUT_SIZE) * sizeof(unsigned))
-
+#define OUT_DATA 0x12345678
+#define IN_PLACE 1 
 /* Size of the contiguous chunks for scatter/gather */
 #define CHUNK_SHIFT 20
 #define CHUNK_SIZE BIT(CHUNK_SHIFT)
@@ -167,11 +169,12 @@ int main(int argc, char * argv[])
                 iowrite32(dev, SYNTH_BURST_LEN_REG, 4);
                 iowrite32(dev, SYNTH_COMPUTE_BOUND_FACTOR_REG, 2);
                 iowrite32(dev, SYNTH_IRREGULAR_SEED_REG, 0); 
-                iowrite32(dev, SYNTH_REUSE_FACTOR_REG, 2);
+                iowrite32(dev, SYNTH_REUSE_FACTOR_REG, 8);
                 iowrite32(dev, SYNTH_LD_ST_RATIO_REG, LD_ST_RATIO);
                 iowrite32(dev, SYNTH_STRIDE_LEN_REG, 4); 
                 iowrite32(dev, SYNTH_OUT_SIZE_REG, OUT_SIZE); 
-                iowrite32(dev, SYNTH_IN_PLACE_REG, 1);
+                iowrite32(dev, SYNTH_IN_PLACE_REG, IN_PLACE);
+                iowrite32(dev, SYNTH_WR_DATA_REG, OUT_DATA);
 
                 // Flush for non-coherent DMA
                 esp_flush(coherence);
@@ -182,7 +185,7 @@ int main(int argc, char * argv[])
 #ifndef __riscv
 			    printf("  Start..\n");
 #else
-			    print_uart("  Start %d..\n", n);
+			    print_uart("  Start..\n");
 #endif
                 dev = &espdevs[n];
 			    iowrite32(dev, CMD_REG, CMD_MASK_START);
@@ -198,12 +201,33 @@ int main(int argc, char * argv[])
 			
             iowrite32(dev, CMD_REG, 0x0);
 #ifndef __riscv
+			printf("  Validating...\n");
+#else
+			print_uart("  Validating...\n");
+#endif
+
+			
+            uint32_t start = IN_PLACE ? 0 : IN_SIZE;
+            uint32_t errors = 0;
+            uint32_t i;
+            for (i = start; i < start + OUT_SIZE; i++){
+                if (mem[i] != OUT_DATA) 
+                    errors++;
+            }
+#ifndef __riscv
+			printf(" %d errors \n", errors);
+#else
+			print_uart_int(errors); print_uart(" errors\n");
+#endif
+
+#ifndef __riscv
 			printf("  Done\n");
 #else
 			print_uart("  Done\n");
 #endif
 
-			// Validation
+            
+            // Validation
 
 			if (scatter_gather)
 				aligned_free(ptable);

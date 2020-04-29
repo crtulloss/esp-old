@@ -156,7 +156,8 @@ void synth::load_input()
 		if (ld_st_ratio_cnt == ld_st_ratio) {
 
 		    if ((ld_st_ratio == 1 && in_place == 1) || (r == reuse_factor - 1))
-			this->load_compute_handshake();
+		        this->load_compute_handshake();
+
 
 		    ld_st_ratio_cnt = 0;
 		}
@@ -165,9 +166,11 @@ void synth::load_input()
 		for (uint32_t i = 0; i < compute_bound_delay; i++)
 		{
 		    HLS_LOAD_INPUT_LOOP;
-
-		    wait();
-		}
+            {
+            HLS_DEFINE_PROTOCOL("compute-bound-delay");
+            wait();
+		    }
+        }
 
 		// Index calculation
 		if (pattern == STREAMING) {
@@ -214,7 +217,7 @@ void synth::store_output()
     uint32_t ntrans;
     uint32_t index;
     uint32_t burst_len_log;
-
+    uint32_t wr_data;
     // Reset
     {
 	HLS_DEFINE_PROTOCOL("store-reset");
@@ -254,6 +257,7 @@ void synth::store_output()
 	ld_st_ratio = config.ld_st_ratio;
 	in_place = config.in_place;
 	offset = config.offset;
+    wr_data = config.wr_data;
 
 	if (ld_st_ratio != 1 || in_place != 1)
 	    reuse_factor = 1;
@@ -282,7 +286,7 @@ void synth::store_output()
 
 		this->store_compute_handshake();
 
-		{
+        {
 		    HLS_DEFINE_PROTOCOL("store-dma-conf");
 
 		    // Configure DMA transaction
@@ -293,10 +297,9 @@ void synth::store_output()
 		{
 		    HLS_STORE_OUTPUT_LOOP;
 
-		    uint32_t data = 0xdade0123;
 		    {
 			HLS_STORE_DMA;
-			this->dma_write_chnl.put(data);
+			this->dma_write_chnl.put(wr_data);
 			wait();
 		    }
 		}
@@ -304,6 +307,12 @@ void synth::store_output()
 		index += burst_len;
 	    }
 	}
+    }
+
+    //wait for final transactions to complete
+    {
+        HLS_DEFINE_PROTOCOL("final-wait");
+        wait(1000);
     }
 
     // Conclude
@@ -324,7 +333,6 @@ void synth::compute_kernel()
 
     uint32_t nwords;
     uint32_t ntrans;
-    uint32_t index;
     uint32_t burst_len_log;
 
     // Reset
@@ -344,7 +352,6 @@ void synth::compute_kernel()
 
 	nwords = 0;
 	ntrans = 0;
-	index = 0;
 	burst_len_log = 0;
 
 	wait();
@@ -364,7 +371,7 @@ void synth::compute_kernel()
 	ld_st_ratio = config.ld_st_ratio;
 	in_place = config.in_place;
 
-	if (ld_st_ratio != 1 || in_place != 1)
+    if (ld_st_ratio != 1 || in_place != 1)
 	    reuse_factor = 1;
 
 	// Logarithms
@@ -391,10 +398,13 @@ void synth::compute_kernel()
 		this->compute_store_handshake();
 	    }
 
-	    // Conclude
-	    {
-		this->process_done();
-	    }
+
 	}
+	
+    // Conclude
+    {
+	this->process_done();
+    }
+    
     }
 }

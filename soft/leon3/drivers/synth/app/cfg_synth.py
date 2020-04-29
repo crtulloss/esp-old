@@ -111,6 +111,9 @@ for p in range(phases):
                 in_place = 1 
             if in_place == 0:
                 total_size -= out_size 
-            f.write(str(in_place) + "\n")
+            f.write(str(in_place) + " ")
+            
+            wr_data = rand.randint(0, 4294967295)
+            f.write(str(wr_data) + "\n")
 
 f.close()
