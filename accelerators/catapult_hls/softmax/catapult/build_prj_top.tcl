@@ -9,6 +9,10 @@ array set opt {
     # = 0 -> Legacy P2P
     # = 1 -> MatchLib Connections
     #
+    # The 'plm' flag enable BRAMs (SRAMs):
+    # = 0 -> registers
+    # = 1 -> BRAMs/SRAMs
+    #
     # The 'csim' flag enables C simulation.
     # The 'hsynth' flag enables HLS.
     # The 'rtlsim' flag enable RTL simulation.
@@ -16,6 +20,7 @@ array set opt {
     # The 'debug' flag stops Catapult HLS before the architect step.
     asic       0
     channels   1
+    plm        1
     csim       1
     hsynth     1
     rtlsim     1

@@ -194,10 +194,15 @@ public:
     // Private local memories
     //
 
-    ac_channel<plm_t<FPDATA_IN, PLM_SIZE> > plm0_in;
-    ac_channel<plm_t<FPDATA_IN, PLM_SIZE> > plm1_in;
-    ac_channel<plm_t<FPDATA_OUT, PLM_SIZE> > plm0_out;
-    ac_channel<plm_t<FPDATA_OUT, PLM_SIZE> > plm1_out;
+    // TODO Disable explicit ping-pong buffering. Does Catapult HLS infer
+    // ping-pong buffering on its own?
+    //ac_channel<plm_t<FPDATA_IN, PLM_SIZE> > plm0_in;
+    //ac_channel<plm_t<FPDATA_IN, PLM_SIZE> > plm1_in;
+    //ac_channel<plm_t<FPDATA_OUT, PLM_SIZE> > plm0_out;
+    //ac_channel<plm_t<FPDATA_OUT, PLM_SIZE> > plm1_out;
+
+    ac_channel<plm_t<FPDATA_IN, PLM_SIZE> > plm_in;
+    ac_channel<plm_t<FPDATA_OUT, PLM_SIZE> > plm_out;
 };
 
 #endif /* __SOFTMAX_HPP__ */
