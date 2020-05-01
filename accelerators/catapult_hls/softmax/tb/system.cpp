@@ -95,7 +95,10 @@ void system_t::load_memory()
 
         FPDATA_IN data = (i % 32) + 0.25;
 
-        sc_dt::sc_bv<32> data_bv(data.template slc<32>(0));
+        sc_dt::sc_bv<DMA_WIDTH> data_bv;
+        data_bv.range(63,32) = sc_dt::sc_bv<32>(0xdeadbeef);
+        data_bv.range(31,0) = (data.template slc<32>(0));
+        //std::cout << std::hex << data_bv.range(63,32).to_uint() << std::dec << "|" << data_bv.range(31,0) << std::endl; 
 
         mem[i] = data_bv;
 
@@ -111,7 +114,7 @@ void system_t::dump_memory()
 {
     // Get results from memory
     for (unsigned i = 0; i < BATCH*SIZE; i++) {
-        sc_dt::sc_bv<32> data_bv;
+        sc_dt::sc_bv<DMA_WIDTH> data_bv;
 
         unsigned offset = BATCH * SIZE;
 
@@ -119,7 +122,7 @@ void system_t::dump_memory()
 
         ESP_REPORT_TIME(VOFF, sc_time_stamp(), "mem[%d] -> %llX", offset + i, mem[offset + i].to_uint64());
 
-        out[offset + i] = data_bv.to_uint();
+        out[offset + i] = data_bv.range(31,0).to_uint();
 
         //std::cout << "out[" << offset + i << "] = " << out[offset+i] << std::endl;
 

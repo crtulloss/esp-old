@@ -43,6 +43,12 @@ public:
 #else
         ESP_REPORT_TIME(VON, sc_time_stamp(), "enable Legacy P2P");
 #endif
+#if defined(__MNTR_AC_SHARED__)
+        ESP_REPORT_TIME(VON, sc_time_stamp(), "enable ac_shared PLMs");
+#else
+        ESP_REPORT_TIME(VON, sc_time_stamp(), "enable ac_channel PLMs");
+#endif
+
 
         // Binding the accelerator
 #ifdef __CUSTOM_SIM__

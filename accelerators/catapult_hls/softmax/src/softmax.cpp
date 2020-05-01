@@ -9,10 +9,19 @@
 // Compute functions
 //
 
+#ifdef __MNTR_AC_SHARED__
 template <class T1, unsigned S1, class T2, unsigned S2>
-void compute(unsigned len, plm_t<T1,S1> *input, plm_t<T2,S2> *output) {
+void compute(ac_shared<T1[S1]> &input, ac_shared<T2[S2]> &output) {
+    T1 (&input_data)[S1] = input;
+    T2 (&output_data)[S2] = output;
+    ac_math::ac_softmax_pwl(input_data, output_data);
+}
+#else
+template <class T1, unsigned S1, class T2, unsigned S2>
+void compute(plm_t<T1,S1> *input, plm_t<T2,S2> *output) {
     ac_math::ac_softmax_pwl(input->data, output->data);
 }
+#endif
 
 //
 // Processes
@@ -94,29 +103,44 @@ LOAD_DATA_OUTER_LOOP:
 
             ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Load load(): dma_read_ctrl done!");
 
+#ifndef __MNTR_AC_SHARED__
             plm_t<FPDATA_IN, PLM_SIZE> plm_local;
+#endif
 
 LOAD_DATA_INNER_LOOP:
 //#pragma hls_pipeline_init_interval 1
             for (uint16_t i = 0; i < len; i++) {
                 FPDATA_IN data;
-                sc_dt::sc_bv<32> data_bv;
+                sc_dt::sc_bv<64> data_bv;
                 ac_int<32> data_ac;
 
                 DMA_READ(data_bv, this->dma_read_chnl);
 
-                data_ac = ac_int<32>(data_bv.to_uint());
+                // DMA_WIDTH = 64
+                // discard bits in the range(63,32)
+                // keep bits in the range(31,0)
+                data_ac = ac_int<32>(data_bv.range(31,0).to_uint());
                 data.set_slc(0, data_ac);
+#ifdef __MNTR_AC_SHARED__
+                plm_in[i] = data;
+#else
                 plm_local.data[i] = data;
+#endif
             }
 
+#ifdef __MNTR_AC_SHARED__
+            load_to_compute.sync_out();
+#endif
+
+
+#ifndef __MNTR_AC_SHARED__
             //if (ping) {
             //    plm0_in.write(plm_local);
             //} else {
             //    plm1_in.write(plm_local);
             //}
             plm_in.write(plm_local);
-
+#endif
             this->load_compute_handshake();
             ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Load load() --> compute()");
 
@@ -171,7 +195,11 @@ COMPUTE_OUTER_LOOP:
             ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Compute compute() <---> load()");
 
             uint32_t len = (s > (uint32_t)PLM_SIZE) ? (uint32_t)PLM_SIZE : s;
-
+#ifdef __MNTR_AC_SHARED__
+            load_to_compute.sync_in();
+            compute<FPDATA_IN, PLM_SIZE, FPDATA_OUT, PLM_SIZE>(plm_in, plm_out);
+            compute_to_store.sync_out();
+#else
             plm_t<FPDATA_IN, PLM_SIZE> plm_local_in;
             plm_t<FPDATA_OUT, PLM_SIZE> plm_local_out;
 
@@ -182,7 +210,7 @@ COMPUTE_OUTER_LOOP:
             //}
             plm_local_in = plm_in.read();
 
-            compute<FPDATA_IN, PLM_SIZE, FPDATA_OUT, PLM_SIZE>(len, &plm_local_in, &plm_local_out);
+            compute<FPDATA_IN, PLM_SIZE, FPDATA_OUT, PLM_SIZE>(&plm_local_in, &plm_local_out);
 
             //if (ping) {
             //    plm0_out.write(plm_local_out);
@@ -190,7 +218,7 @@ COMPUTE_OUTER_LOOP:
             //    plm1_out.write(plm_local_out);
             //}
             plm_out.write(plm_local_out);
-
+#endif
             this->compute_store_handshake();
             ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Compute compute() ---> store()");
 
@@ -256,6 +284,7 @@ STORE_MAIN_LOOP:
 
             DMA_WRITE(dma_info, this->dma_write_ctrl);
 
+#ifndef __MNTR_AC_SHARED__
             plm_t<FPDATA_OUT, PLM_SIZE> plm_local;
 
             //if (ping) {
@@ -264,16 +293,31 @@ STORE_MAIN_LOOP:
             //    plm_local = plm1_out.read();
             //}
             plm_local = plm_out.read();
+#endif
+
 
 STORE_OUTPUT_INNER_LOOP:
 //#pragma hls_pipeline_init_interval 1
             for (uint16_t i = 0; i < len; i++) {
-
+#ifdef __MNTR_AC_SHARED__
+                FPDATA_OUT data = plm_out[i];
+#else
                 FPDATA_OUT data = plm_local.data[i];
-                sc_dt::sc_bv<32> data_bv(data.template slc<32>(0));
+#endif
+
+                // DMA_WIDTH = 64
+                // set to a constante value range(63,32)
+                // return results on the range(31,0)
+                sc_dt::sc_bv<64> data_bv;
+                data_bv.range(63,32) = sc_dt::sc_bv<32>(0xdeadbeef);
+                data_bv.range(31,0) = data.template slc<32>(0);
 
                 DMA_WRITE(data_bv, this->dma_write_chnl);
             }
+
+#ifdef __MNTR_AC_SHARED__
+            compute_to_store.sync_in();
+#endif
 
             //ping = !ping;
         }
