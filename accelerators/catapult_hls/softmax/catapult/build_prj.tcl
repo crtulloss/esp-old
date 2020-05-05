@@ -292,13 +292,15 @@ if {$opt(hsynth)} {
 #    directive set /${ACCELERATOR}/plm1_out -WORD_WIDTH ${PLM_SIZE}
 #    directive set /${ACCELERATOR}/plm1_out:cns -FIFO_DEPTH 32
 
-    directive set /${ACCELERATOR}/plm_in:cns -MAP_TO_MODULE Xilinx_FIFO.FIFO
+    directive set /${ACCELERATOR}/plm_in:cns -MAP_TO_MODULE ccs_ioport.ccs_pipe
+#    directive set /${ACCELERATOR}/plm_in:cns -MAP_TO_MODULE Xilinx_FIFO.FIFO
     directive set /${ACCELERATOR}/plm_in:cns -PACKING_MODE sidebyside
 #    directive set /${ACCELERATOR}/plm_in:cns -STAGE_REPLICATION 0
     directive set /${ACCELERATOR}/plm_in -WORD_WIDTH ${PLM_SIZE}
     directive set /${ACCELERATOR}/plm_in:cns -FIFO_DEPTH 32
 
-    directive set /${ACCELERATOR}/plm_out:cns -MAP_TO_MODULE Xilinx_FIFO.FIFO
+    directive set /${ACCELERATOR}/plm_out:cns -MAP_TO_MODULE ccs_ioport.ccs_pipe
+#    directive set /${ACCELERATOR}/plm_out:cns -MAP_TO_MODULE Xilinx_FIFO.FIFO
     directive set /${ACCELERATOR}/plm_out:cns -PACKING_MODE sidebyside
 #    directive set /${ACCELERATOR}/plm_out:cns -STAGE_REPLICATION 0
     directive set /${ACCELERATOR}/plm_out -WORD_WIDTH ${PLM_SIZE}

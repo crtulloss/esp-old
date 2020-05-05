@@ -24,17 +24,12 @@ void system_t::config_proc()
         conf_info_t config;
         config.size = SIZE;
         config.batch = BATCH;
-        config.in_offset = 0;
-        config.out_offset = SIZE*BATCH;
 
         wait(); conf_info.write(config);
         conf_done.write(true);
 
         ESP_REPORT_TIME(VON, sc_time_stamp(), "config.size = %d", config.size);
         ESP_REPORT_TIME(VON, sc_time_stamp(), "config.batch = %d", config.batch);
-        ESP_REPORT_TIME(VON, sc_time_stamp(), "config.in_offset = %d", config.in_offset);
-        ESP_REPORT_TIME(VON, sc_time_stamp(), "config.out_offset = %d", config.out_offset);
-
     }
 
     ESP_REPORT_TIME(VON, sc_time_stamp(), "config done");

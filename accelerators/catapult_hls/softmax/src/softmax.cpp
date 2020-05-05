@@ -63,21 +63,17 @@ void softmax::load_input() {
     // Load-process config
     uint32_t size;
     uint32_t batch;
-    uint32_t in_offset;
-    uint32_t out_offset;
     {
         wait_for_config(); // config process
         conf_info_t config = this->conf_info.read();
 
         size = config.size;
         batch = config.batch;
-        in_offset = config.in_offset;
-        out_offset = config.out_offset;
 
-        ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Load config(): size = %u, batch = %u, in_offset = %u, out_offset = %u", ESP_TO_UINT32(size), ESP_TO_UINT32(batch), ESP_TO_UINT32(in_offset), ESP_TO_UINT32(out_offset));
+        ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Load config(): size = %u, batch = %u", ESP_TO_UINT32(size), ESP_TO_UINT32(batch));
     }
 
-    uint32_t offset = in_offset;
+    uint32_t offset = 0;
 
     // TODO Disable explicit ping-pong buffering. Does Catapult HLS infer
     // ping-pong buffering on its own?
@@ -165,18 +161,14 @@ void softmax::compute_kernel() {
     // Compute-process config
     uint32_t size;
     uint32_t batch;
-    uint32_t in_offset;
-    uint32_t out_offset;
     {
         wait_for_config(); // config process
         conf_info_t config = this->conf_info.read();
 
         size = config.size;
         batch = config.batch;
-        in_offset = config.in_offset;
-        out_offset = config.out_offset;
 
-        ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Compute config(): size = %u, batch = %u, in_offset = %u, out_offset = %u", ESP_TO_UINT32(size), ESP_TO_UINT32(batch), ESP_TO_UINT32(in_offset), ESP_TO_UINT32(out_offset));
+        ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Compute config(): size = %u, batch = %u", ESP_TO_UINT32(size), ESP_TO_UINT32(batch));
     }
 
     // TODO Disable explicit ping-pong buffering. Does Catapult HLS infer
@@ -243,21 +235,17 @@ void softmax::store_output() {
     // Store-process config
     uint32_t size;
     uint32_t batch;
-    uint32_t in_offset;
-    uint32_t out_offset;
     {
         wait_for_config(); // config process
         conf_info_t config = this->conf_info.read();
 
         size = config.size;
         batch = config.batch;
-        in_offset = config.in_offset;
-        out_offset = config.out_offset;
 
-        ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Store config(): size = %u, batch = %u, in_offset = %u, out_offset = %u", ESP_TO_UINT32(size), ESP_TO_UINT32(batch), ESP_TO_UINT32(in_offset), ESP_TO_UINT32(out_offset));
+        ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Store config(): size = %u, batch = %u", ESP_TO_UINT32(size), ESP_TO_UINT32(batch));
     }
 
-    uint32_t offset = out_offset;
+    uint32_t offset = size * batch;
 
     // TODO Disable explicit ping-pong buffering. Does Catapult HLS infer
     // ping-pong buffering on its own?
