@@ -137,11 +137,7 @@ static void esp_runtime_config(struct esp_device *esp)
 
 	if (esp->coherence == ACC_COH_FULL) {
 
-		if (esp_status.active_acc_cnt_full >= 1)
-			/* esp->coherence = ACC_COH_RECALL; */
-			esp->coherence = ACC_COH_LLC;
-		else
-			esp_status.active_acc_cnt_full++;
+		esp_status.active_acc_cnt_full++;
 
 		return;
 	}

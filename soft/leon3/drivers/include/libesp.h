@@ -78,19 +78,25 @@ struct esp_accelerator_thread_info {
 	bool run;
 	char *devname;
 	enum esp_accelerator_type type;
-	/* Partially Filled-in by ESPLIB */
+    contig_handle_t *contig_handle;
+    /* Partially Filled-in by ESPLIB */
 	union esp_accelerator_descriptor desc;
 	/* Filled-in by ESPLIB */
 	int fd;
-	contig_handle_t *hwbuf;
 	unsigned long long hw_ns;
 };
 
 typedef struct esp_accelerator_thread_info esp_thread_info_t;
 
+struct thread_args {
+    esp_thread_info_t* info; 
+    unsigned nacc; 
+};
+
 void *esp_alloc_policy(struct contig_alloc_params params, size_t size, contig_handle_t *handle);
 void *esp_alloc(size_t size, contig_handle_t *handle);
-void esp_run(esp_thread_info_t cfg[], unsigned nacc, contig_handle_t *handle);
+void esp_run_parallel(esp_thread_info_t* cfg[], unsigned nthreads, unsigned* nacc);
+void esp_run(esp_thread_info_t* cfg[], unsigned nacc);
 void esp_cleanup(contig_handle_t *handle);
 
 #endif /* __ESPLIB_H__ */

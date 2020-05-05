@@ -31,6 +31,7 @@ struct synth_access {
     unsigned int stride_len;                /* stride length for strided pattern */
     unsigned int out_size;                  /* size of output dataset */
     unsigned int in_place;                  /* output stored in place of input */
+    unsigned int wr_data;                   /* output word to be written */
     unsigned src_offset;
     unsigned dst_offset;
 };
