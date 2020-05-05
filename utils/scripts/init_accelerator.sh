@@ -310,6 +310,10 @@ for d in $dirs; do
         rename accelerator $LOWER *
     fi
 
+    if cat /etc/os-release | grep -q -i rhel; then
+        rename accelerator $LOWER *
+    fi
+
     sed -i "s/<accelerator_name>/$LOWER/g" *
     sed -i "s/<ACCELERATOR_NAME>/$UPPER/g" *
 
@@ -342,6 +346,7 @@ if [ "$FLOW" == "vivado_hls" ]; then
     echo "$LOWER" > .gitignore
     echo "*.log" >> .gitignore
 fi
+
 if [ "$FLOW" == "hls4ml" ]; then
     ## Initialize gitignore
     cd $ACC_DIR
@@ -518,7 +523,6 @@ if [ "$FLOW" == "stratus_hls" ]; then
     fi
 fi
 
-
 ### Generate skeleton for unit testbench
 if [ "$FLOW" == "stratus_hls" ]; then
 
@@ -549,7 +553,6 @@ if [ "$FLOW" == "stratus_hls" ]; then
     fi
 fi
 
-
 ### Device driver folders initialization
 if [ $FLOW == "hls4ml" ]; then
     TEMPLATES_DIR=$ESP_ROOT/utils/scripts/templates/drivers_hls4ml
@@ -572,6 +575,10 @@ if cat /etc/os-release | grep -q -i centos; then
     rename accelerator $LOWER accelerator.h
 fi
 
+if cat /etc/os-release | grep -q -i rhel; then
+    rename accelerator $LOWER accelerator.h
+fi
+
 sed -i "s/<accelerator_name>/$LOWER/g" ${LOWER}.h
 sed -i "s/<ACCELERATOR_NAME>/$UPPER/g" ${LOWER}.h
 for d in $dirs; do
@@ -585,6 +592,10 @@ for d in $dirs; do
     fi
 
     if cat /etc/os-release | grep -q -i centos; then
+	rename accelerator $LOWER *
+    fi
+
+    if cat /etc/os-release | grep -q -i rhel; then
 	rename accelerator $LOWER *
     fi
 
