@@ -234,7 +234,8 @@ architecture rtl of acc_dma2noc is
   type dma_fsm is (idle, request_header, request_address, request_length,
                    request_data, reply_header, reply_data, config,
                    send_header, rd_handshake, wr_handshake, wait_req_p2p,
-                   running, reset, wait_for_completion, fully_coherent_request);
+                   running, reset, wait_for_completion, fully_coherent_request,
+                   wait_for_flush);
   signal dma_state, dma_next : dma_fsm;
   signal status : std_logic_vector(31 downto 0);
   signal sample_status : std_ulogic;
@@ -265,9 +266,6 @@ architecture rtl of acc_dma2noc is
 
   -- Sample acc_done:
   signal pending_acc_done, clear_acc_done : std_ulogic;
-
-  -- sample flush_done:
-  signal pending_flush_done, clear_flush_done : std_ulogic;
 
   -- DVFS
   signal dma_snd_delay : std_ulogic;
@@ -635,20 +633,12 @@ begin  -- rtl
   begin  -- process sample_acc_done
     if rst = '0' then                   -- asynchronous reset (active low)
       pending_acc_done <= '0';
-      pending_flush_done <= '0';
     elsif clk'event and clk = '1' then  -- rising clock edge
       if acc_done = '1' then
         pending_acc_done <= '1';
       end if;
-      if flush_done = '1' then
-        pending_flush_done <= '1';
-      end if;
-
       if clear_acc_done = '1' then
         pending_acc_done <= '0';
-      end if;
-      if clear_flush_done = '1' then
-        pending_flush_done <= '0';
       end if;
     end if;
   end process sample_acc_done;
@@ -659,7 +649,7 @@ begin  -- rtl
                           header_r, payload_address_r, payload_length_r,
                           dma_tran_start, tlb_empty, pending_dma_write,
                           pending_dma_read, coherent_dma_ready, dvfs_transient,
-                          size_r, coherence,
+                          size_r, coherence, flush_done,
                           p2p_req_rcv_empty, p2p_req_rcv_data_out, p2p_rsp_snd_full)
     variable payload_data : noc_flit_type;
     variable preamble : noc_preamble_type;
@@ -793,13 +783,15 @@ begin  -- rtl
         elsif bankreg(CMD_REG)(CMD_BIT_LAST downto 0) = zero(CMD_BIT_LAST downto 0) then
           dma_next <= reset;
         elsif pending_acc_done = '1' then
-          status <= (others => '0');
-          status(STATUS_BIT_DONE) <= '1';
-          sample_status <= '1';
           if coherence = ACC_COH_FULL then
             flush <= '1';
+            dma_next <= wait_for_flush;
+          else
+            status <= (others => '0');
+            status(STATUS_BIT_DONE) <= '1';
+            sample_status <= '1';
+            dma_next <= wait_for_completion;
           end if;
-          dma_next <= wait_for_completion;
         elsif rd_request = '1' then
           if scatter_gather = 0 then
             sample_flits <= '1';
@@ -812,6 +804,15 @@ begin  -- rtl
           end if;
           sample_wr_size <= '1';
           dma_next <= wr_handshake;
+        end if;
+
+      when wait_for_flush =>
+        -- Delay STATUS Done and IRQ; must finish flushing first
+        if flush_done = '1' then
+          status <= (others => '0');
+          status(STATUS_BIT_DONE) <= '1';
+          sample_status <= '1';
+          dma_next <= wait_for_completion;
         end if;
 
       when wait_for_completion =>
@@ -1053,22 +1054,18 @@ begin  -- rtl
     if rst = '0' then                   -- asynchronous reset (active low)
       irq <= (others => '0');
       irqset <= '0';
-      clear_flush_done <= '0';
     elsif clk'event and clk = '1' then  -- rising clock edge
       -- Avoid latches on other irq bits
       irq <= (others => '0');
       irq(pirq) <= irq(pirq);
-      clear_flush_done <= '0';
       --
       if irqset = '1' then
         irq(pirq) <= '0';
       elsif ((bankreg(STATUS_REG)(STATUS_BIT_DONE) or
               bankreg(STATUS_REG)(STATUS_BIT_ERR)) = '1' and
-             pending_flush_done = '1' and
              irqset = '0') then
         irq(pirq) <= '1';
         irqset <=  '1';
-        clear_flush_done <= '1';
       end if;
       if ((bankreg(STATUS_REG)(STATUS_BIT_RUN) or
            bankreg(STATUS_REG)(STATUS_BIT_DONE) or
