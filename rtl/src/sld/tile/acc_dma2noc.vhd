@@ -101,6 +101,7 @@ entity acc_dma2noc is
     bufdout_valid : in  std_ulogic;
     acc_done      : in  std_ulogic;
     flush         : out std_ulogic;
+    flush_done    : in  std_ulogic;
     mon_dvfs_in   : in  monitor_dvfs_type;
     --Monitor signals
     mon_dvfs      : out monitor_dvfs_type;
@@ -264,6 +265,9 @@ architecture rtl of acc_dma2noc is
 
   -- Sample acc_done:
   signal pending_acc_done, clear_acc_done : std_ulogic;
+
+  -- sample flush_done:
+  signal pending_flush_done, clear_flush_done : std_ulogic;
 
   -- DVFS
   signal dma_snd_delay : std_ulogic;
@@ -631,12 +635,20 @@ begin  -- rtl
   begin  -- process sample_acc_done
     if rst = '0' then                   -- asynchronous reset (active low)
       pending_acc_done <= '0';
+      pending_flush_done <= '0';
     elsif clk'event and clk = '1' then  -- rising clock edge
       if acc_done = '1' then
         pending_acc_done <= '1';
       end if;
+      if flush_done = '1' then
+        pending_flush_done <= '1';
+      end if;
+
       if clear_acc_done = '1' then
         pending_acc_done <= '0';
+      end if;
+      if clear_flush_done = '1' then
+        pending_flush_done <= '0';
       end if;
     end if;
   end process sample_acc_done;
@@ -1041,18 +1053,22 @@ begin  -- rtl
     if rst = '0' then                   -- asynchronous reset (active low)
       irq <= (others => '0');
       irqset <= '0';
+      clear_flush_done <= '0';
     elsif clk'event and clk = '1' then  -- rising clock edge
       -- Avoid latches on other irq bits
       irq <= (others => '0');
       irq(pirq) <= irq(pirq);
+      clear_flush_done <= '0';
       --
       if irqset = '1' then
         irq(pirq) <= '0';
       elsif ((bankreg(STATUS_REG)(STATUS_BIT_DONE) or
               bankreg(STATUS_REG)(STATUS_BIT_ERR)) = '1' and
+             pending_flush_done = '1' and
              irqset = '0') then
         irq(pirq) <= '1';
         irqset <=  '1';
+        clear_flush_done <= '1';
       end if;
       if ((bankreg(STATUS_REG)(STATUS_BIT_RUN) or
            bankreg(STATUS_REG)(STATUS_BIT_DONE) or
