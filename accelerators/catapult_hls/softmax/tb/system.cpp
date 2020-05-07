@@ -127,12 +127,29 @@ void system_t::dump_memory()
     ESP_REPORT_TIME(VON, sc_time_stamp(), "dump memory completed");
 }
 
+#if 0
+// Returns approximate value of e^x,
+// using sum of first n terms of Taylor Series
+static float exponential(int n, float x)
+{
+    float sum = 1.0f; // initialize sum of series
+    int i;
+    for (i = n - 1; i > 0; --i )
+        sum = 1 + x * sum / i;
+
+    return sum;
+}
+#endif
+
 void softmax_tb(FPDATA_IN (&input)[SIZE], double (&output)[SIZE])
 {
     double exp_in[SIZE];
     double sum_exp = 0;
     for (unsigned i = 0; i < SIZE; i++) {
         exp_in[i] = exp(input[i].to_double());
+#if 0
+        printf("exp = %f, taylor_exp = %f\n", (float)exp(input[i].to_double()), exponential(100, (float)input[i].to_double()));
+#endif
         sum_exp += exp_in[i];
     }
     for (unsigned i = 0; i < SIZE; i++) { output[i] = exp_in[i]/sum_exp; }
