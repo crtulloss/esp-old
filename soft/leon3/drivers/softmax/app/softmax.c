@@ -1,6 +1,8 @@
 #include "libesp.h"
 #include "cfg.h"
 
+#include <sys/time.h>
+
 static unsigned in_words_adj;
 static unsigned out_words_adj;
 static unsigned in_len;
@@ -20,9 +22,10 @@ float abs_float(const float input)
 float allowed_error = 0.001;
 
 
-// TODO when running on Linux use <math.h> exp. 
+// TODO when running on Linux use <math.h> exp.
 // Returns approximate value of e^x,
 // using sum of first n terms of Taylor Series
+#if 0
 static float exponential(int n, float x)
 {
     float sum = 1.0f; // initialize sum of series
@@ -32,7 +35,7 @@ static float exponential(int n, float x)
 
     return sum;
 }
-
+#endif
 
 static void softmax_sw(float *input, float *output)
 {
@@ -62,7 +65,7 @@ static int validate_buffer(token_t *out, token_t *gold)
 
     float in_local_gold[size];
     float out_local_gold[size];
-    for (i = 0; i < 1; i++)
+    for (i = 0; i < batch; i++)
     {
         for (j = 0; j < size; j++)
         {
@@ -71,7 +74,7 @@ static int validate_buffer(token_t *out, token_t *gold)
     }
     softmax_sw(in_local_gold, out_local_gold);
 
-    for (i = 0; i < 1; i++) {
+    for (i = 0; i < batch; i++) {
         for (j = 0; j < size; j++)
         {
             token_t gold_data_fxd = gold[i * out_words_adj + j];
@@ -79,13 +82,12 @@ static int validate_buffer(token_t *out, token_t *gold)
             float gold_data_flt = fixed32_to_float(gold_data_fxd, 2);
             float out_data_flt = fixed32_to_float(out_data_fxd, 2);
             float error_it = abs_float(gold_data_flt - out_data_flt);
-  
+
             if (error_it > allowed_error)
             {
                 errors++;
             }
-            printf("INFO: [%d] softmax(%f) = %f (expected %f, error %f %s)\n", i*size+j, in_local_gold[i*size+j], out_data_flt, gold_data_flt, error_it, (error_it > allowed_error)?": ERROR":"");
-            //printf("INFO: [%d] out %f / gold %f (error %f) %s\n", i*size+j, out_data_flt, gold_data_flt, error_it, (error_it > allowed_error)?": ERROR":"");
+            //printf("INFO: [%d] softmax(%f) = %f (expected %f, error %f %s)\n", i*size+j, in_local_gold[i*size+j], out_data_flt, gold_data_flt, error_it, (error_it > allowed_error)?": ERROR":"");
         }
     }
 
@@ -99,7 +101,7 @@ static void init_buffer(token_t *in, token_t * gold)
     int i;
     int j;
 
-    for (i = 0; i < 1; i++)
+    for (i = 0; i < batch; i++)
     {
         for (j = 0; j < size; j++)
         {
@@ -111,7 +113,7 @@ static void init_buffer(token_t *in, token_t * gold)
 
     float in_local_gold[size];
     float out_local_gold[size];
-    for (i = 0; i < 1; i++)
+    for (i = 0; i < batch; i++)
     {
         for (j = 0; j < size; j++)
         {
@@ -120,7 +122,7 @@ static void init_buffer(token_t *in, token_t * gold)
     }
     softmax_sw(in_local_gold, out_local_gold);
 
-    for (i = 0; i < 1; i++)
+    for (i = 0; i < batch; i++)
     {
         for (j = 0; j < size; j++)
         {
@@ -171,7 +173,10 @@ int main(int argc, char **argv)
     printf("  .batch = %d\n", batch);
     printf("\n  ** START **\n");
 
+    struct timeval  hw_begin, hw_end;
+    gettimeofday(&hw_begin, NULL);
     esp_run(cfg_000, NACC);
+    gettimeofday(&hw_end, NULL);
 
     printf("\n  ** DONE **\n");
 
@@ -186,6 +191,34 @@ int main(int argc, char **argv)
         printf("+ Test FAILED\n");
 
     printf("\n====== %s ======\n\n", cfg_000[0].devname);
+
+
+    // Profiling results
+    {
+        float in_local_gold[size];
+        float out_local_gold[size];
+        unsigned i, j;
+        for (i = 0; i < batch; i++)
+        {
+            for (j = 0; j < size; j++)
+            {
+                in_local_gold[i * size + j] = ((i * size + j) % 32) + 0.25;
+            }
+        }
+
+        struct timeval  sw_begin, sw_end;
+        gettimeofday(&sw_begin, NULL);
+        softmax_sw(in_local_gold, out_local_gold);
+        gettimeofday(&sw_end, NULL);
+
+        printf("Software total time = %f seconds\n",
+                (double) (sw_end.tv_usec - sw_begin.tv_usec) / 1000000 +
+                (double) (sw_end.tv_sec - sw_begin.tv_sec));
+
+        printf("Hardware total time = %f seconds\n",
+                (double) (hw_end.tv_usec - hw_begin.tv_usec) / 1000000 +
+                (double) (hw_end.tv_sec - hw_begin.tv_sec));
+    }
 
     return errors;
 }
