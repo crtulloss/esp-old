@@ -74,17 +74,12 @@ static int validate_buf(token_t *out, token_t *gold)
         {
             token_t gold_data_fxd = gold[i * out_words_adj + j];
             token_t out_data_fxd = out[i * out_words_adj + j];
-#ifdef __riscv
-            print_uart("  gold: "); print_uart_int64(gold_data_fxd); print_uart("\n");
-            print_uart("  out : "); print_uart_int64(out_data_fxd); print_uart("\n");
-#endif
             float gold_data_flt = fixed32_to_float(gold_data_fxd, 2);
             float out_data_flt = fixed32_to_float(out_data_fxd, 2);
             float error_it = abs_float(gold_data_flt - out_data_flt);
 
 			if (error_it > allowed_error)
             {
-                print_uart(" ---> ERROR\n");
 				errors++;
             }
         }
@@ -112,7 +107,7 @@ static void softmax_sw(float *input, float *output)
     float sum_exp = 0;
     unsigned i;
     for (i = 0; i < size; i++) {
-        exp_in[i] = exponential(10, input[i]);
+        exp_in[i] = exponential(100, input[i]);
         sum_exp += exp_in[i];
     }
     for (i = 0; i < size; i++) {
@@ -164,7 +159,6 @@ static void init_buf (token_t *in, token_t * gold)
             float data_flt = out_local_gold[i * size + j];
             token_t data_fxd = float_to_fixed32(data_flt, 2);
 			gold[i * out_words_adj + j] = 0xdeadbeef00000000 | (token_t) data_fxd;
-            //print_uart("  INIT: gold: "); print_uart_int64(gold[i * out_words_adj + j]); print_uart("\n");
         }
     }
 }
