@@ -10,7 +10,7 @@ set PLM_SIZE [expr ${PLM_WIDTH}*${PLM_HEIGHT}]
 set DMA_WIDTH ${PLM_WIDTH}
 
 #
-# Technology
+# Technology-dependend reports and project dirs.
 #
 
 if {$opt(asic) > 0} {
@@ -104,31 +104,23 @@ directive set -TRANSACTION_DONE_SIGNAL true
 #
 
 if {$opt(asic) > 0} {
-solution options set Flows/QuestaSIM/SCCOM_OPTS {-g -x /usr/bin/g++-5 -Wall -Wno-unused-label -Wno-unknown-pragmas -DDMA_WITDH=64 -DCLOCK_PERIOD=12500}
-#solution options set Flows/NCSIM/SCCOM_OPTS {-g -x c++ -Wall -Wno-unused-label -Wno-unknown-pragmas -D=64 -DCLOCK_PERIOD=12500}
+    solution options set Flows/QuestaSIM/SCCOM_OPTS {-g -x /usr/bin/g++-5 -Wall -Wno-unused-label -Wno-unknown-pragmas -DCLOCK_PERIOD=12500}
 } else {
-solution options set Flows/QuestaSIM/SCCOM_OPTS {-64 -g -x c++ -Wall -Wno-unused-label -Wno-unknown-pragmas -DDMA_WIDTH=64 -DCLOCK_PERIOD=12500}
-
-    #solution options set Flows/QuestaSIM/SCCOM_OPTS {-cpppath /usr/bin/g++-5 -g -x c++ -Wall -Wno-unused-label -Wno-unknown-pragmas -D=64 -DCLOCK_PERIOD=12500}
-#solution options set Flows/NCSIM/SCCOM_OPTS {-g -x c++ -Wall -Wno-unused-label -Wno-unknown-pragmas -D=64 -DCLOCK_PERIOD=12500}
+    solution options set Flows/QuestaSIM/SCCOM_OPTS {-64 -g -x c++ -Wall -Wno-unused-label -Wno-unknown-pragmas -DCLOCK_PERIOD=12500}
 }
 
 if {$opt(channels) == 0} {
-
-if {$opt(plm_shrd)} {
-    solution options set /Input/CompilerFlags {-DDMA_WIDTH=64 -DHLS_CATAPULT -D__MNTR_AC_SHRD__ -DCLOCK_PERIOD=12500}
+    if {$opt(plm_shrd)} {
+        solution options set /Input/CompilerFlags {-DHLS_CATAPULT -D__MNTR_AC_SHRD__ -DCLOCK_PERIOD=12500}
+    } else {
+        solution options set /Input/CompilerFlags {-DHLS_CATAPULT -DCLOCK_PERIOD=12500}
+    }
 } else {
-    solution options set /Input/CompilerFlags {-DDMA_WIDTH=64 -DHLS_CATAPULT -DCLOCK_PERIOD=12500}
-}
-
-} else {
-
-if {$opt(plm_shrd)} {
-    solution options set /Input/CompilerFlags {-DDMA_WIDTH=64 -DHLS_CATAPULT -D__MATCHLIB_CONNECTIONS__ -D__MNTR_AC_SHARED__ -DCLOCK_PERIOD=12500}
-} else {
-    solution options set /Input/CompilerFlags {-DDMA_WIDTH=64 -DHLS_CATAPULT -D__MATCHLIB_CONNECTIONS__ -DCLOCK_PERIOD=12500}
-}
-
+    if {$opt(plm_shrd)} {
+        solution options set /Input/CompilerFlags {-DHLS_CATAPULT -D__MATCHLIB_CONNECTIONS__ -D__MNTR_AC_SHARED__ -DCLOCK_PERIOD=12500}
+    } else {
+        solution options set /Input/CompilerFlags {-DHLS_CATAPULT -D__MATCHLIB_CONNECTIONS__ -DCLOCK_PERIOD=12500}
+    }
 }
 
 #
@@ -228,7 +220,6 @@ if {$opt(hsynth)} {
         #solution library add mgc_Xilinx-VIRTEX-u-2_beh -- -rtlsyntool Vivado -manufacturer Xilinx -family VIRTEX-u -speed -2 -part xcvu440-flga2892-2-e
         #solution library add mgc_Xilinx-VIRTEX-7-2_beh -- -rtlsyntool Vivado -manufacturer Xilinx -family VIRTEX-7 -speed -2 -part xc7v2000tflg1925-2
 
-
         solution library add Xilinx_RAMS
         solution library add Xilinx_ROMS
         solution library add Xilinx_FIFO
@@ -266,100 +257,97 @@ if {$opt(hsynth)} {
 
     # Arrays
 
-    # TODO Disable explicit ping-pong buffering. Does Catapult HLS infer
-    # ping-pong buffering on its own?
-#    directive set /${ACCELERATOR}/plm0_in:cns -MAP_TO_MODULE Xilinx_FIFO.FIFO
-#    directive set /${ACCELERATOR}/plm0_in:cns -PACKING_MODE sidebyside
-##    directive set /${ACCELERATOR}/plm0_in:cns -STAGE_REPLICATION 0
-#    directive set /${ACCELERATOR}/plm0_in -WORD_WIDTH ${PLM_SIZE}
-#    directive set /${ACCELERATOR}/plm0_in:cns -FIFO_DEPTH 32
+    directive set /${ACCELERATOR}/plm_in:cns -MAP_TO_MODULE Xilinx_RAMS.BLOCK_1R1W_RBW
+    # directive set /${ACCELERATOR}/plm_in:cns -STAGE_REPLICATION 2
+    directive set /${ACCELERATOR}/plm_in -WORD_WIDTH 32
+
+    directive set /${ACCELERATOR}/plm_out:cns -MAP_TO_MODULE Xilinx_RAMS.BLOCK_1R1W_RBW
+    # directive set /${ACCELERATOR}/plm_out:cns -STAGE_REPLICATION 2
+    directive set /${ACCELERATOR}/plm_out -WORD_WIDTH 32
+
+    directive set /${ACCELERATOR}/${ACCELERATOR}:load_input/load_input/LOAD_DATA_OUTER_LOOP:plm_local.data:rsc -MAP_TO_MODULE Xilinx_RAMS.BLOCK_1R1W_RBW
+    directive set /${ACCELERATOR}/${ACCELERATOR}:load_input/load_input/LOAD_DATA_OUTER_LOOP:plm_local.data -WORD_WIDTH 32
+    directive set /${ACCELERATOR}/${ACCELERATOR}:load_input/load_input/LOAD_DATA_OUTER_LOOP:plm_local.data:rsc -GEN_EXTERNAL_ENABLE true
+
+    directive set /${ACCELERATOR}/${ACCELERATOR}:compute_kernel/compute_kernel/COMPUTE_OUTER_LOOP:plm_local_in.data:rsc -MAP_TO_MODULE Xilinx_RAMS.BLOCK_1R1W_RBW
+    directive set /${ACCELERATOR}/${ACCELERATOR}:compute_kernel/compute_kernel/COMPUTE_OUTER_LOOP:plm_local_in.data -WORD_WIDTH 32
+    directive set /${ACCELERATOR}/${ACCELERATOR}:compute_kernel/compute_kernel/COMPUTE_OUTER_LOOP:plm_local_out.data:rsc -MAP_TO_MODULE Xilinx_RAMS.BLOCK_1R1W_RBW
+    directive set /${ACCELERATOR}/${ACCELERATOR}:compute_kernel/compute_kernel/COMPUTE_OUTER_LOOP:plm_local_out.data -WORD_WIDTH 32
+
+    directive set /${ACCELERATOR}/${ACCELERATOR}:store_output/store_output/STORE_DATA_OUTER_LOOP:plm_local.data:rsc -MAP_TO_MODULE Xilinx_RAMS.BLOCK_1R1W_RBW
+    directive set /${ACCELERATOR}/${ACCELERATOR}:store_output/store_output/STORE_DATA_OUTER_LOOP:plm_local.data -WORD_WIDTH 32
+    directive set /${ACCELERATOR}/${ACCELERATOR}:store_output/store_output/STORE_DATA_OUTER_LOOP:plm_local.data:rsc -GEN_EXTERNAL_ENABLE true
+
 #
-#    directive set /${ACCELERATOR}/plm1_in:cns -MAP_TO_MODULE Xilinx_FIFO.FIFO
-#    directive set /${ACCELERATOR}/plm1_in:cns -PACKING_MODE sidebyside
-##    directive set /${ACCELERATOR}/plm1_in:cns -STAGE_REPLICATION 0
-#    directive set /${ACCELERATOR}/plm1_in -WORD_WIDTH ${PLM_SIZE}
-#    directive set /${ACCELERATOR}/plm1_in:cns -FIFO_DEPTH 32
+#    directive set /${ACCELERATOR}/plm_in:cns -MAP_TO_MODULE ccs_ioport.ccs_pipe
+#    directive set /${ACCELERATOR}/plm_in:cns -PACKING_MODE sidebyside
+##    directive set /${ACCELERATOR}/plm_in:cns -STAGE_REPLICATION 0
+#    directive set /${ACCELERATOR}/plm_in -WORD_WIDTH ${PLM_SIZE}
+#    directive set /${ACCELERATOR}/plm_in:cns -FIFO_DEPTH 32
 #
-#    directive set /${ACCELERATOR}/plm0_out:cns -MAP_TO_MODULE Xilinx_FIFO.FIFO
-#    directive set /${ACCELERATOR}/plm0_out:cns -PACKING_MODE sidebyside
-##    directive set /${ACCELERATOR}/plm0_out:cns -STAGE_REPLICATION 0
-#    directive set /${ACCELERATOR}/plm0_out -WORD_WIDTH ${PLM_SIZE}
-#    directive set /${ACCELERATOR}/plm0_out:cns -FIFO_DEPTH 32
+#    directive set /${ACCELERATOR}/plm_out:cns -MAP_TO_MODULE ccs_ioport.ccs_pipe
+#    directive set /${ACCELERATOR}/plm_out:cns -PACKING_MODE sidebyside
+##    directive set /${ACCELERATOR}/plm_out:cns -STAGE_REPLICATION 0
+#    directive set /${ACCELERATOR}/plm_out -WORD_WIDTH ${PLM_SIZE}
+#    directive set /${ACCELERATOR}/plm_out:cns -FIFO_DEPTH 32
 #
-#    directive set /${ACCELERATOR}/plm1_out:cns -MAP_TO_MODULE Xilinx_FIFO.FIFO
-#    directive set /${ACCELERATOR}/plm1_out:cns -PACKING_MODE sidebyside
-##    directive set /${ACCELERATOR}/plm1_out:cns -STAGE_REPLICATION 0
-#    directive set /${ACCELERATOR}/plm1_out -WORD_WIDTH ${PLM_SIZE}
-#    directive set /${ACCELERATOR}/plm1_out:cns -FIFO_DEPTH 32
+#    if { $opt(plm_bram) } {
+#        # PLMs as BRAMs
+#        directive set /${ACCELERATOR}/${ACCELERATOR}:load_input/load_input/LOAD_DATA_OUTER_LOOP:plm_local.data:rsc -MAP_TO_MODULE Xilinx_RAMS.BLOCK_1R1W_RBW
+#        directive set /${ACCELERATOR}/${ACCELERATOR}:load_input/load_input/LOAD_DATA_OUTER_LOOP:plm_local.data:rsc -GEN_EXTERNAL_ENABLE true
+#
+#        directive set /${ACCELERATOR}/${ACCELERATOR}:compute_kernel/compute_kernel/COMPUTE_OUTER_LOOP:plm_local_in.data:rsc -MAP_TO_MODULE Xilinx_RAMS.BLOCK_DPRAM_RBW_DUAL
+#        directive set /${ACCELERATOR}/${ACCELERATOR}:compute_kernel/compute_kernel/COMPUTE_OUTER_LOOP:plm_local_in.data:rsc -INTERLEAVE 2
+#        directive set /${ACCELERATOR}/${ACCELERATOR}:compute_kernel/compute_kernel/COMPUTE_OUTER_LOOP:plm_local_in.data -WORD_WIDTH 1024
+#
+#        directive set /${ACCELERATOR}/${ACCELERATOR}:compute_kernel/compute_kernel/COMPUTE_OUTER_LOOP:plm_local_out.data:rsc -MAP_TO_MODULE Xilinx_RAMS.BLOCK_DPRAM_RBW_DUAL
+#        directive set /${ACCELERATOR}/${ACCELERATOR}:compute_kernel/compute_kernel/COMPUTE_OUTER_LOOP:plm_local_out.data:rsc -INTERLEAVE 2
+#        directive set /${ACCELERATOR}/${ACCELERATOR}:compute_kernel/compute_kernel/COMPUTE_OUTER_LOOP:plm_local_out.data -WORD_WIDTH 1024
+#
+#        directive set /${ACCELERATOR}/${ACCELERATOR}:store_output/store_output/STORE_DATA_OUTER_LOOP:plm_local.data:rsc -MAP_TO_MODULE Xilinx_RAMS.BLOCK_1R1W_RBW
+#        directive set /${ACCELERATOR}/${ACCELERATOR}:store_output/store_output/STORE_DATA_OUTER_LOOP:plm_local.data:rsc -GEN_EXTERNAL_ENABLE true
+#    } else {
+#        # PLMs as registers
+#        directive set /${ACCELERATOR}/${ACCELERATOR}:load_input/load_input/LOAD_DATA_OUTER_LOOP:plm_local.data:rsc -MAP_TO_MODULE {[Register]}
+#
+#        directive set /${ACCELERATOR}/${ACCELERATOR}:compute_kernel/compute_kernel/COMPUTE_OUTER_LOOP:plm_local_in.data:rsc -MAP_TO_MODULE {[Register]}
+#
+#        directive set /${ACCELERATOR}/${ACCELERATOR}:compute_kernel/compute_kernel/COMPUTE_OUTER_LOOP:plm_local_out.data:rsc -MAP_TO_MODULE {[Register]}
+#
+#        directive set /${ACCELERATOR}/${ACCELERATOR}:store_output/store_output/STORE_DATA_OUTER_LOOP:plm_local.data:rsc -MAP_TO_MODULE {[Register]}
+#    }
+#
+#    # Loops
+#
+#    directive set /${ACCELERATOR}/${ACCELERATOR}:load_input/load_input/LOAD_DATA_INNER_LOOP -PIPELINE_INIT_INTERVAL 1
+#    if { $opt(plm_bram) } {
+#        directive set /${ACCELERATOR}/${ACCELERATOR}:compute_kernel/compute_kernel/COMPUTE_OUTER_LOOP -PIPELINE_INIT_INTERVAL 2
+#    } else {
+#        directive set /${ACCELERATOR}/${ACCELERATOR}:compute_kernel/compute_kernel/COMPUTE_OUTER_LOOP -PIPELINE_INIT_INTERVAL 1
+#    }
+#    directive set /${ACCELERATOR}/${ACCELERATOR}:store_output/store_output/STORE_DATA_INNER_LOOP -PIPELINE_INIT_INTERVAL 1
 
-    directive set /${ACCELERATOR}/plm_in:cns -MAP_TO_MODULE ccs_ioport.ccs_pipe
-#    directive set /${ACCELERATOR}/plm_in:cns -MAP_TO_MODULE Xilinx_FIFO.FIFO
-    directive set /${ACCELERATOR}/plm_in:cns -PACKING_MODE sidebyside
-#    directive set /${ACCELERATOR}/plm_in:cns -STAGE_REPLICATION 0
-    directive set /${ACCELERATOR}/plm_in -WORD_WIDTH ${PLM_SIZE}
-    directive set /${ACCELERATOR}/plm_in:cns -FIFO_DEPTH 32
-
-    directive set /${ACCELERATOR}/plm_out:cns -MAP_TO_MODULE ccs_ioport.ccs_pipe
-#    directive set /${ACCELERATOR}/plm_out:cns -MAP_TO_MODULE Xilinx_FIFO.FIFO
-    directive set /${ACCELERATOR}/plm_out:cns -PACKING_MODE sidebyside
-#    directive set /${ACCELERATOR}/plm_out:cns -STAGE_REPLICATION 0
-    directive set /${ACCELERATOR}/plm_out -WORD_WIDTH ${PLM_SIZE}
-    directive set /${ACCELERATOR}/plm_out:cns -FIFO_DEPTH 32
-
-    if { $opt(plm_bram) } {
-        # PLMs as BRAMs
-        directive set /${ACCELERATOR}/${ACCELERATOR}:load_input/load_input/LOAD_DATA_OUTER_LOOP:plm_local.data:rsc -MAP_TO_MODULE Xilinx_RAMS.BLOCK_1R1W_RBW
-        directive set /${ACCELERATOR}/${ACCELERATOR}:load_input/load_input/LOAD_DATA_OUTER_LOOP:plm_local.data:rsc -GEN_EXTERNAL_ENABLE true
-
-        directive set /${ACCELERATOR}/${ACCELERATOR}:compute_kernel/compute_kernel/COMPUTE_OUTER_LOOP:plm_local_in.data:rsc -MAP_TO_MODULE Xilinx_RAMS.BLOCK_DPRAM_RBW_DUAL
-        directive set /${ACCELERATOR}/${ACCELERATOR}:compute_kernel/compute_kernel/COMPUTE_OUTER_LOOP:plm_local_in.data:rsc -INTERLEAVE 2
-        directive set /${ACCELERATOR}/${ACCELERATOR}:compute_kernel/compute_kernel/COMPUTE_OUTER_LOOP:plm_local_in.data -WORD_WIDTH 1024
-
-        directive set /${ACCELERATOR}/${ACCELERATOR}:compute_kernel/compute_kernel/COMPUTE_OUTER_LOOP:plm_local_out.data:rsc -MAP_TO_MODULE Xilinx_RAMS.BLOCK_DPRAM_RBW_DUAL
-        directive set /${ACCELERATOR}/${ACCELERATOR}:compute_kernel/compute_kernel/COMPUTE_OUTER_LOOP:plm_local_out.data:rsc -INTERLEAVE 2
-        directive set /${ACCELERATOR}/${ACCELERATOR}:compute_kernel/compute_kernel/COMPUTE_OUTER_LOOP:plm_local_out.data -WORD_WIDTH 1024
-
-        directive set /${ACCELERATOR}/${ACCELERATOR}:store_output/store_output/STORE_DATA_OUTER_LOOP:plm_local.data:rsc -MAP_TO_MODULE Xilinx_RAMS.BLOCK_1R1W_RBW
-        directive set /${ACCELERATOR}/${ACCELERATOR}:store_output/store_output/STORE_DATA_OUTER_LOOP:plm_local.data:rsc -GEN_EXTERNAL_ENABLE true
-    } else {
-        # PLMs as registers
-        directive set /${ACCELERATOR}/${ACCELERATOR}:load_input/load_input/LOAD_DATA_OUTER_LOOP:plm_local.data:rsc -MAP_TO_MODULE {[Register]}
-
-        directive set /${ACCELERATOR}/${ACCELERATOR}:compute_kernel/compute_kernel/COMPUTE_OUTER_LOOP:plm_local_in.data:rsc -MAP_TO_MODULE {[Register]}
-
-        directive set /${ACCELERATOR}/${ACCELERATOR}:compute_kernel/compute_kernel/COMPUTE_OUTER_LOOP:plm_local_out.data:rsc -MAP_TO_MODULE {[Register]}
-
-        directive set /${ACCELERATOR}/${ACCELERATOR}:store_output/store_output/STORE_DATA_OUTER_LOOP:plm_local.data:rsc -MAP_TO_MODULE {[Register]}
-    }
-
-    # Loops
-
-    # TODO Added as pragmas
-    directive set /${ACCELERATOR}/${ACCELERATOR}:load_input/load_input/LOAD_DATA_INNER_LOOP -PIPELINE_INIT_INTERVAL 1
-    if { $opt(plm_bram) } {
-        directive set /${ACCELERATOR}/${ACCELERATOR}:compute_kernel/compute_kernel/COMPUTE_OUTER_LOOP -PIPELINE_INIT_INTERVAL 2
-    } else {
-        directive set /${ACCELERATOR}/${ACCELERATOR}:compute_kernel/compute_kernel/COMPUTE_OUTER_LOOP -PIPELINE_INIT_INTERVAL 1
-    }
+    directive set /${ACCELERATOR}/${ACCELERATOR}:compute_kernel/compute_kernel/COMPUTE_OUTER_LOOP -PIPELINE_INIT_INTERVAL 1
     directive set /${ACCELERATOR}/${ACCELERATOR}:store_output/store_output/STORE_DATA_INNER_LOOP -PIPELINE_INIT_INTERVAL 1
+    directive set /${ACCELERATOR}/${ACCELERATOR}:load_input/load_input/LOAD_DATA_INNER_LOOP -PIPELINE_INIT_INTERVAL 1
 
-   #
-    #
-    directive set /softmax/config_accelerator/CONFIG_LOOP -ITERATIONS 1
+    # Loops performance tracing
 
-    directive set /softmax/softmax:load_input/load_input/WAIT_FOR_CONFIG_LOOP -ITERATIONS 1
-    directive set /softmax/softmax:load_input/load_input/LOAD_BATCH_LOOP -ITERATIONS 16
-    directive set /softmax/softmax:load_input/load_input/LOAD_DATA_OUTER_LOOP -ITERATIONS 1
-    directive set /softmax/softmax:load_input/load_input/LOAD_DATA_INNER_LOOP -ITERATIONS 128
+    directive set /${ACCELERATOR}/config_accelerator/CONFIG_LOOP -ITERATIONS 1
 
-    directive set /softmax/softmax:compute_kernel/compute_kernel/WAIT_FOR_CONFIG_LOOP -ITERATIONS 1
-    directive set /softmax/softmax:compute_kernel/compute_kernel/COMPUTE_BATCH_LOOP -ITERATIONS 16
-    directive set /softmax/softmax:compute_kernel/compute_kernel/COMPUTE_OUTER_LOOP -ITERATIONS 1
+    directive set /${ACCELERATOR}/${ACCELERATOR}:load_input/load_input/WAIT_FOR_CONFIG_LOOP -ITERATIONS 1
+    directive set /${ACCELERATOR}/${ACCELERATOR}:load_input/load_input/LOAD_BATCH_LOOP -ITERATIONS 16
+    directive set /${ACCELERATOR}/${ACCELERATOR}:load_input/load_input/LOAD_DATA_OUTER_LOOP -ITERATIONS 1
+    directive set /${ACCELERATOR}/${ACCELERATOR}:load_input/load_input/LOAD_DATA_INNER_LOOP -ITERATIONS 128
 
-    directive set /softmax/softmax:store_output/store_output/WAIT_FOR_CONFIG_LOOP -ITERATIONS 16
-    directive set /softmax/softmax:store_output/store_output/STORE_BATCH_LOOP -ITERATIONS 16
-    directive set /softmax/softmax:store_output/store_output/STORE_DATA_OUTER_LOOP -ITERATIONS 1
-    directive set /softmax/softmax:store_output/store_output/STORE_DATA_INNER_LOOP -ITERATIONS 128
+    directive set /${ACCELERATOR}/${ACCELERATOR}:compute_kernel/compute_kernel/WAIT_FOR_CONFIG_LOOP -ITERATIONS 1
+    directive set /${ACCELERATOR}/${ACCELERATOR}:compute_kernel/compute_kernel/COMPUTE_BATCH_LOOP -ITERATIONS 16
+    directive set /${ACCELERATOR}/${ACCELERATOR}:compute_kernel/compute_kernel/COMPUTE_OUTER_LOOP -ITERATIONS 1
+
+    directive set /${ACCELERATOR}/${ACCELERATOR}:store_output/store_output/WAIT_FOR_CONFIG_LOOP -ITERATIONS 16
+    directive set /${ACCELERATOR}/${ACCELERATOR}:store_output/store_output/STORE_BATCH_LOOP -ITERATIONS 16
+    directive set /${ACCELERATOR}/${ACCELERATOR}:store_output/store_output/STORE_DATA_OUTER_LOOP -ITERATIONS 1
+    directive set /${ACCELERATOR}/${ACCELERATOR}:store_output/store_output/STORE_DATA_INNER_LOOP -ITERATIONS 128
 
     # Area vs Latency Goals
 

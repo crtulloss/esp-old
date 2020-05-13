@@ -79,7 +79,9 @@ void softmax::load_input() {
     // ping-pong buffering on its own?
     //bool ping = true;
 
-    ESP_REPORT_TIME(VON, sc_time_stamp(), "Load config(): LOAD_DATA_OUTER_LOOP:size/PLM_SIZE = %f, LOAD_BATCH_LOOP:batch = %u, LOAD_DATA_INNER_LOOP = %u", ESP_TO_UINT32(size)/(float)PLM_SIZE, ESP_TO_UINT32(batch), PLM_SIZE);
+    ESP_REPORT_TIME(VON, sc_time_stamp(), "load_input(): LOAD_BATCH_LOOP: batch = %u", ESP_TO_UINT32(batch));
+    ESP_REPORT_TIME(VON, sc_time_stamp(), "load_input():    LOAD_DATA_OUTER_LOOP: ceil(size/PLM_SIZE) = %.2f", ESP_TO_UINT32(size)/(float)PLM_SIZE);
+    ESP_REPORT_TIME(VON, sc_time_stamp(), "load_input():       LOAD_DATA_INNER_LOOP = %u", PLM_SIZE);
 
     // Load-process body
 LOAD_BATCH_LOOP:
@@ -176,7 +178,8 @@ void softmax::compute_kernel() {
     // ping-pong buffering on its own?
     //bool ping = true;
 
-    ESP_REPORT_TIME(VON, sc_time_stamp(), "Compute config(): COMPUTE_OUTER_LOOP:size/PLM_SIZE = %f, COMPUTE_BATCH_LOOP:batch = %u", ESP_TO_UINT32(size)/(float)PLM_SIZE, ESP_TO_UINT32(batch));
+    ESP_REPORT_TIME(VON, sc_time_stamp(), "compute_kernel(): COMPUTE_BATCH_LOOP: batch = %u", ESP_TO_UINT32(batch));
+    ESP_REPORT_TIME(VON, sc_time_stamp(), "compute_kernel():    COMPUTE_OUTER_LOOP: ceil(size/PLM_SIZE) = %.2f", ESP_TO_UINT32(size)/(float)PLM_SIZE);
 
     // Compute-process body
 COMPUTE_BATCH_LOOP:
@@ -253,8 +256,9 @@ void softmax::store_output() {
     // ping-pong buffering on its own?
     //bool ping = true;
 
-    ESP_REPORT_TIME(VON, sc_time_stamp(), "Store config(): STORE_DATA_OUTER_LOOP:size/PLM_SIZE = %f, STORE_BATCH_LOOP:batch = %u, STORE_DATA_INNER_LOOP = %u", ESP_TO_UINT32(size)/(float)PLM_SIZE, ESP_TO_UINT32(batch), PLM_SIZE);
-
+    ESP_REPORT_TIME(VON, sc_time_stamp(), "store_output(): STORE_BATCH_LOOP: batch = %u", ESP_TO_UINT32(batch));
+    ESP_REPORT_TIME(VON, sc_time_stamp(), "store_output():    STORE_DATA_OUTER_LOOP: ceil(size/PLM_SIZE) = %.2f", ESP_TO_UINT32(size)/(float)PLM_SIZE);
+    ESP_REPORT_TIME(VON, sc_time_stamp(), "store_output():       STORE_DATA_INNER_LOOP = %u", PLM_SIZE);
 
     // Store-process body
 STORE_BATCH_LOOP:
