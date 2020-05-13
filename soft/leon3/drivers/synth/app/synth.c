@@ -1,5 +1,6 @@
 #include "libesp.h"
 #include "synth.h"
+#include "string.h"
 
 #define DEBUG 0
 #define dprintf if(DEBUG) printf
@@ -20,8 +21,7 @@ typedef struct accelerator_thread_info {
     int ndev; 
     int chain[NDEV_MAX];
     size_t memsz;
-    enum accelerator_coherence coherence_hint; 
-    enum alloc_effort alloc_choice; 
+    enum contig_alloc_policy alloc_choice; 
     struct timespec th_start;
     struct timespec th_end; 
     contig_handle_t mem;
@@ -235,7 +235,7 @@ static void config_threads(FILE* f, accelerator_thread_info_t **thread_info, esp
                 (*cfg)[t][d].desc.synth_desc.esp.coherence = ACC_COH_FULL;
             }
 
-            (*cfg)[t][d].desc.synth_desc.esp.footprint = footprint; 
+            (*cfg)[t][d].desc.synth_desc.esp.footprint = footprint * 4; 
             (*cfg)[t][d].desc.synth_desc.esp.in_place = (*cfg)[t][d].desc.synth_desc.in_place; 
             (*cfg)[t][d].desc.synth_desc.esp.reuse_factor = (*cfg)[t][d].desc.synth_desc.reuse_factor;
 
@@ -245,13 +245,12 @@ static void config_threads(FILE* f, accelerator_thread_info_t **thread_info, esp
     }
 }
 
-static void alloc_phase(accelerator_thread_info_t **thread_info, esp_thread_info_t ***cfg, int nthreads, soc_config_t soc_config, int alloc_mode, enum alloc_effort alloc, uint32_t **buffers){
+static void alloc_phase(accelerator_thread_info_t **thread_info, esp_thread_info_t ***cfg, int nthreads, soc_config_t soc_config, int alloc_mode, enum alloc_effort alloc, uint32_t **buffers, int phase){
     int largest_thread = 0;
     size_t largest_sz = 0;
     int* ddr_node_cost = malloc(sizeof(int)*soc_config.nmem);
     int preferred_node_cost;
     int preferred_node[NTHREADS_MAX];
-
     //determine preferred controller for each thread 
     for (int t = 0; t < nthreads; t++){
         if (thread_info[t]->memsz > largest_sz){
@@ -288,16 +287,20 @@ static void alloc_phase(accelerator_thread_info_t **thread_info, esp_thread_info
         } 
         else if (alloc_mode == FIXED){
             params.policy = alloc;
+            thread_info[i]->alloc_choice = alloc;
         }
         // AUTO
         else if (nthreads < 3){
             params.policy = CONTIG_ALLOC_BALANCED;
+            thread_info[i]->alloc_choice = CONTIG_ALLOC_BALANCED;
             params.pol.balanced.threshold = 4;
             params.pol.balanced.cluster_size = 1;
         } else if (i == largest_thread){
+            thread_info[i]->alloc_choice = CONTIG_ALLOC_PREFERRED;
             params.policy = CONTIG_ALLOC_PREFERRED;
             params.pol.first.ddr_node = preferred_node[largest_thread];
         } else {
+            thread_info[i]->alloc_choice = CONTIG_ALLOC_LEAST_LOADED;
             params.policy = CONTIG_ALLOC_LEAST_LOADED;
             params.pol.lloaded.threshold = 4;
         }
@@ -315,8 +318,12 @@ static void alloc_phase(accelerator_thread_info_t **thread_info, esp_thread_info
 
         total_alloc += thread_info[i]->memsz;
         buffers[i] = (uint32_t *) esp_alloc_policy(params, thread_info[i]->memsz, &(thread_info[i]->mem));  
-        if ( buffers[i] == NULL){
+        if (buffers[i] == NULL){
             die_errno("error: cannot allocate %zu contig bytes", thread_info[i]->memsz);   
+        }
+
+        for (int j = 0; j < thread_info[i]->memsz / sizeof(uint32_t); j++){
+            buffers[i][j] = phase * 100 + i;  
         }
 
         for (int acc = 0; acc < thread_info[i]->ndev; acc++){
@@ -352,6 +359,7 @@ static int validate_buffer(accelerator_thread_info_t *thread_info, esp_thread_in
         for (int j = offset; j < offset + out_size; j++){
             if (buf[j] != wr_data){
                 errors++;
+           //     printf("Mismatch at %d, Expected: %d, Got: %d\n", j, wr_data, buf[j]);
             }
         }
     }
@@ -367,25 +375,97 @@ static void free_phase(accelerator_thread_info_t **thread_info, esp_thread_info_
     free(cfg);
 }
 
+static void dump_results(FILE* out_file, accelerator_thread_info_t **thread_info, esp_thread_info_t ** cfg, soc_config_t *soc_config, int phase, int nthreads, char** argv, int test_no){
+    int t, d, m;
+    unsigned long long thread_ns;
+    unsigned long long phase_size = 0;
+    unsigned long long phase_ns = 0;
+    int phase_adj = test_no * 40 + phase;
+    for (t = 0; t < nthreads; t++){
+        thread_ns = 0;
+        for (d = 0; d < thread_info[t]->ndev; d++){
+            thread_ns += cfg[t][d].hw_ns;
+            phase_ns += cfg[t][d].hw_ns;
+            fprintf(out_file,"%d-%d-%d,", phase_adj, t, d);
+            fprintf(out_file,"%d,", thread_info[t]->chain[d]);
+            if (cfg[t][d].desc.synth_desc.esp.coherence == ACC_COH_FULL)
+                fprintf(out_file,"full,");
+            else if (cfg[t][d].desc.synth_desc.esp.coherence == ACC_COH_LLC)
+                fprintf(out_file,"llc,");
+            else if (cfg[t][d].desc.synth_desc.esp.coherence == ACC_COH_RECALL)
+                fprintf(out_file,"recall,");
+            else if (cfg[t][d].desc.synth_desc.esp.coherence == ACC_COH_NONE)
+                fprintf(out_file,"none,");
+            else if (cfg[t][d].desc.synth_desc.esp.coherence == ACC_COH_AUTO)
+                fprintf(out_file,"auto,");
+
+            if (thread_info[t]->alloc_choice == CONTIG_ALLOC_BALANCED)
+                fprintf(out_file,"balanced,");
+            else if (thread_info[t]->alloc_choice == CONTIG_ALLOC_PREFERRED)
+                fprintf(out_file,"preferred,");
+            else if (thread_info[t]->alloc_choice == CONTIG_ALLOC_LEAST_LOADED)
+                fprintf(out_file,"lloaded,");
+
+            fprintf(out_file, "%d,", cfg[t][d].desc.synth_desc.esp.footprint); 
+
+            fprintf(out_file,"%d,", cfg[t][d].desc.synth_desc.esp.ddr_node);
+            fprintf(out_file,"%llu\n", cfg[t][d].hw_ns);
+        }
+        fprintf(out_file, "%d-%d,", phase_adj, t);
+        fprintf(out_file, "%d,", thread_info[t]->ndev);
+        fprintf(out_file, "%s,", argv[2]);
+        if (thread_info[t]->alloc_choice == CONTIG_ALLOC_BALANCED)
+            fprintf(out_file,"balanced,");
+        else if (thread_info[t]->alloc_choice == CONTIG_ALLOC_PREFERRED)
+            fprintf(out_file,"preferred,");
+        else if (thread_info[t]->alloc_choice == CONTIG_ALLOC_LEAST_LOADED)
+            fprintf(out_file,"lloaded,");
+        
+        fprintf(out_file, "%d,", thread_info[t]->memsz);
+        phase_size += thread_info[t]->memsz; 
+        
+        fprintf(out_file,"%d,", cfg[t][0].desc.synth_desc.esp.ddr_node);
+        fprintf(out_file, "%llu\n", thread_ns);
+    }
+    fprintf(out_file, "%d,", phase_adj);
+    fprintf(out_file, "%d,", nthreads);
+    fprintf(out_file, "%s,", argv[2]);
+    fprintf(out_file, "%s,", argv[3]);
+    fprintf(out_file, "%llu,", phase_size);
+    fprintf(out_file, ",");
+    fprintf(out_file, "%llu\n", phase_ns);
+}
 
 int main (int argc, char** argv)
 {
     srand(time(NULL));
 
-    //command line args
-    FILE* f;
-    if (argc >= 2)
-        f = fopen(argv[1], "r");
-    else
-        f = fopen("synth_cfg.txt", "r");
-   
-    enum accelerator_coherence coherence; 
-    enum alloc_effort alloc; 
-    int coherence_mode, alloc_mode; 
-
     if (argc != 4){
         printf("Usage: ./synth.exe file coherence alloc\n");
     }
+    //command line args
+    FILE* f;
+    f = fopen(argv[1], "r");
+
+    int test_no = argv[1][9] - 48;
+
+    char out_name[20];
+    int len = strlen(strcpy(out_name, argv[1]));
+    out_name[len-3] = 'c';
+    out_name[len-2] = 's';
+    out_name[len-1] = 'v';
+
+    FILE* out_file;
+    if (access(out_name, F_OK) != -1){
+        out_file = fopen(out_name, "a");
+    } else {
+        out_file = fopen(out_name, "w");
+        fprintf(out_file,  "Device/Thread/Phase name, devID/nacc/nthreads, coherence, allocation, footprint, DDR#, time\n");
+    }
+    
+    enum accelerator_coherence coherence; 
+    enum alloc_effort alloc; 
+    int coherence_mode, alloc_mode;
     
     if (!strcmp(argv[2], "none")){
         coherence_mode = FIXED;
@@ -461,10 +541,10 @@ int main (int argc, char** argv)
     //loop over phases - config, alloc, spawn thread, validate, and free
     for (int p = 0; p < nphases; p++){
         config_threads(f, thread_info[p], &cfg, p, &nthreads, coherence_mode, coherence, &nacc); 
-        alloc_phase(thread_info[p], &cfg, nthreads, *soc_config, alloc_mode, alloc, buffers); 
+        alloc_phase(thread_info[p], &cfg, nthreads, *soc_config, alloc_mode, alloc, buffers, p); 
         
         gettime(&th_start);
-        
+
         esp_run_parallel(cfg, nthreads, nacc);
 
         gettime(&th_end); 
@@ -480,11 +560,12 @@ int main (int argc, char** argv)
         hw_ns_total += hw_ns; 
         hw_s = (float) hw_ns / 1000000000;
 
-        sleep(1); 
         printf("PHASE.%d %.4f s\n", p, hw_s);
-        sleep(1);
-        
+      
+        dump_results(out_file, thread_info[p], cfg, soc_config, p, nthreads, argv, test_no);
+
         free_phase(thread_info[p], cfg, nthreads);
+        free(nacc); 
     }
     hw_s_total = (float) hw_ns_total / 1000000000;
     printf("TOTAL %.4f s\n", hw_s_total); 
@@ -496,6 +577,6 @@ int main (int argc, char** argv)
     free(soc_config->ddr_hops);
     free(soc_config);
     fclose(f);
-    
+    fclose(out_file); 
     return 0; 
 }

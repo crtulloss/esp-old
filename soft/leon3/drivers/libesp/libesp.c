@@ -17,8 +17,6 @@ void *accelerator_thread( void *ptr )
 	struct timespec th_end;
 	int rc = 0;
 
-    printf("Starting accelerator %s\n", info->devname);
-	
     gettime(&th_start);
 	switch (info->type) {
 	// <<--esp-ioctl-->>
@@ -114,7 +112,6 @@ void *accelerator_thread_serial(void *ptr)
         if (!info->run)
             continue;
 
-        printf("Starting accelerator %s\n", info->devname);
         gettime(&th_start);
         switch (info->type) {
         // <<--esp-ioctl-->>

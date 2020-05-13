@@ -31,7 +31,8 @@ ld_st_ratios = [1, 2, 4]
 stride_lens = [32, 64, 128, 256, 512]
 coherence_choices = ["none", "llc", "recall", "full"]
 alloc_choices = ["preferred", "balanced", "lloaded"]
-phases = rand.randint(1, 40)
+phases = 40
+choices = [110, 90, 75, 60, 50, 40, 33, 28, 25, 23, 22, 22]
 
 f.write("5 5\n")
 f.write("3\n")
@@ -41,14 +42,17 @@ f.write("1 2 5 8 10 11 12 13 15 18 21 22\n")
 f.write(str(phases) + "\n")
 
 for p in range(phases):
-    devices = range(12)
-    threads = rand.randint(1, 12)
+    devices = list(range(12))
+    nthreads = rand.choices(range(1, 13), choices)
+    threads = nthreads[0]
     f.write(str(threads) + "\n")
     #512 MB / 4 bytes per word
     total_size_avail = math.pow(2, 29) / 4
     for t in range(threads):
         # NDEVICES
-        ndev = rand.randint(1, len(devices) - (threads - (t + 1))) 
+        avail = len(devices) - (threads - (t + 1))
+        devs = rand.choices(range(1, avail+1), choices[0:avail]) 
+        ndev = devs[0]
         f.write(str(ndev) + "\n")
         
         #INPUT SIZE
