@@ -258,11 +258,9 @@ if {$opt(hsynth)} {
     # Arrays
 
     directive set /${ACCELERATOR}/plm_in:cns -MAP_TO_MODULE Xilinx_RAMS.BLOCK_1R1W_RBW
-    # directive set /${ACCELERATOR}/plm_in:cns -STAGE_REPLICATION 2
     directive set /${ACCELERATOR}/plm_in -WORD_WIDTH 32
 
     directive set /${ACCELERATOR}/plm_out:cns -MAP_TO_MODULE Xilinx_RAMS.BLOCK_1R1W_RBW
-    # directive set /${ACCELERATOR}/plm_out:cns -STAGE_REPLICATION 2
     directive set /${ACCELERATOR}/plm_out -WORD_WIDTH 32
 
     directive set /${ACCELERATOR}/${ACCELERATOR}:load_input/load_input/LOAD_DATA_OUTER_LOOP:plm_local.data:rsc -MAP_TO_MODULE Xilinx_RAMS.BLOCK_1R1W_RBW
@@ -277,55 +275,6 @@ if {$opt(hsynth)} {
     directive set /${ACCELERATOR}/${ACCELERATOR}:store_output/store_output/STORE_DATA_OUTER_LOOP:plm_local.data:rsc -MAP_TO_MODULE Xilinx_RAMS.BLOCK_1R1W_RBW
     directive set /${ACCELERATOR}/${ACCELERATOR}:store_output/store_output/STORE_DATA_OUTER_LOOP:plm_local.data -WORD_WIDTH 32
     directive set /${ACCELERATOR}/${ACCELERATOR}:store_output/store_output/STORE_DATA_OUTER_LOOP:plm_local.data:rsc -GEN_EXTERNAL_ENABLE true
-
-#
-#    directive set /${ACCELERATOR}/plm_in:cns -MAP_TO_MODULE ccs_ioport.ccs_pipe
-#    directive set /${ACCELERATOR}/plm_in:cns -PACKING_MODE sidebyside
-##    directive set /${ACCELERATOR}/plm_in:cns -STAGE_REPLICATION 0
-#    directive set /${ACCELERATOR}/plm_in -WORD_WIDTH ${PLM_SIZE}
-#    directive set /${ACCELERATOR}/plm_in:cns -FIFO_DEPTH 32
-#
-#    directive set /${ACCELERATOR}/plm_out:cns -MAP_TO_MODULE ccs_ioport.ccs_pipe
-#    directive set /${ACCELERATOR}/plm_out:cns -PACKING_MODE sidebyside
-##    directive set /${ACCELERATOR}/plm_out:cns -STAGE_REPLICATION 0
-#    directive set /${ACCELERATOR}/plm_out -WORD_WIDTH ${PLM_SIZE}
-#    directive set /${ACCELERATOR}/plm_out:cns -FIFO_DEPTH 32
-#
-#    if { $opt(plm_bram) } {
-#        # PLMs as BRAMs
-#        directive set /${ACCELERATOR}/${ACCELERATOR}:load_input/load_input/LOAD_DATA_OUTER_LOOP:plm_local.data:rsc -MAP_TO_MODULE Xilinx_RAMS.BLOCK_1R1W_RBW
-#        directive set /${ACCELERATOR}/${ACCELERATOR}:load_input/load_input/LOAD_DATA_OUTER_LOOP:plm_local.data:rsc -GEN_EXTERNAL_ENABLE true
-#
-#        directive set /${ACCELERATOR}/${ACCELERATOR}:compute_kernel/compute_kernel/COMPUTE_OUTER_LOOP:plm_local_in.data:rsc -MAP_TO_MODULE Xilinx_RAMS.BLOCK_DPRAM_RBW_DUAL
-#        directive set /${ACCELERATOR}/${ACCELERATOR}:compute_kernel/compute_kernel/COMPUTE_OUTER_LOOP:plm_local_in.data:rsc -INTERLEAVE 2
-#        directive set /${ACCELERATOR}/${ACCELERATOR}:compute_kernel/compute_kernel/COMPUTE_OUTER_LOOP:plm_local_in.data -WORD_WIDTH 1024
-#
-#        directive set /${ACCELERATOR}/${ACCELERATOR}:compute_kernel/compute_kernel/COMPUTE_OUTER_LOOP:plm_local_out.data:rsc -MAP_TO_MODULE Xilinx_RAMS.BLOCK_DPRAM_RBW_DUAL
-#        directive set /${ACCELERATOR}/${ACCELERATOR}:compute_kernel/compute_kernel/COMPUTE_OUTER_LOOP:plm_local_out.data:rsc -INTERLEAVE 2
-#        directive set /${ACCELERATOR}/${ACCELERATOR}:compute_kernel/compute_kernel/COMPUTE_OUTER_LOOP:plm_local_out.data -WORD_WIDTH 1024
-#
-#        directive set /${ACCELERATOR}/${ACCELERATOR}:store_output/store_output/STORE_DATA_OUTER_LOOP:plm_local.data:rsc -MAP_TO_MODULE Xilinx_RAMS.BLOCK_1R1W_RBW
-#        directive set /${ACCELERATOR}/${ACCELERATOR}:store_output/store_output/STORE_DATA_OUTER_LOOP:plm_local.data:rsc -GEN_EXTERNAL_ENABLE true
-#    } else {
-#        # PLMs as registers
-#        directive set /${ACCELERATOR}/${ACCELERATOR}:load_input/load_input/LOAD_DATA_OUTER_LOOP:plm_local.data:rsc -MAP_TO_MODULE {[Register]}
-#
-#        directive set /${ACCELERATOR}/${ACCELERATOR}:compute_kernel/compute_kernel/COMPUTE_OUTER_LOOP:plm_local_in.data:rsc -MAP_TO_MODULE {[Register]}
-#
-#        directive set /${ACCELERATOR}/${ACCELERATOR}:compute_kernel/compute_kernel/COMPUTE_OUTER_LOOP:plm_local_out.data:rsc -MAP_TO_MODULE {[Register]}
-#
-#        directive set /${ACCELERATOR}/${ACCELERATOR}:store_output/store_output/STORE_DATA_OUTER_LOOP:plm_local.data:rsc -MAP_TO_MODULE {[Register]}
-#    }
-#
-#    # Loops
-#
-#    directive set /${ACCELERATOR}/${ACCELERATOR}:load_input/load_input/LOAD_DATA_INNER_LOOP -PIPELINE_INIT_INTERVAL 1
-#    if { $opt(plm_bram) } {
-#        directive set /${ACCELERATOR}/${ACCELERATOR}:compute_kernel/compute_kernel/COMPUTE_OUTER_LOOP -PIPELINE_INIT_INTERVAL 2
-#    } else {
-#        directive set /${ACCELERATOR}/${ACCELERATOR}:compute_kernel/compute_kernel/COMPUTE_OUTER_LOOP -PIPELINE_INIT_INTERVAL 1
-#    }
-#    directive set /${ACCELERATOR}/${ACCELERATOR}:store_output/store_output/STORE_DATA_INNER_LOOP -PIPELINE_INIT_INTERVAL 1
 
     directive set /${ACCELERATOR}/${ACCELERATOR}:compute_kernel/compute_kernel/COMPUTE_OUTER_LOOP -PIPELINE_INIT_INTERVAL 1
     directive set /${ACCELERATOR}/${ACCELERATOR}:store_output/store_output/STORE_DATA_INNER_LOOP -PIPELINE_INIT_INTERVAL 1
