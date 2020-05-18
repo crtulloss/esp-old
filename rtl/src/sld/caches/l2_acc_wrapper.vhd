@@ -61,7 +61,6 @@ entity l2_acc_wrapper is
     dma_snd_ready             : out std_ulogic;
     -- Accelerator done causes a flush
     flush                     : in  std_ulogic;
-    flush_done                : out std_ulogic;
 
     -- backend (cache - NoC)
     -- tile->NoC1
@@ -138,6 +137,7 @@ architecture rtl of l2_acc_wrapper is
   --signal asserts                : asserts_t;
   --signal bookmark               : bookmark_t;
   --signal custom_dbg             : custom_dbg_t;
+  signal flush_done             : std_ulogic;
   -- statistics
   signal stats_ready            : std_ulogic;
   signal stats_valid            : std_ulogic;
