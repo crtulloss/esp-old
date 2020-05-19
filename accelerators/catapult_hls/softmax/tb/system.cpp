@@ -193,7 +193,7 @@ int system_t::validate()
             double error_it = abs_double(data.to_double() - gold);
 
             if (error_it > allowed_error) {
-                //ESP_REPORT_TIME(VON, sc_time_stamp(), "[%lu]: %f (expected %f)", b * SIZE + s, data.to_double(), gold);
+                ESP_REPORT_TIME(VOFF, sc_time_stamp(), "[%lu]: %f (expected %f)", b * SIZE + s, data.to_double(), gold);
                 errors++;
             }
             ESP_REPORT_TIME(VOFF, sc_time_stamp(), "[%lu] softmax(%f) = %f (expected %f)%s", b * SIZE + s, data_in[s].to_double(), data.to_double(), gold, (error_it > allowed_error) ? ": ERROR" : "");
