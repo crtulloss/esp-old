@@ -365,11 +365,55 @@ ahbrom-distclean: ahbrom-clean
 
 
 ### Leon3 Linux ###
+sysroot/etc/init.d/S64contig : socmap.vhd 
+	$(QUIET_INFO) echo "Generating contig_alloc load script"; \
+	printf "cd /opt/drivers-esp\n" >> $@ ; \
+    printf "insmod contig_alloc.ko " >> $@; \
+    ddr_size=$$(sed -n 's/DDR_SIZE = \(0x[0-f]*\)/\1/p' ../../utils/socmap/socmap_gen.py)00000; \
+    nmem=$$(grep -c 'TILE_[0-8]*_[0-8]* = [0-9]* mem' .esp_config); \
+    size=$$(( $$ddr_size / $$nmem )); \
+    sizes=(); \
+    starts=(); \
+    nddr=0; \
+    for i in $$(sed -n '/ddr_haddr : mem_attribute_array/,/others/p' socmap.vhd | sed -n 's/[0-9]* => 16#\([0-9]*\)#,/\1/p'); \
+    do  \
+		str=0x$${i}00000; \
+        val=$$(printf "%d" "$$str"); \
+		sp_val=$$(printf "%d" "$(LEON3_STACK)"); \
+        if [ $$val -ge $$(($$sp_val + 0x10)) ]; then \
+            starts+=("$$str"); \
+            nddr=$$((nddr+1)); \
+            sizes+=("$$size"); \
+		elif [ $$(($$val + $$size)) -gt $$(($$sp_val + 0x10)) ]; then \
+            starts+=("$$((sp_val + 0x10))") ; \
+            nddr=$$((nddr+1)); \
+            sizes+="$$((($$val + $$size) - ($$sp_val + 0x10)))" ; \
+		fi; \
+    done; \
+	printf "nddr=%d " $$nddr >> $@; \
+    printf "start=" >> $@; \
+    for (( i=0; i < $$nddr; i++ )); \
+    do \
+        printf "0x%x" $${starts[$$i]} >> $@ ; \
+        if [[ $$i -ne $$(($$nddr - 1)) ]]; then \
+            printf "," >>  $@; \
+        fi; \
+    done; \
+    printf " size=" >> $@; \
+    for (( i=0; i < $$nddr; i++ )); \
+    do \
+	printf "0x%x" $${sizes[$$i]} >> $@ ; \
+        if [[ $$i -ne $$(($$nddr - 1)) ]]; then \
+			printf "," >>  $@; \
+        fi; \
+    done; \
+    printf " chunk_log=20" >> $@; \
+	chmod a+x $@
 
 sysroot:
 	$(QUIET_CP)cp -r $(ESP_ROOT)/soft/leon3/sysroot .
 
-sysroot.files: sysroot
+sysroot.files: sysroot sysroot/etc/init.d/S64contig
 	$(QUIET_MAKE)$(MAKE) -C ${LINUXSRC}/usr gen_init_cpio
 	$(QUIET_INFO)echo "Generating root file-system list..."
 	@sh ${LINUXSRC}/scripts/gen_initramfs_list.sh -u `id -u` -g `id -g` $< \
