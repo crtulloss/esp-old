@@ -54,7 +54,9 @@ int main(int argc, char **argv)
 
 	init_parameters();
 
-	buf = (token_t *) esp_alloc(size);
+    contig_handle_t contig_handle;
+    cfg_000[0].contig_handle = &contig_handle;
+	buf = (token_t *) esp_alloc(size, cfg_000[0].contig_handle);
 	gold = malloc(out_len * sizeof(int));
 
 	init_buffer(buf, gold);
@@ -73,7 +75,7 @@ int main(int argc, char **argv)
 	errors = validate_buffer(&buf[out_offset], gold);
 
 	free(gold);
-	esp_cleanup();
+	esp_cleanup(cfg_000[0].contig_handle);
 
         if (errors)
 		printf("  + TEST FAIL\n");

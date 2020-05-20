@@ -96,7 +96,7 @@ struct thread_args {
 void *esp_alloc_policy(struct contig_alloc_params params, size_t size, contig_handle_t *handle);
 void *esp_alloc(size_t size, contig_handle_t *handle);
 void esp_run_parallel(esp_thread_info_t* cfg[], unsigned nthreads, unsigned* nacc);
-void esp_run(esp_thread_info_t* cfg[], unsigned nacc);
+void esp_run(esp_thread_info_t cfg[], unsigned nacc);
 void esp_cleanup(contig_handle_t *handle);
 
 #endif /* __ESPLIB_H__ */

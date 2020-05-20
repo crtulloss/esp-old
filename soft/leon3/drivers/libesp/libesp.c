@@ -17,6 +17,8 @@ void *accelerator_thread( void *ptr )
 	struct timespec th_end;
 	int rc = 0;
 
+    printf("starting p2p device %s\n", info->devname);
+
     gettime(&th_start);
 	switch (info->type) {
 	// <<--esp-ioctl-->>
@@ -72,6 +74,8 @@ void *accelerator_thread_p2p(void *ptr)
     int i;
 
     pthread_t *threads = malloc(nacc * sizeof(pthread_t));
+
+    printf("starting p2p thread with %d acc\n", nacc);
 
     for (i = 0; i < nacc; i++){
         esp_thread_info_t *info = thread + i;
@@ -246,9 +250,15 @@ static void print_time_info(esp_thread_info_t *info[], unsigned long long hw_ns,
     }
 }
 
-void esp_run(esp_thread_info_t* cfg[], unsigned nacc)
+void esp_run(esp_thread_info_t cfg[], unsigned nacc)
 { 
-    esp_run_parallel(cfg, 1, &nacc);
+    int i;
+    esp_thread_info_t **cfg_ptrs = malloc(sizeof(esp_thread_info_t*) * nacc);
+    
+    for (i = 0; i < nacc; i++)
+        cfg_ptrs[i] = &cfg[i];
+    
+    esp_run_parallel(cfg_ptrs, 1, &nacc);
 }
 
 void esp_run_parallel(esp_thread_info_t* cfg[], unsigned nthreads, unsigned* nacc)
