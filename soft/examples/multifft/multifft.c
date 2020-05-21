@@ -114,21 +114,19 @@ int main(int argc, char **argv)
 
 	init_parameters();
 
-
-	buf = (token_t *) esp_alloc(NACC * size);
+    buf = (token_t *) esp_alloc(NACC * size);
 	gold = malloc(NACC * out_len * sizeof(float));
-
-	/* Non Coherent test */
 	init_buffer(buf, gold, false, false);
 
-	printf("\n====== Non coherent DMA ======\n\n");
+    printf("\n====== Non coherent DMA ======\n\n");
 	printf("  .len = %d\n", len);
 	printf("  .log_len = %d\n", log_len);
 
 	printf("  ** Press ENTER to START ** ");
 	scanf("%c", &key);
 
-	esp_run(cfg_nc, 1);
+	cfg_nc[0].hw_buf = buf;;
+    esp_run(cfg_nc, 1);
 
 	printf("\n  ** DONE **\n");
 
@@ -151,7 +149,8 @@ int main(int argc, char **argv)
 
 	printf("  ** Press ENTER to START ** ");
 	scanf("%c", &key);
-
+	
+    cfg_llc[0].hw_buf = buf;
 	esp_run(cfg_llc, 1);
 
 	printf("\n  ** DONE **\n");
@@ -176,6 +175,7 @@ int main(int argc, char **argv)
 	printf("  ** Press ENTER to START ** ");
 	scanf("%c", &key);
 
+    cfg_fc[0].hw_buf = buf;
 	esp_run(cfg_fc, 1);
 
 	printf("\n  ** DONE **\n");
@@ -208,7 +208,19 @@ int main(int argc, char **argv)
 	printf("  ** Press ENTER to START ** ");
 	scanf("%c", &key);
 
-	esp_run(cfg_parallel, NACC);
+    for (k = 0; k < NACC; k++)
+	    cfg_parallel[k].hw_buf = buf;
+
+    esp_thread_info_t *cfg_ptrs[NACC];
+    
+    unsigned int *nacc = malloc(sizeof(int)*NACC);
+    for (k = 0; k < NACC;k++){
+        cfg_ptrs[k] = malloc(sizeof(esp_thread_info_t));
+        cfg_ptrs[k] = &cfg_parallel[k];
+        nacc[k] = 1;
+    }
+
+    esp_run_parallel(cfg_ptrs, NACC, nacc);
 
 	printf("\n  ** DONE **\n");
 
@@ -233,6 +245,8 @@ int main(int argc, char **argv)
 	printf("  ** Press ENTER to START ** ");
 	scanf("%c", &key);
 
+    for (k = 0; k < NACC; k++)
+        cfg_p2p[k].hw_buf = buf;
 	esp_run(cfg_p2p, NACC);
 
 	printf("\n  ** DONE **\n");
@@ -247,7 +261,7 @@ int main(int argc, char **argv)
 	printf("\n============\n\n");
 
 	free(gold);
-	esp_cleanup();
+	esp_cleanup(buf);
 
 	return errors;
 }

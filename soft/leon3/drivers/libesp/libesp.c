@@ -5,6 +5,55 @@
 
 #include "libesp.h"
 
+buf2handle_node *head = NULL;
+
+void insert_buf(void *buf, contig_handle_t *handle, enum contig_alloc_policy policy){
+    buf2handle_node *new = malloc(sizeof(buf2handle_node));
+    new->buf = buf;
+    new->handle = handle;
+    new->policy = policy;
+
+    new->next = head;
+    head = new; 
+}
+
+contig_handle_t* lookup_handle(void *buf, enum contig_alloc_policy *policy){
+    buf2handle_node *cur = head;
+    while (cur != NULL){
+        if (cur->buf == buf){
+            if (policy != NULL)
+                *policy = cur->policy;
+            return cur->handle;
+        }
+        cur = cur->next;
+    }
+    die("buf not in active allocations\n");
+}
+
+void remove_buf(void *buf){
+    buf2handle_node *cur = head;
+    if (cur->buf == buf){
+        head = cur->next;
+        contig_free(*(cur->handle));
+        free(cur);
+        return;
+    }
+    
+    buf2handle_node *prev;
+    while (cur != NULL && cur->buf != buf){
+        prev = cur;
+        cur = cur->next;
+    }
+
+    if (cur == NULL)
+        die("buf not in active allocations\n");
+
+    prev->next = cur->next;
+    contig_free(*(cur->handle));
+    free(cur->handle);
+    free(cur);
+}
+
 unsigned DMA_WORD_PER_BEAT(unsigned _st)
 {
 	return (sizeof(void *) / _st);
@@ -164,21 +213,27 @@ void *accelerator_thread_serial(void *ptr)
     return NULL;
 }
 
-void *esp_alloc_policy(struct contig_alloc_params params, size_t size, contig_handle_t *handle){
+void *esp_alloc_policy(struct contig_alloc_params params, size_t size){
+    contig_handle_t *handle = malloc(sizeof(contig_handle_t));
     void* contig_ptr = contig_alloc_policy(params, size, handle); 
+    insert_buf(contig_ptr, handle, params.policy);
     return contig_ptr;
 }
 
-void *esp_alloc(size_t size, contig_handle_t *handle)
+void *esp_alloc(size_t size)
 {
+    contig_handle_t *handle = malloc(sizeof(contig_handle_t));
     void* contig_ptr = contig_alloc(size, handle);
+    insert_buf(contig_ptr, handle, CONTIG_ALLOC_PREFERRED);
     return contig_ptr;
 }
 
-static void esp_prepare(struct esp_access *esp, contig_handle_t *handle)
+static void esp_prepare(struct esp_access *esp, contig_handle_t *handle, enum contig_alloc_policy policy)
 {
 	esp->contig = contig_to_khandle(*handle);
-	esp->run = true;
+	esp->ddr_node = contig_to_most_allocated(*handle);
+    esp->alloc_policy = policy; 
+    esp->run = true;
 }
 
 static void esp_config(esp_thread_info_t* cfg[], unsigned nthreads, unsigned *nacc)
@@ -190,44 +245,45 @@ static void esp_config(esp_thread_info_t* cfg[], unsigned nthreads, unsigned *na
 		    esp_thread_info_t *info = cfg[i] + j;
             if (!info->run)
                 continue;
-
+            enum contig_alloc_policy policy;
+            contig_handle_t *handle = lookup_handle(info->hw_buf, &policy);
             switch (info->type) {
             // <<--esp-prepare-->>
             case fftaccelerator :
-                esp_prepare(&info->desc.fftaccelerator_desc.esp, info->contig_handle);
+                esp_prepare(&info->desc.fftaccelerator_desc.esp, handle, policy);
                 break;
             case adderaccelerator :
-                esp_prepare(&info->desc.adderaccelerator_desc.esp, info->contig_handle);
+                esp_prepare(&info->desc.adderaccelerator_desc.esp, handle, policy);
                 break;
             case fft :
-                esp_prepare(&info->desc.fft_desc.esp, info->contig_handle);
+                esp_prepare(&info->desc.fft_desc.esp, handle, policy);
                 break;
             case adder:
-                esp_prepare(&info->desc.adder_desc.esp, info->contig_handle);
+                esp_prepare(&info->desc.adder_desc.esp, handle, policy);
                 break;
             case CounterAccelerator:
-                esp_prepare(&info->desc.CounterAccelerator_desc.esp, info->contig_handle);
+                esp_prepare(&info->desc.CounterAccelerator_desc.esp, handle, policy);
                 break;
             case dummy:
-                esp_prepare(&info->desc.dummy_desc.esp, info->contig_handle);
+                esp_prepare(&info->desc.dummy_desc.esp, handle, policy);
                 break;
             case sort:
-                esp_prepare(&info->desc.sort_desc.esp, info->contig_handle);
+                esp_prepare(&info->desc.sort_desc.esp, handle, policy);
                 break;
             case spmv:
-                esp_prepare(&info->desc.spmv_desc.esp, info->contig_handle);
+                esp_prepare(&info->desc.spmv_desc.esp, handle, policy);
                 break;
             case synth:
-                esp_prepare(&info->desc.synth_desc.esp, info->contig_handle);
+                esp_prepare(&info->desc.synth_desc.esp, handle, policy);
                 break;
             case visionchip:
-                esp_prepare(&info->desc.visionchip_desc.esp, info->contig_handle);
+                esp_prepare(&info->desc.visionchip_desc.esp, handle, policy);
                 break;
             case vitbfly2:
-                esp_prepare(&info->desc.vitbfly2_desc.esp, info->contig_handle);
+                esp_prepare(&info->desc.vitbfly2_desc.esp, handle, policy);
                 break;
             default :
-                contig_free(*(info->contig_handle));
+                contig_free(*handle);
                 die("Error: accelerator type specified for accelerator %s not supported\n", info->devname);
                 break;
             }
@@ -267,8 +323,7 @@ void esp_run_parallel(esp_thread_info_t* cfg[], unsigned nthreads, unsigned* nac
 	struct timespec th_start;
 	struct timespec th_end;
 	pthread_t *thread = malloc(nthreads * sizeof(pthread_t));
-	int rc = 0;
-
+    int rc = 0;
     esp_config(cfg, nthreads, nacc);
     for (i = 0; i < nthreads; i++) {
         unsigned len = nacc[i];
@@ -276,9 +331,11 @@ void esp_run_parallel(esp_thread_info_t* cfg[], unsigned nthreads, unsigned* nac
             esp_thread_info_t *info = cfg[i] + j;
             const char *prefix = "/dev/";
             char path[70];
-
+            
+	        contig_handle_t *handle = lookup_handle(info->hw_buf, NULL);
+            
             if (strlen(info->devname) > 64) {
-                contig_free(*(info->contig_handle));
+                contig_free(*handle);
                 die("Error: device name %s exceeds maximum length of 64 characters\n", info->devname);
             }
 
@@ -286,7 +343,7 @@ void esp_run_parallel(esp_thread_info_t* cfg[], unsigned nthreads, unsigned* nac
             
             info->fd = open(path, O_RDWR, 0);
             if (info->fd < 0) {
-                contig_free(*(info->contig_handle));
+                contig_free(*handle);
                 die_errno("fopen failed\n");
             }
         }
@@ -323,7 +380,7 @@ void esp_run_parallel(esp_thread_info_t* cfg[], unsigned nthreads, unsigned* nac
 }
 
 
-void esp_cleanup(contig_handle_t *handle)
+void esp_cleanup(void *buf)
 {
-    contig_free(*handle);
+    remove_buf(buf);   
 }

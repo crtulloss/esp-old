@@ -88,9 +88,8 @@ int main(int argc, char **argv)
 
 	init_parameters();
 
-	contig_handle_t contig_handle;
-    cfg_000[0].contig_handle = &contig_handle;
-    buf = (token_t *) esp_alloc(size, cfg_000[0].contig_handle);
+    buf = (token_t *) esp_alloc(size);
+    cfg_000[0].hw_buf = buf;
 	gold = malloc(out_len * sizeof(float));
 
 	init_buffer(buf, gold);
@@ -108,7 +107,7 @@ int main(int argc, char **argv)
 	errors = validate_buffer(&buf[out_offset], gold);
 
 	free(gold);
-	esp_cleanup(cfg_000[0].contig_handle);
+	esp_cleanup(buf);
 
         if ((errors / len) > ERROR_COUNT_TH)
 		printf("  + TEST FAIL: exceeding error count threshold\n");
