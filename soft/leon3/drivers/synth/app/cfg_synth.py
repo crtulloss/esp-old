@@ -33,6 +33,7 @@ coherence_choices = ["none", "llc", "recall", "full"]
 alloc_choices = ["preferred", "balanced", "lloaded"]
 phases = 40
 choices = [110, 90, 75, 60, 50, 40, 33, 28, 25, 23, 22, 22]
+flow_choices = ["serial", "p2p"]
 
 f.write("5 5\n")
 f.write("3\n")
@@ -54,6 +55,16 @@ for p in range(phases):
         devs = rand.choices(range(1, avail+1), choices[0:avail]) 
         ndev = devs[0]
         f.write(str(ndev) + "\n")
+        
+        #DATA FLOW
+        if ndev == 1:
+            flow_choice = "serial"
+        else:
+            flow_choice = rand.choice(flow_choices)
+        f.write(flow_choice + "\n")
+
+        if flow_choice == "p2p":
+            p2p_burst_len = rand.choice(burst_lens)
         
         #INPUT SIZE
         size = rand.choice(sizes)
@@ -85,7 +96,9 @@ for p in range(phases):
             f.write(pattern + " ")
             
             #ACCESS FACTOR
-            if pattern == "IRREGULAR":
+            if flow_choice == "p2p":
+                access_factor = 0
+            elif pattern == "IRREGULAR":
                 upper = log_size - 10 
                 if upper > 4:
                     upper = 4
@@ -98,7 +111,11 @@ for p in range(phases):
             f.write(str(access_factor) + " ")
             
             #BURST LEN
-            burst_len = rand.choice(burst_lens)
+            if flow_choice == "p2p":
+                burst_len = p2p_burst_len
+            else: 
+                burst_len = rand.choice(burst_lens)
+            
             f.write(str(burst_len) + " ")
             
             #COMPUTE BOUND FACTOR
@@ -143,7 +160,10 @@ for p in range(phases):
             f.write(str(wr_data) + " ")
 
             #COHERENCE
-            coherence = rand.choice(coherence_choices)
+            if flow_choice == "p2p":
+                coherence = "none"
+            else:
+                coherence = rand.choice(coherence_choices) 
             f.write(coherence + "\n")
 
 f.close()
