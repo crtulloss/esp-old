@@ -366,7 +366,8 @@ ahbrom-distclean: ahbrom-clean
 
 ### Leon3 Linux ###
 sysroot/etc/init.d/S64contig : socmap.vhd 
-	$(QUIET_INFO) echo "Generating contig_alloc load script"; \
+	$(QUIET_INFO)echo "Generating contig_alloc load script" ; \
+	rm $@ ; \
 	printf "cd /opt/drivers-esp\n" >> $@ ; \
     printf "insmod contig_alloc.ko " >> $@; \
     ddr_size=$$(sed -n 's/DDR_SIZE = \(0x[0-f]*\)/\1/p' ../../utils/socmap/socmap_gen.py)00000; \
