@@ -15,7 +15,6 @@ entity softmax_rtl is
 
     port (
       conf_info_batch            : in  std_logic_vector(31 downto 0);
-      conf_info_size             : in  std_logic_vector(31 downto 0);
       clk                        : in  std_ulogic;
       acc_rst                    : in  std_ulogic;
       conf_done                  : in  std_ulogic;
@@ -49,8 +48,7 @@ begin  -- mapping
   impl_basic_fx32_dma64_gen: if hls_conf = HLSCFG_SOFTMAX_BASIC_FX32_DMA64 generate
     softmax_basic_fx32_dma64_i: softmax_basic_fx32_dma64
     port map(
-      conf_info(63 downto 32)    => conf_info_batch,
-      conf_info(31 downto 0)     => conf_info_size,
+      conf_info(31 downto 0)    => conf_info_batch,
       clk                        => clk,
       rst                        => acc_rst,
       conf_done                  => conf_done,

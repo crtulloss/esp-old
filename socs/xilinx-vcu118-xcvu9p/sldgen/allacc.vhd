@@ -9,7 +9,7 @@ package allacc is
 
   component softmax_basic_fx32_dma64
     port (
-      conf_info                  : in  std_logic_vector(63 downto 0);
+      conf_info                  : in  std_logic_vector(31 downto 0);
       clk                        : in  std_ulogic;
       rst                        : in  std_ulogic;
       conf_done                  : in  std_ulogic;
