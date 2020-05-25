@@ -1,7 +1,8 @@
-Catapult_*
+Catapult*
 *.txt
 *.vcd
 *.sh
 catapult.pinfo
 catapult_cache_*
 xilinx_cache
+*.vstf

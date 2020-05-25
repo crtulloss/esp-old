@@ -10,10 +10,17 @@
 
 #include <ac_channel.h>   // Algorithmic C channel class
 
+// NoC-/Accelerator-interface dimensions
 #define DMA_WIDTH 64
+#define DMA_SIZE SIZE_DWORD 
+
+typedef ac_int<DMA_WIDTH, false> dma_data_t;
+
+// PLM and data dimensions
+#define DATA_WIDTH 32
 #define PLM_SIZE 128
 
-#define BATCH_SIZE_MAX 16
+#define BATCH_MAX 16
 
 // Private Local Memory
 // Encapsulate the PLM array in a templated struct
@@ -34,7 +41,7 @@ void softmax_cxx(
         bool conf_done,
         ac_channel<dma_info_t> &dma_read_ctrl,
         ac_channel<dma_info_t> &dma_write_ctrl,
-        ac_channel<ac_int<DMA_WIDTH, false> > &dma_read_chnl,
-        ac_channel<ac_int<DMA_WIDTH, false> > &dma_write_chnl);
+        ac_channel<dma_data_t> &dma_read_chnl,
+        ac_channel<dma_data_t> &dma_write_chnl);
 
 #endif /* __SOFTMAX_CXX_HPP__ */

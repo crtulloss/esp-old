@@ -25,9 +25,9 @@ double abs_double(const double &input)
 }
 
 CCS_MAIN(int argv, char **argc) {
-    ESP_REPORT_INFO(VON, "-----------------");
-    ESP_REPORT_INFO(VON, "ESP - SoftMax C++");
-    ESP_REPORT_INFO(VON, "-----------------");
+    ESP_REPORT_INFO(VON, "--------------------------------");
+    ESP_REPORT_INFO(VON, "ESP - SoftMax [Catapult HLS C++]");
+    ESP_REPORT_INFO(VON, "--------------------------------");
 
     // Testbench return value (0 = PASS, non-0 = FAIL)
     int rc = 0;
@@ -44,8 +44,11 @@ CCS_MAIN(int argv, char **argc) {
     ESP_REPORT_INFO(VON, "Configuration:");
     ESP_REPORT_INFO(VON, "  - batch: %u", ESP_TO_UINT32(conf_info.batch));
     ESP_REPORT_INFO(VON, "Other info:");
-    ESP_REPORT_INFO(VON, "  - PLM size: %u", softmax_size);
     ESP_REPORT_INFO(VON, "  - DMA width: %u", DMA_WIDTH);
+    ESP_REPORT_INFO(VON, "  - DMA size [2 = 32b, 3 = 64b]: %u", DMA_SIZE);
+    ESP_REPORT_INFO(VON, "  - PLM size: %u", PLM_SIZE);
+    ESP_REPORT_INFO(VON, "  - DATA width: %u", DATA_WIDTH);
+    ESP_REPORT_INFO(VON, "  - SoftMax size: %u", softmax_size);
     ESP_REPORT_INFO(VON, "  - memory in (words): %u", softmax_size * ESP_TO_UINT32(conf_info.batch));
     ESP_REPORT_INFO(VON, "  - memory out (words): %u", softmax_size * ESP_TO_UINT32(conf_info.batch));
     ESP_REPORT_INFO(VON, "-----------------");
@@ -53,13 +56,13 @@ CCS_MAIN(int argv, char **argc) {
     // Communication channels
     ac_channel<dma_info_t> dma_read_ctrl;
     ac_channel<dma_info_t> dma_write_ctrl;
-    ac_channel<ac_int<DMA_WIDTH, false> > dma_read_chnl;
-    ac_channel<ac_int<DMA_WIDTH, false> > dma_write_chnl;
+    ac_channel<dma_data_t> dma_read_chnl;
+    ac_channel<dma_data_t> dma_write_chnl;
 
     // Testbench data
-    FPDATA_IN inputs[PLM_SIZE * BATCH_SIZE_MAX];
-    FPDATA_OUT outputs[PLM_SIZE * BATCH_SIZE_MAX];
-    double gold_outputs[PLM_SIZE * BATCH_SIZE_MAX];
+    FPDATA_IN inputs[PLM_SIZE * BATCH_MAX];
+    FPDATA_OUT outputs[PLM_SIZE * BATCH_MAX];
+    double gold_outputs[PLM_SIZE * BATCH_MAX];
 
     // Pass inputs to the accelerator
     for (unsigned i = 0; i < conf_info.batch * softmax_size; i++) {
@@ -68,10 +71,10 @@ CCS_MAIN(int argv, char **argc) {
 
         inputs[i] = data_fp;
 
-        ac_int<64, false> data_ac;
+        ac_int<DMA_WIDTH, false> data_ac;
         ac_int<32, false> DEADBEEF = 0xdeadbeef;
         data_ac.set_slc(32, DEADBEEF.template slc<32>(0));
-        data_ac.set_slc(0, inputs[i].template slc<32>(0));
+        data_ac.set_slc(0, inputs[i].template slc<DATA_WIDTH>(0));
 
         dma_read_chnl.write(data_ac);
     }
@@ -85,7 +88,7 @@ CCS_MAIN(int argv, char **argc) {
         // DMA_WIDTH = 64
         // discard bits in the range(63,32)
         // keep bits in the range(31,0)
-        ac_int<32, false> data = dma_write_chnl.read().template slc<32>(0);
+        ac_int<DATA_WIDTH, false> data = dma_write_chnl.read().template slc<DATA_WIDTH>(0);
         outputs[i].template set_slc<32>(0, data);
     }
 
