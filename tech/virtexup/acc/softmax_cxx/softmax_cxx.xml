@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sld>
+  <accelerator name="softmax_cxx" desc="Accelerator SOFTMAX [C++]" data_size="4" device_id="051" hls_tool="stratus_hls">
+    <param name="batch" desc="batch" />
+  </accelerator>
+</sld>
