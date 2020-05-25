@@ -365,8 +365,8 @@ ahbrom-distclean: ahbrom-clean
 
 
 ### Leon3 Linux ###
-sysroot/etc/init.d/S64contig : socmap.vhd 
-	$(QUIET_INFO)echo "Generating contig_alloc load script" ; \
+sysroot/etc/init.d/S64esp : socmap.vhd 
+	$(QUIET_INFO)echo "Generating esp load script" ; \
 	rm $@ ; \
 	printf "cd /opt/drivers-esp\n" >> $@ ; \
     printf "insmod contig_alloc.ko " >> $@; \
@@ -408,13 +408,27 @@ sysroot/etc/init.d/S64contig : socmap.vhd
 			printf "," >>  $@; \
         fi; \
     done; \
-    printf " chunk_log=20" >> $@; \
+    printf " chunk_log=20\n" >> $@; \
+	l2_sets=$$(sed -n 's/constant CFG_L2_SETS\s*: integer := \([0-9]*\);/\1/p' socmap.vhd); \
+	l2_ways=$$(sed -n 's/constant CFG_L2_WAYS\s*: integer := \([0-9]*\);/\1/p' socmap.vhd); \
+	llc_sets=$$(sed -n 's/constant CFG_LLC_SETS\s*: integer := \([0-9]*\);/\1/p' socmap.vhd); \
+	llc_ways=$$(sed -n 's/constant CFG_LLC_WAYS\s*: integer := \([0-9]*\);/\1/p' socmap.vhd); \
+	nmem=$$(sed -n 's/constant CFG_NMEM_TILE\s*: integer := \([0-9]*\);/\1/p' socmap.vhd); \
+	printf "insmod esp_cache.ko\n" >> $@; \
+    printf "insmod esp_private_cache.ko\n" >> $@; \
+	printf "insmod esp.ko " >> $@; \
+ 	printf "line_bytes=16 " >> $@; \
+	printf "l2_sets=%d " $${l2_sets} >> $@; \
+	printf "l2_ways=%d " $${l2_ways} >> $@; \
+	printf "llc_sets=%d " $${llc_sets} >> $@; \
+	printf "llc_ways=%d " $${llc_ways} >> $@; \
+	printf "llc_banks=%d\n" $${nmem}  >> $@; \
 	chmod a+x $@
 
 sysroot:
 	$(QUIET_CP)cp -r $(ESP_ROOT)/soft/leon3/sysroot .
 
-sysroot.files: sysroot sysroot/etc/init.d/S64contig
+sysroot.files: sysroot sysroot/etc/init.d/S64esp
 	$(QUIET_MAKE)$(MAKE) -C ${LINUXSRC}/usr gen_init_cpio
 	$(QUIET_INFO)echo "Generating root file-system list..."
 	@sh ${LINUXSRC}/scripts/gen_initramfs_list.sh -u `id -u` -g `id -g` $< \
