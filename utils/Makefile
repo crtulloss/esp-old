@@ -898,6 +898,7 @@ $(ESP_ROOT)/.cache/modelsim/xilinx_lib:
 	sed -i 's/; Show_Warning5 = 0/Show_Warning5 = 0/g' modelsim.ini; \
 	sed -i 's/; StdArithNoWarnings = 1/StdArithNoWarnings = 1/g' modelsim.ini; \
 	sed -i 's/; NumericStdNoWarnings = 1/NumericStdNoWarnings = 1/g' modelsim.ini; \
+	sed -i 's/VoptFlow = 1/VoptFlow = 0/g' modelsim.ini; \
 	sed -i '/suppress = [0-9]\+/d' modelsim.ini; \
 	sed -i '/\[msg_system\]/a suppress = 8780,8891,1491,12110\nwarning = 8891' modelsim.ini; \
 	cd ../;
@@ -952,9 +953,9 @@ xilinx_lib-clean:
 
 xilinx_lib-distclean: xilinx_lib-clean
 	$(QUIET_CLEAN)$(RM) \
-		$(ESP_ROOT)/.cache/modelsim/xilinx_lib \
-		$(ESP_ROOT)/.cache/xcelium/xilinx_lib \
-		$(ESP_ROOT)/.cache/incisive/xilinx_lib
+		$(ESP_ROOT)/.cache/modelsim/ 	\
+		$(ESP_ROOT)/.cache/xcelium/ 	\
+		$(ESP_ROOT)/.cache/incisive/
 
 .PHONY: xilinx_lib-clean xilinx_lib-distclean
 
@@ -1227,10 +1228,10 @@ ncsim-distclean: ncsim-clean
 modelsim/vsim.mk: modelsim/modelsim.ini check_all_srcs.old $(PKG_LIST)
 ifneq ($(findstring profpga, $(BOARD)),)
 	@cd modelsim; \
+	echo $(SPACES)"### Compile proFPGA source files ###"; \
 	if ! test -e profpga; then \
 		vlib -type directory profpga; \
-	fi
-	echo $(SPACES)"### Compile proFPGA source files ###"; \
+	fi; \
 	for vhd in $(VHDL_PROFPGA); do \
 		rtl=$(PROFPGA)/hdl/$$vhd; \
 		echo $(SPACES)"$(VCOM) -work profpga $$rtl"; \
@@ -1591,6 +1592,7 @@ vivado-clean:
 vivado-distclean: vivado-clean
 	$(QUIET_CLEAN)$(RM) \
 		vivado	\
+		mem_tile_floorplanning.xdc \
 		*.bit
 
 .PHONY: vivado-clean vivado-distclean vivado-syn vivado-prog-fpga vivado/$(DESIGN) vivado-setup vivado-gui
