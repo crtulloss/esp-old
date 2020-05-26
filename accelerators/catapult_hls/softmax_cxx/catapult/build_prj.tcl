@@ -234,12 +234,30 @@ if {$opt(hsynth)} {
     #
     #
 
+    #directive set -CLOCKS { \
+    #    clk { \
+    #        -CLOCK_PERIOD 6.4 \
+    #        -CLOCK_HIGH_TIME 3.2 \
+    #        -CLOCK_OFFSET 0.000000 \
+    #        -CLOCK_UNCERTAINTY 0.0 \
+    #    } \
+    #}
+
+
     directive set -CLOCKS { \
         clk { \
-            -CLOCK_PERIOD 12.5 \
-            -CLOCK_HIGH_TIME 6.25 \
+            -CLOCK_PERIOD 6.4 \
+            -CLOCK_EDGE rising \
+            -CLOCK_HIGH_TIME 3.2 \
             -CLOCK_OFFSET 0.000000 \
             -CLOCK_UNCERTAINTY 0.0 \
+            -RESET_KIND sync \
+            -RESET_SYNC_NAME rst \
+            -RESET_SYNC_ACTIVE low \
+            -RESET_ASYNC_NAME arst_n \
+            -RESET_ASYNC_ACTIVE low \
+            -ENABLE_NAME {} \
+            -ENABLE_ACTIVE high \
         } \
     }
 
@@ -283,45 +301,47 @@ if {$opt(hsynth)} {
 
     # Arrays
 
+
     # Loops
-    directive set /$ACCELERATOR/$ACCELERATOR:core/core/main -PIPELINE_INIT_INTERVAL 1
-    directive set /$ACCELERATOR/$ACCELERATOR:core/core/main -PIPELINE_STALL_MODE flush
+    ###directive set /$ACCELERATOR/$ACCELERATOR:core/core/main -PIPELINE_INIT_INTERVAL 1
+    ###directive set /$ACCELERATOR/$ACCELERATOR:core/core/main -PIPELINE_STALL_MODE flush
 
-    #directive set /$ACCELERATOR/load/core/LOAD_OUTER_LOOP -PIPELINE_INIT_INTERVAL 1
-    #directive set /$ACCELERATOR/load/core/LOAD_OUTER_LOOP -PIPELINE_STALL_MODE flush
+    ###directive set /$ACCELERATOR/load/core/LOAD_INNER_LOOP -PIPELINE_INIT_INTERVAL 1
+    ###directive set /$ACCELERATOR/load/core/LOAD_INNER_LOOP -PIPELINE_STALL_MODE flush
 
-    #directive set /$ACCELERATOR/compute/core/COMPUTE_LOOP -PIPELINE_INIT_INTERVAL 1
-    #directive set /$ACCELERATOR/compute/core/COMPUTE_LOOP -PIPELINE_STALL_MODE flush
+    ###directive set /$ACCELERATOR/compute/core/CALC_EXP_LOOP -PIPELINE_INIT_INTERVAL 1
+    ###directive set /$ACCELERATOR/compute/core/CALC_EXP_LOOP -PIPELINE_STALL_MODE flush
 
+    ###directive set /$ACCELERATOR/compute/core/SUM_EXP_LOOP -PIPELINE_INIT_INTERVAL 1
+    ###directive set /$ACCELERATOR/compute/core/SUM_EXP_LOOP -PIPELINE_STALL_MODE flush
 
-    #directive set /$ACCELERATOR/store/core/STORE_OUTER_LOOP -PIPELINE_INIT_INTERVAL 1
-    #directive set /$ACCELERATOR/store/core/STORE_OUTER_LOOP -PIPELINE_STALL_MODE flush
+    ###directive set /$ACCELERATOR/compute/core/CALC_SOFTMAX_LOOP -PIPELINE_INIT_INTERVAL 1
+    ###directive set /$ACCELERATOR/compute/core/CALC_SOFTMAX_LOOP -PIPELINE_STALL_MODE flush
 
+    ###directive set /$ACCELERATOR/store/core/STORE_INNER_LOOP -PIPELINE_INIT_INTERVAL 1
+    ###directive set /$ACCELERATOR/store/core/STORE_INNER_LOOP -PIPELINE_STALL_MODE flush
 
+    directive set /$ACCELERATOR/core/CONFIG_LOOP -ITERATIONS 1
 
-    directive set /$ACCELERATOR/load/core/LOAD_INNER_LOOP -PIPELINE_INIT_INTERVAL 1
-    directive set /$ACCELERATOR/load/core/LOAD_INNER_LOOP -PIPELINE_STALL_MODE flush
+    directive set /$ACCELERATOR/core/LOAD_OUTER_LOOP -PIPELINE_INIT_INTERVAL 1
+    directive set /$ACCELERATOR/core/LOAD_OUTER_LOOP -PIPELINE_STALL_MODE flush
 
-    directive set /$ACCELERATOR/compute/core/CALC_EXP_LOOP -PIPELINE_INIT_INTERVAL 1
-    directive set /$ACCELERATOR/compute/core/CALC_EXP_LOOP -PIPELINE_STALL_MODE flush
+    directive set /$ACCELERATOR/core/COMPUTE_LOOP -PIPELINE_INIT_INTERVAL 1
+    directive set /$ACCELERATOR/core/COMPUTE_LOOP -PIPELINE_STALL_MODE flush
 
-    directive set /$ACCELERATOR/compute/core/SUM_EXP_LOOP -PIPELINE_INIT_INTERVAL 1
-    directive set /$ACCELERATOR/compute/core/SUM_EXP_LOOP -PIPELINE_STALL_MODE flush
-
-    directive set /$ACCELERATOR/compute/core/CALC_SOFTMAX_LOOP -PIPELINE_INIT_INTERVAL 1
-    directive set /$ACCELERATOR/compute/core/CALC_SOFTMAX_LOOP -PIPELINE_STALL_MODE flush
-
-    directive set /$ACCELERATOR/store/core/STORE_INNER_LOOP -PIPELINE_INIT_INTERVAL 1
-    directive set /$ACCELERATOR/store/core/STORE_INNER_LOOP -PIPELINE_STALL_MODE flush
+    directive set /$ACCELERATOR/core/STORE_OUTER_LOOP -PIPELINE_INIT_INTERVAL 1
+    directive set /$ACCELERATOR/core/STORE_OUTER_LOOP -PIPELINE_STALL_MODE flush
 
     # Loops performance tracing
 
 
     # Area vs Latency Goals
+    ###directive set /$ACCELERATOR/$ACCELERATOR:core/core -DESIGN_GOAL Latency
+    ###directive set /$ACCELERATOR/load/core -DESIGN_GOAL Latency
+    ###directive set /$ACCELERATOR/compute/core -DESIGN_GOAL Latency
+    ###directive set /$ACCELERATOR/store/core -DESIGN_GOAL Latency
+
     directive set /$ACCELERATOR/$ACCELERATOR:core/core -DESIGN_GOAL Latency
-    directive set /$ACCELERATOR/load/core -DESIGN_GOAL Latency
-    directive set /$ACCELERATOR/compute/core -DESIGN_GOAL Latency
-    directive set /$ACCELERATOR/store/core -DESIGN_GOAL Latency
 
     if {$opt(debug) != 1} {
         go architect

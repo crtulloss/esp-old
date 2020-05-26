@@ -74,7 +74,7 @@ begin  -- mapping
       dma_write_chnl_rsc_vld     => dma_write_chnl_valid,
       dma_write_chnl_rsc_rdy     => dma_write_chnl_ready,
 
-      store_acc_done_sync_vld    => acc_done
+      acc_done_sync_vld          => acc_done
     );
   end generate impl_basic_fx32_dma64_gen;
 
