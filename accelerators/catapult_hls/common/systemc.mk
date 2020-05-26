@@ -19,6 +19,7 @@ endif
 INCDIR ?=
 INCDIR += -I../src
 INCDIR += -I../tb
+INCDIR += -I../common
 INCDIR += -I$(SYSTEMC)/include
 #INCDIR += -I$(CATAPULT_PATH)/shared/include
 INCDIR += -I$(MGC_HOME)/shared/include
@@ -54,6 +55,7 @@ TARGET = $(ACCELERATOR)
 VPATH ?=
 VPATH += ../src
 VPATH += ../tb
+VPATH += ../common
 #VPATH += $(ESP_ROOT)/accelerators/catapult_hls/common/syn-templates/core/systems
 
 

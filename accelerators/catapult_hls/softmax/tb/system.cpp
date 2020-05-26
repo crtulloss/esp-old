@@ -22,13 +22,11 @@ void system_t::config_proc()
 
     {
         conf_info_t config;
-        config.size = SIZE;
         config.batch = BATCH;
 
         wait(); conf_info.write(config);
         conf_done.write(true);
 
-        ESP_REPORT_TIME(VON, sc_time_stamp(), "config.size = %d", config.size);
         ESP_REPORT_TIME(VON, sc_time_stamp(), "config.batch = %d", config.batch);
     }
 

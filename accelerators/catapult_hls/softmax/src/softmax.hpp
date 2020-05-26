@@ -12,17 +12,14 @@
 #include "utils/esp_handshake.hpp"
 #include "core/systems/esp_dma_info.hpp"
 
-#ifdef __MNTR_AC_SHARED__
-#include <ac_shared.h>
 #include <ac_sync.h>
-#else
+
 #include <ac_channel.h>
 template <class T, unsigned S>
 struct plm_t {
 public:
    T data[S];
 };
-#endif
 
 #define PLM_SIZE (128)
 
@@ -151,21 +148,12 @@ public:
 
     // Configure the accelerator
     void config_accelerator();
-//#ifdef __MNTR_AC_SHARED__
-//    // Load the input data
-//    void load_input(ac_shared<FPDATA_IN[PLM_SIZE]> &data_in);
-//    // Computation
-//    void compute_kernel(ac_shared<FPDATA_IN[PLM_SIZE]> &data_in, ac_shared<FPDATA_OUT[PLM_SIZE]> &data_out);
-//    // Store the output data
-//    void store_output(ac_shared<FPDATA_OUT[PLM_SIZE]> &data_out);
-//#else
     // Load the input data
     void load_input();
     // Computation
     void compute_kernel();
     // Store the output data
     void store_output();
-//#endif
 
     //
     // Reset functions
@@ -207,14 +195,6 @@ public:
     // Private local memories
     //
 
-#ifdef __MNTR_AC_SHARED__
-    //static
-    static ac_shared<FPDATA_IN[PLM_SIZE] > plm_in;
-    static ac_sync load_to_compute;
-    //static
-    static ac_shared<FPDATA_OUT[PLM_SIZE] > plm_out;
-    static ac_sync compute_to_store;
-#else
     // TODO Disable explicit ping-pong buffering. Does Catapult HLS infer
     // ping-pong buffering on its own?
     //ac_channel<plm_t<FPDATA_IN, PLM_SIZE> > plm0_in;
@@ -224,7 +204,6 @@ public:
 
     ac_channel<plm_t<FPDATA_IN, PLM_SIZE> > plm_in;
     ac_channel<plm_t<FPDATA_OUT, PLM_SIZE> > plm_out;
-#endif
 };
 
 #endif /* __SOFTMAX_HPP__ */

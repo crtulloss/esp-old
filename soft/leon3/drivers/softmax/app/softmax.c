@@ -12,6 +12,7 @@ static unsigned out_size;
 static unsigned out_offset;
 static unsigned size_;
 
+const int32_t size = 128;
 
 float abs_float(const float input)
 {
@@ -169,7 +170,6 @@ int main(int argc, char **argv)
 
     printf("\n====== %s ======\n\n", cfg_000[0].devname);
     /* <<--print-params-->> */
-    printf("  .size = %d\n", size);
     printf("  .batch = %d\n", batch);
     printf("\n  ** START **\n");
 

@@ -30,6 +30,7 @@ if {$opt(asic) > 0} {
 solution new -state initial
 solution options defaults
 
+# Without the following option the synthesis fails.
 solution options set Message/ErrorOverride CIN-188 -remove
 
 solution options set Flows/ModelSim/VLOG_OPTS {-suppress 12110}
@@ -38,8 +39,8 @@ solution options set Flows/DesignCompiler/OutNetlistFormat verilog
 solution options set /Input/CppStandard c++11
 #solution options set /Input/TargetPlatform x86_64
 
-solution options set Cache/UserCacheHome "catapult_105c_cache"
-#solution options set Cache/UserCacheHome "catapul_105beta_cache"
+set CATAPULT_VERSION  [string map { / - } [string map { . - } [application get /SYSTEM/RELEASE_VERSION]]]
+solution options set Cache/UserCacheHome "catapult_cache_$CATAPULT_VERSION"
 solution options set Cache/DefaultCacheHomeEnabled false
 
 flow package require /SCVerify

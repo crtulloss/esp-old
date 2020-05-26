@@ -291,7 +291,7 @@ if {$opt(hsynth)} {
     directive set /${ACCELERATOR}/${ACCELERATOR}:compute_kernel/compute_kernel/WAIT_FOR_CONFIG_LOOP -ITERATIONS 1
     directive set /${ACCELERATOR}/${ACCELERATOR}:compute_kernel/compute_kernel/COMPUTE_BATCH_LOOP -ITERATIONS 16
 
-    directive set /${ACCELERATOR}/${ACCELERATOR}:store_output/store_output/WAIT_FOR_CONFIG_LOOP -ITERATIONS 16
+    directive set /${ACCELERATOR}/${ACCELERATOR}:store_output/store_output/WAIT_FOR_CONFIG_LOOP -ITERATIONS 1
     directive set /${ACCELERATOR}/${ACCELERATOR}:store_output/store_output/STORE_BATCH_LOOP -ITERATIONS 16
     directive set /${ACCELERATOR}/${ACCELERATOR}:store_output/store_output/STORE_DATA_INNER_LOOP -ITERATIONS 128
 

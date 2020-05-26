@@ -6,11 +6,9 @@
 typedef int64_t token_t;
 
 /* <<--params-def-->> */
-#define SIZE 128
 #define BATCH 1
 
 /* <<--params-->> */
-const int32_t size = SIZE;
 const int32_t batch = BATCH;
 
 #define NACC 1
@@ -21,7 +19,6 @@ esp_thread_info_t cfg_000[] = {
 		.devname = "softmax.0",
 		.type = softmax,
 		/* <<--descriptor-->> */
-		.desc.softmax_desc.size = SIZE,
 		.desc.softmax_desc.batch = BATCH,
 		.desc.softmax_desc.src_offset = 0,
 		.desc.softmax_desc.dst_offset = 0,

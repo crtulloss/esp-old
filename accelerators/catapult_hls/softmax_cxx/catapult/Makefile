@@ -6,14 +6,15 @@ syn:
 .PHONY: syn
 
 clean:
-	rm -rf Catapult_*
-	rm -rf catapult_*_cache
+	rm -rf Catapult*
+	rm -rf catapult_cache*
 	rm -f catapult.pinfo
 	rm -f log_dir_data.txt
 	rm -f log_dir_names.txt
 	rm -f trace.vcd
 	rm -f transcript
 	rm -f catapult.log
+	rm -f vsim_stacktrace.vstf
 .PHONY: clean
 
 #include ../../common/common.mk

@@ -13,16 +13,15 @@ class conf_info_t {
 public:
 
     // Constructor
-    conf_info_t() : size(0), batch(0){}
+    conf_info_t() : batch(0){}
 
     // Equal operator
     inline bool operator==(const conf_info_t &rhs) const {
-        return (size == rhs.size && batch == rhs.batch);
+        return (batch == rhs.batch);
     }
 
     // Assignment operator
     inline conf_info_t& operator=(const conf_info_t& other) {
-        size = other.size;
         batch = other.batch;
         return *this;
     }
@@ -32,12 +31,11 @@ public:
 
     // Redirection operator
     friend ostream& operator << (ostream& os, conf_info_t const &conf_info) {
-        os << "{ size = " << conf_info.size << ", batch = " << conf_info.batch << "}";
+        os << "{ batch = " << conf_info.batch << "}";
         return os;
     }
 
     // Parameters
-    uint32_t size;
     uint32_t batch;
 };
 
