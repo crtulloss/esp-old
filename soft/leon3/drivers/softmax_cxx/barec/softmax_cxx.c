@@ -6,14 +6,18 @@
 #include <stdlib.h>
 #endif
 
+#include <fixed_point.h>
+#include <math.h>
+
 #include <esp_accelerator.h>
 #include <esp_probe.h>
 
-typedef int32_t token_t;
+//typedef int32_t token_t;
+typedef int64_t token_t;
 
 static unsigned DMA_WORD_PER_BEAT(unsigned _st)
 {
-        return (sizeof(void *) / _st);
+    return (sizeof(void *) / _st);
 }
 
 
@@ -43,6 +47,14 @@ static unsigned mem_size;
 /* <<--regs-->> */
 #define SOFTMAX_CXX_BATCH_REG 0x40
 
+#define size 128
+
+float abs_float(const float input)
+{
+    return input < 0 ? -input : input;
+}
+
+float allowed_error = 0.001;
 
 static int validate_buf(token_t *out, token_t *gold)
 {
@@ -50,12 +62,58 @@ static int validate_buf(token_t *out, token_t *gold)
 	int j;
 	unsigned errors = 0;
 
-	for (i = 0; i < 128; i++)
-		for (j = 0; j < 128 * batch; j++)
-			if (gold[i * out_words_adj + j] != out[i * out_words_adj + j])
+#ifndef __riscv
+	printf("  gold output data @%p\n", gold);
+	printf("       output data @%p\n", out);
+#else
+	print_uart("  gold output data @"); print_uart_addr((uintptr_t) gold); print_uart("\n");
+	print_uart("       output data @"); print_uart_addr((uintptr_t) out); print_uart("\n");
+#endif
+
+	for (i = 0; i < 1; i++) {
+		for (j = 0; j < size; j++)
+        {
+            token_t gold_data_fxd = gold[i * out_words_adj + j];
+            token_t out_data_fxd = out[i * out_words_adj + j];
+            float gold_data_flt = fixed32_to_float(gold_data_fxd, 2);
+            float out_data_flt = fixed32_to_float(out_data_fxd, 2);
+            float error_it = abs_float(gold_data_flt - out_data_flt);
+
+			if (error_it > allowed_error)
+            {
 				errors++;
+            }
+        }
+    }
 
 	return errors;
+}
+
+// Returns approximate value of e^x,
+// using sum of first n terms of Taylor Series  
+static float exponential(int n, float x)  
+{
+    float sum = 1.0f; // initialize sum of series
+    int i;
+    for (i = n - 1; i > 0; --i )
+        sum = 1 + x * sum / i;  
+                    
+    return sum;  
+}  
+
+
+static void softmax_sw(float *input, float *output)
+{
+    float exp_in[size];
+    float sum_exp = 0;
+    unsigned i;
+    for (i = 0; i < size; i++) {
+        exp_in[i] = exponential(100, input[i]);
+        sum_exp += exp_in[i];
+    }
+    for (i = 0; i < size; i++) {
+        output[i] = exp_in[i] / sum_exp;
+    }
 }
 
 
@@ -64,13 +122,46 @@ static void init_buf (token_t *in, token_t * gold)
 	int i;
 	int j;
 
-	for (i = 0; i < 128; i++)
-		for (j = 0; j < 128 * batch; j++)
-			in[i * in_words_adj + j] = (token_t) j;
+#ifndef __riscv
+	printf("  input data @%p\n", in);
+#else
+	print_uart("       input  data @"); print_uart_addr((uintptr_t) in); print_uart("\n");
+#endif
 
-	for (i = 0; i < 128; i++)
-		for (j = 0; j < 128 * batch; j++)
-			gold[i * out_words_adj + j] = (token_t) j;
+	for (i = 0; i < 1; i++)
+    {
+		for (j = 0; j < size; j++)
+        {
+            float data_flt = ((i * size + j) % 32) + 0.25;
+            token_t data_fxd = 0xdeadbeef00000000 | float_to_fixed32(data_flt, 6);
+			in[i * in_words_adj + j] = (token_t) data_fxd;
+        }
+    }
+
+    float in_local_gold[size];
+    float out_local_gold[size];
+	for (i = 0; i < 1; i++)
+    {
+		for (j = 0; j < size; j++)
+        {
+			in_local_gold[i * size + j] = ((i * size + j) % 32) + 0.25;
+        }
+    }
+    softmax_sw(in_local_gold, out_local_gold);
+
+#ifndef __riscv
+	printf("  gold output data @%p\n", gold);
+#else
+	print_uart("  gold output data @"); print_uart_addr((uintptr_t) gold); print_uart("\n");
+#endif
+
+    for (i = 0; i < 1; i++) {
+		for (j = 0; j < size; j++) {
+            float data_flt = out_local_gold[i * size + j];
+            token_t data_fxd = float_to_fixed32(data_flt, 2);
+			gold[i * out_words_adj + j] = 0xdeadbeef00000000 | (token_t) data_fxd;
+        }
+    }
 }
 
 
@@ -167,7 +258,8 @@ int main(int argc, char * argv[])
 #else
 		print_uart("  Generate input...\n");
 #endif
-		init_buf(mem, gold);
+
+        init_buf(mem, gold);
 
 		// Pass common configuration parameters
 
@@ -183,8 +275,8 @@ int main(int argc, char * argv[])
 		iowrite32(dev, PT_SHIFT_REG, CHUNK_SHIFT);
 
 		// Use the following if input and output data are not allocated at the default offsets
-		iowrite32(dev, SRC_OFFSET_REG, 0x0);
-		iowrite32(dev, DST_OFFSET_REG, 0x0);
+		//iowrite32(dev, SRC_OFFSET_REG, 0x0);
+		//iowrite32(dev, DST_OFFSET_REG, 0x0);
 
 		// Pass accelerator-specific configuration parameters
 		/* <<--regs-config-->> */
@@ -199,9 +291,10 @@ int main(int argc, char * argv[])
 #else
 		print_uart("  Start...\n");
 #endif
+
 		iowrite32(dev, CMD_REG, CMD_MASK_START);
 
-		// Wait for completion
+        // Wait for completion
 		done = 0;
 		while (!done) {
 			done = ioread32(dev, STATUS_REG);
