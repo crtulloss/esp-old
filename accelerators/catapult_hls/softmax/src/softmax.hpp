@@ -125,6 +125,7 @@ public:
           , input_ready("input_ready")
           , output_ready("output_ready")
     {
+#if 0
         SC_CTHREAD(config_accelerator, clk.pos());
         reset_signal_is(rst, false);
         // set_stack_size(0x400000);
@@ -140,21 +141,29 @@ public:
         SC_CTHREAD(store_output, this->clk.pos());
         this->reset_signal_is(this->rst, false);
         // set_stack_size(0x400000);
+#else
+        SC_CTHREAD(run, clk.pos());
+        reset_signal_is(rst, false);
+        // set_stack_size(0x400000);
+#endif
     }
 
     //
     // Processes
     //
-
+#if 0
     // Configure the accelerator
-    void config_accelerator();
+    void config();
     // Load the input data
-    void load_input();
+    void load();
     // Computation
-    void compute_kernel();
+    void compute();
     // Store the output data
-    void store_output();
-
+    void store();
+#else
+    // Single process config/loag/compute/store
+    void run();
+#endif
     //
     // Reset functions
     //

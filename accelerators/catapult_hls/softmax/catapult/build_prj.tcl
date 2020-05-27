@@ -257,50 +257,52 @@ if {$opt(hsynth)} {
 
     # Arrays
 
-    directive set /${ACCELERATOR}/plm_in:cns -MAP_TO_MODULE Xilinx_RAMS.BLOCK_1R1W_RBW
-    directive set /${ACCELERATOR}/plm_in -WORD_WIDTH 32
+    ###directive set /${ACCELERATOR}/plm_in:cns -MAP_TO_MODULE Xilinx_RAMS.BLOCK_1R1W_RBW
+    ###directive set /${ACCELERATOR}/plm_in -WORD_WIDTH 32
 
-    directive set /${ACCELERATOR}/plm_out:cns -MAP_TO_MODULE Xilinx_RAMS.BLOCK_1R1W_RBW
-    directive set /${ACCELERATOR}/plm_out -WORD_WIDTH 32
+    ###directive set /${ACCELERATOR}/plm_out:cns -MAP_TO_MODULE Xilinx_RAMS.BLOCK_1R1W_RBW
+    ###directive set /${ACCELERATOR}/plm_out -WORD_WIDTH 32
 
-    directive set /${ACCELERATOR}/${ACCELERATOR}:load_input/load_input/LOAD_BATCH_LOOP:plm_local.data:rsc -MAP_TO_MODULE Xilinx_RAMS.BLOCK_1R1W_RBW
-    directive set /${ACCELERATOR}/${ACCELERATOR}:load_input/load_input/LOAD_BATCH_LOOP:plm_local.data -WORD_WIDTH 32
-    directive set /${ACCELERATOR}/${ACCELERATOR}:load_input/load_input/LOAD_BATCH_LOOP:plm_local.data:rsc -GEN_EXTERNAL_ENABLE true
+    ###directive set /${ACCELERATOR}/${ACCELERATOR}:load_input/load_input/LOAD_BATCH_LOOP:plm_local.data:rsc -MAP_TO_MODULE Xilinx_RAMS.BLOCK_1R1W_RBW
+    ###directive set /${ACCELERATOR}/${ACCELERATOR}:load_input/load_input/LOAD_BATCH_LOOP:plm_local.data -WORD_WIDTH 32
+    ###directive set /${ACCELERATOR}/${ACCELERATOR}:load_input/load_input/LOAD_BATCH_LOOP:plm_local.data:rsc -GEN_EXTERNAL_ENABLE true
 
-    directive set /${ACCELERATOR}/${ACCELERATOR}:compute_kernel/compute_kernel/COMPUTE_BATCH_LOOP:plm_local_in.data:rsc -MAP_TO_MODULE Xilinx_RAMS.BLOCK_1R1W_RBW
-    directive set /${ACCELERATOR}/${ACCELERATOR}:compute_kernel/compute_kernel/COMPUTE_BATCH_LOOP:plm_local_in.data -WORD_WIDTH 32
-    directive set /${ACCELERATOR}/${ACCELERATOR}:compute_kernel/compute_kernel/COMPUTE_BATCH_LOOP:plm_local_out.data:rsc -MAP_TO_MODULE Xilinx_RAMS.BLOCK_1R1W_RBW
-    directive set /${ACCELERATOR}/${ACCELERATOR}:compute_kernel/compute_kernel/COMPUTE_BATCH_LOOP:plm_local_out.data -WORD_WIDTH 32
+    ###directive set /${ACCELERATOR}/${ACCELERATOR}:compute_kernel/compute_kernel/COMPUTE_BATCH_LOOP:plm_local_in.data:rsc -MAP_TO_MODULE Xilinx_RAMS.BLOCK_1R1W_RBW
+    ###directive set /${ACCELERATOR}/${ACCELERATOR}:compute_kernel/compute_kernel/COMPUTE_BATCH_LOOP:plm_local_in.data -WORD_WIDTH 32
+    ###directive set /${ACCELERATOR}/${ACCELERATOR}:compute_kernel/compute_kernel/COMPUTE_BATCH_LOOP:plm_local_out.data:rsc -MAP_TO_MODULE Xilinx_RAMS.BLOCK_1R1W_RBW
+    ###directive set /${ACCELERATOR}/${ACCELERATOR}:compute_kernel/compute_kernel/COMPUTE_BATCH_LOOP:plm_local_out.data -WORD_WIDTH 32
 
-    directive set /${ACCELERATOR}/${ACCELERATOR}:store_output/store_output/STORE_BATCH_LOOP:plm_local.data:rsc -MAP_TO_MODULE Xilinx_RAMS.BLOCK_1R1W_RBW
-    directive set /${ACCELERATOR}/${ACCELERATOR}:store_output/store_output/STORE_BATCH_LOOP:plm_local.data -WORD_WIDTH 32
-    directive set /${ACCELERATOR}/${ACCELERATOR}:store_output/store_output/STORE_BATCH_LOOP:plm_local.data:rsc -GEN_EXTERNAL_ENABLE true
+    ###directive set /${ACCELERATOR}/${ACCELERATOR}:store_output/store_output/STORE_BATCH_LOOP:plm_local.data:rsc -MAP_TO_MODULE Xilinx_RAMS.BLOCK_1R1W_RBW
+    ###directive set /${ACCELERATOR}/${ACCELERATOR}:store_output/store_output/STORE_BATCH_LOOP:plm_local.data -WORD_WIDTH 32
+    ###directive set /${ACCELERATOR}/${ACCELERATOR}:store_output/store_output/STORE_BATCH_LOOP:plm_local.data:rsc -GEN_EXTERNAL_ENABLE true
 
-    directive set /${ACCELERATOR}/${ACCELERATOR}:compute_kernel/compute_kernel/COMPUTE_BATCH_LOOP -PIPELINE_INIT_INTERVAL 1
-    directive set /${ACCELERATOR}/${ACCELERATOR}:store_output/store_output/STORE_BATCH_LOOP -PIPELINE_INIT_INTERVAL 1
-    directive set /${ACCELERATOR}/${ACCELERATOR}:load_input/load_input/LOAD_BATCH_LOOP -PIPELINE_INIT_INTERVAL 1
+    ###directive set /${ACCELERATOR}/${ACCELERATOR}:compute_kernel/compute_kernel/COMPUTE_BATCH_LOOP -PIPELINE_INIT_INTERVAL 1
+    ###directive set /${ACCELERATOR}/${ACCELERATOR}:store_output/store_output/STORE_BATCH_LOOP -PIPELINE_INIT_INTERVAL 1
+    ###directive set /${ACCELERATOR}/${ACCELERATOR}:load_input/load_input/LOAD_BATCH_LOOP -PIPELINE_INIT_INTERVAL 1
+
+    # Loops
 
     # Loops performance tracing
 
-    directive set /${ACCELERATOR}/config_accelerator/CONFIG_LOOP -ITERATIONS 1
+    ###directive set /${ACCELERATOR}/config_accelerator/CONFIG_LOOP -ITERATIONS 1
 
-    directive set /${ACCELERATOR}/${ACCELERATOR}:load_input/load_input/WAIT_FOR_CONFIG_LOOP -ITERATIONS 1
-    directive set /${ACCELERATOR}/${ACCELERATOR}:load_input/load_input/LOAD_BATCH_LOOP -ITERATIONS 16
-    directive set /${ACCELERATOR}/${ACCELERATOR}:load_input/load_input/LOAD_DATA_INNER_LOOP -ITERATIONS 128
+    ###directive set /${ACCELERATOR}/${ACCELERATOR}:load_input/load_input/WAIT_FOR_CONFIG_LOOP -ITERATIONS 1
+    ###directive set /${ACCELERATOR}/${ACCELERATOR}:load_input/load_input/LOAD_BATCH_LOOP -ITERATIONS 16
+    ###directive set /${ACCELERATOR}/${ACCELERATOR}:load_input/load_input/LOAD_DATA_INNER_LOOP -ITERATIONS 128
 
-    directive set /${ACCELERATOR}/${ACCELERATOR}:compute_kernel/compute_kernel/WAIT_FOR_CONFIG_LOOP -ITERATIONS 1
-    directive set /${ACCELERATOR}/${ACCELERATOR}:compute_kernel/compute_kernel/COMPUTE_BATCH_LOOP -ITERATIONS 16
+    ###directive set /${ACCELERATOR}/${ACCELERATOR}:compute_kernel/compute_kernel/WAIT_FOR_CONFIG_LOOP -ITERATIONS 1
+    ###directive set /${ACCELERATOR}/${ACCELERATOR}:compute_kernel/compute_kernel/COMPUTE_BATCH_LOOP -ITERATIONS 16
 
-    directive set /${ACCELERATOR}/${ACCELERATOR}:store_output/store_output/WAIT_FOR_CONFIG_LOOP -ITERATIONS 1
-    directive set /${ACCELERATOR}/${ACCELERATOR}:store_output/store_output/STORE_BATCH_LOOP -ITERATIONS 16
-    directive set /${ACCELERATOR}/${ACCELERATOR}:store_output/store_output/STORE_DATA_INNER_LOOP -ITERATIONS 128
+    ###directive set /${ACCELERATOR}/${ACCELERATOR}:store_output/store_output/WAIT_FOR_CONFIG_LOOP -ITERATIONS 1
+    ###directive set /${ACCELERATOR}/${ACCELERATOR}:store_output/store_output/STORE_BATCH_LOOP -ITERATIONS 16
+    ###directive set /${ACCELERATOR}/${ACCELERATOR}:store_output/store_output/STORE_DATA_INNER_LOOP -ITERATIONS 128
 
     # Area vs Latency Goals
 
-    directive set /${ACCELERATOR}/config_accelerator -DESIGN_GOAL latency
-    directive set /${ACCELERATOR}/${ACCELERATOR}:load_input/load_input -DESIGN_GOAL latency
-    directive set /${ACCELERATOR}/${ACCELERATOR}:compute_kernel/compute_kernel -DESIGN_GOAL latency
-    directive set /${ACCELERATOR}/${ACCELERATOR}:store_output/store_output -DESIGN_GOAL latency
+    ###directive set /${ACCELERATOR}/config_accelerator -DESIGN_GOAL latency
+    ###directive set /${ACCELERATOR}/${ACCELERATOR}:load_input/load_input -DESIGN_GOAL latency
+    ###directive set /${ACCELERATOR}/${ACCELERATOR}:compute_kernel/compute_kernel -DESIGN_GOAL latency
+    ###directive set /${ACCELERATOR}/${ACCELERATOR}:store_output/store_output -DESIGN_GOAL latency
 
     if {$opt(debug) != 1} {
         go architect

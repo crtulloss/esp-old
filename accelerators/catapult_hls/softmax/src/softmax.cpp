@@ -4,13 +4,13 @@
 #include "softmax.hpp"
 
 #include <ac_math/ac_softmax_pwl.h>
-
+#if 0
 //
 // Compute functions
 //
 
 template <class T1, unsigned S1, class T2, unsigned S2>
-void compute(plm_t<T1,S1> *input, plm_t<T2,S2> *output) {
+void compute_wrapper(plm_t<T1,S1> *input, plm_t<T2,S2> *output) {
     ac_math::ac_softmax_pwl(input->data, output->data);
 }
 
@@ -18,7 +18,7 @@ void compute(plm_t<T1,S1> *input, plm_t<T2,S2> *output) {
 // Processes
 //
 #pragma design modulario<sync>
-void softmax::config_accelerator() {
+void softmax::config() {
     // HLS_DEFINE_PROTOCOL("config");
     done.write(false); wait();
     //ESP_REPORT_INFO("start configuration");
@@ -43,7 +43,7 @@ CONFIG_DONE_LOOP:
     while (true) { wait(); }
 }
 
-void softmax::load_input() {
+void softmax::load() {
 
     // Load-process reset
     {
@@ -112,7 +112,7 @@ LOAD_DATA_INNER_LOOP:
         //    plm1_in.write(plm_local);
         //}
         plm_in.write(plm_local);
-        
+
         load_compute_handshake();
         ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Load load() --> compute()");
         //ping = !ping;
@@ -124,7 +124,7 @@ LOAD_DATA_INNER_LOOP:
     }
 }
 
-void softmax::compute_kernel() {
+void softmax::compute() {
 
     // Compute-process reset
     {
@@ -166,7 +166,7 @@ COMPUTE_BATCH_LOOP:
         //}
         plm_local_in = plm_in.read();
 
-        compute<FPDATA_IN, PLM_SIZE, FPDATA_OUT, PLM_SIZE>(&plm_local_in, &plm_local_out);
+        compute_wrapper<FPDATA_IN, PLM_SIZE, FPDATA_OUT, PLM_SIZE>(&plm_local_in, &plm_local_out);
 
         //if (ping) {
         //    plm0_out.write(plm_local_out);
@@ -187,7 +187,7 @@ COMPUTE_BATCH_LOOP:
     }
 }
 
-void softmax::store_output() {
+void softmax::store() {
 
     // Store-process reset
     {
@@ -264,11 +264,137 @@ STORE_DATA_INNER_LOOP:
         process_done();
     }
 }
+#else
+//
+// Compute functions
+//
+
+template <class T1, unsigned S1, class T2, unsigned S2>
+void compute_wrapper(plm_t<T1,S1> *input, plm_t<T2,S2> *output) {
+    ac_math::ac_softmax_pwl(input->data, output->data);
+}
+
+//
+// Processes
+//
+void softmax::run() {
+
+    DMA_WRITE_RESET(dma_read_ctrl);
+    DMA_READ_RESET(dma_read_chnl);
+    DMA_WRITE_RESET(dma_write_ctrl);
+    DMA_WRITE_RESET(dma_write_chnl);
+    acc_done.write(false);
+
+    debug = 0;
+    bool end = false;
+    uint32_t batch = 0;
+    uint32_t dma_read_offset = 0;
+    uint32_t dma_write_offset = 0;
+
+    conf_info_t config;
+    plm_t<FPDATA_IN, PLM_SIZE> plm_in;
+    plm_t<FPDATA_OUT, PLM_SIZE> plm_out;
+
+    wait();
+
+    // Wait for the configuration signal
+#pragma hls_unroll no
+CONFIG_LOOP:
+    do
+    {
+        wait();
+        end = conf_done.read();
+
+        config = conf_info.read();
+
+    } while (!end);
+
+    // Load/Compute/Store-process config
+    {
+        batch = config.batch;
+    }
+
+
+    ESP_REPORT_TIME(VON, sc_time_stamp(), "BATCH_LOOP: batch = %u", ESP_TO_UINT32(batch));
+
+    dma_read_offset = 0;
+
+    // Load-process body
+BATCH_LOOP:
+    for (uint32_t b = 0; b < batch; b++) {
+
+        dma_info_t dma_read_info(dma_read_offset, PLM_SIZE, 32);
+
+        dma_read_offset += PLM_SIZE;
+
+        ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Load load(): dma_read_info.index = %u, dma_read_info.length = %u, dma_read_info.size = %llu", ESP_TO_UINT32(dma_read_info.index), ESP_TO_UINT32(dma_read_info.length), dma_read_info.size.to_uint64());
+
+        DMA_WRITE(dma_read_info, dma_read_ctrl);
+
+        ESP_REPORT_TIME(VON, sc_time_stamp(), "LOAD_LOOP = %u", PLM_SIZE);
+
+LOAD_LOOP:
+        for (uint16_t i = 0; i < PLM_SIZE; i++) {
+
+            FPDATA_IN data;
+            sc_dt::sc_bv<64> data_bv;
+            ac_int<32> data_ac;
+
+            DMA_READ(data_bv, dma_read_chnl);
+
+            // DMA_WIDTH = 64
+            // discard bits in the range(63,32)
+            // keep bits in the range(31,0)
+            data_ac = ac_int<32>(data_bv.range(31,0).to_uint());
+            data.set_slc(0, data_ac);
+            plm_in.data[i] = data;
+        }
+
+        // Compute-process body
+        compute_wrapper<FPDATA_IN, PLM_SIZE, FPDATA_OUT, PLM_SIZE>(&plm_in, &plm_out);
+
+        dma_write_offset = (PLM_SIZE * batch) + PLM_SIZE * b;
+
+        // Store-process body
+        dma_info_t dma_write_info(dma_write_offset, PLM_SIZE, 32);
+
+        dma_write_offset += PLM_SIZE;
+
+        ESP_REPORT_TIME(VOFF, sc_time_stamp(), "dma_write_info.index = %u, dma_write_info.length = %u, dma_write_info.size = %llu", ESP_TO_UINT32(dma_write_info.index), ESP_TO_UINT32(dma_write_info.length), dma_write_info.size.to_uint64());
+
+        DMA_WRITE(dma_write_info, dma_write_ctrl);
+
+        ESP_REPORT_TIME(VON, sc_time_stamp(), "STORE_LOOP = %u", PLM_SIZE);
+
+STORE_LOOP:
+        for (uint16_t i = 0; i < PLM_SIZE; i++) {
+
+           FPDATA_OUT data = plm_out.data[i];
+
+           // DMA_WIDTH = 64
+           // set to a constante value range(63,32)
+           // return results on the range(31,0)
+           sc_dt::sc_bv<64> data_bv;
+           data_bv.range(63,32) = sc_dt::sc_bv<32>(0xdeadbeef);
+           data_bv.range(31,0) = data.template slc<32>(0);
+
+           DMA_WRITE(data_bv, dma_write_chnl);
+        }
+
+    }
+
+    // Process done
+    {
+        accelerator_done();
+        process_done();
+    }
+}
+#endif
 
 // ***************************************************
 // *** YOU SHOULD NOT EDIT THE FOLLOWING FUNCTIONS ***
 // ***************************************************
-
+#if 0
 //
 // Reset functions
 //
@@ -328,6 +454,7 @@ inline void softmax::wait_for_config() {
 WAIT_FOR_CONFIG_LOOP:
     while (!done.read()) { wait(); }
 }
+#endif
 
 inline void softmax::process_done() {
 #pragma hls_unroll no

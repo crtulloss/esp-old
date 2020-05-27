@@ -9,6 +9,7 @@
 #include <mc_scverify.h>
 #include <ac_wait.h>
 
+// TODO: Uncomment this to enable multiprocess.
 #if 0
 
 #pragma hls_design
