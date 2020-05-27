@@ -365,7 +365,7 @@ ahbrom-distclean: ahbrom-clean
 
 
 ### Leon3 Linux ###
-sysroot/etc/init.d/S64esp : socmap.vhd 
+sysroot/etc/init.d/S64esp : socmap.vhd esp_global.vhd 
 	$(QUIET_INFO)echo "Generating esp load script" ; \
 	rm $@ ; \
 	printf "cd /opt/drivers-esp\n" >> $@ ; \
@@ -414,6 +414,7 @@ sysroot/etc/init.d/S64esp : socmap.vhd
 	llc_sets=$$(sed -n 's/constant CFG_LLC_SETS\s*: integer := \([0-9]*\);/\1/p' socmap.vhd); \
 	llc_ways=$$(sed -n 's/constant CFG_LLC_WAYS\s*: integer := \([0-9]*\);/\1/p' socmap.vhd); \
 	nmem=$$(sed -n 's/constant CFG_NMEM_TILE\s*: integer := \([0-9]*\);/\1/p' socmap.vhd); \
+	rtl_cache=$$(sed -n 's/constant CFG_CACHE_RTL\s*: integer := \([0-1]\);/\1/p' esp_global.vhd); \
 	printf "insmod esp_cache.ko\n" >> $@; \
     printf "insmod esp_private_cache.ko\n" >> $@; \
 	printf "insmod esp.ko " >> $@; \
@@ -422,7 +423,8 @@ sysroot/etc/init.d/S64esp : socmap.vhd
 	printf "l2_ways=%d " $${l2_ways} >> $@; \
 	printf "llc_sets=%d " $${llc_sets} >> $@; \
 	printf "llc_ways=%d " $${llc_ways} >> $@; \
-	printf "llc_banks=%d\n" $${nmem}  >> $@; \
+	printf "llc_banks=%d " $${nmem}  >> $@; \
+	printf "rtl_cache=%d\n" $${rtl_cache}  >> $@; \
 	chmod a+x $@
 
 sysroot:
