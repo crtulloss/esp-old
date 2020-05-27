@@ -815,6 +815,7 @@ VHDL_RTL_SRCS  = $(shell (find $(ESP_ROOT)/rtl/src -name "*.vhd" ))
 else
 VHDL_RTL_SRCS  = $(shell (find $(ESP_ROOT)/rtl/src -name "*.vhd" | grep -v "sld/sldcommon/monitor.vhd"))
 endif
+VHDL_RTL_SRCS  += $(shell (find $(ESP_ROOT)/tech/$(TECHLIB) -name "*.vhd" ))
 
 VLOG_RTL_SRCS   = $(shell (find $(ESP_ROOT)/rtl/src -name "*.v" ))
 VLOG_RTL_SRCS  += $(shell (find $(ESP_ROOT)/tech/$(TECHLIB) -name "*.v" ))
@@ -883,10 +884,10 @@ check_all_rtl_srcs-distclean:
 
 ### Xilinx Simulation libs targets ###
 
-modelsim/xilinx_lib: $(XILINX_VIVADO)
+$(ESP_ROOT)/.cache/modelsim/xilinx_lib:
 	$(QUIET_MKDIR)mkdir -p $@
 	@echo "compile_simlib -directory xilinx_lib -simulator modelsim -library unisim -no_ip_compile" > $@/simlib.tcl; \
-	cd modelsim; \
+	cd $(ESP_ROOT)/.cache/modelsim; \
 	if ! vivado $(VIVADO_BATCH_OPT) -source xilinx_lib/simlib.tcl; then \
 		echo "$(SPACES)ERROR: Xilinx library compilation failed!"; rm -rf xilinx_lib modelsim.ini; exit 1; \
 	fi; \
@@ -897,26 +898,47 @@ modelsim/xilinx_lib: $(XILINX_VIVADO)
 	sed -i 's/; Show_Warning5 = 0/Show_Warning5 = 0/g' modelsim.ini; \
 	sed -i 's/; StdArithNoWarnings = 1/StdArithNoWarnings = 1/g' modelsim.ini; \
 	sed -i 's/; NumericStdNoWarnings = 1/NumericStdNoWarnings = 1/g' modelsim.ini; \
+	sed -i 's/VoptFlow = 1/VoptFlow = 0/g' modelsim.ini; \
 	sed -i '/suppress = [0-9]\+/d' modelsim.ini; \
 	sed -i '/\[msg_system\]/a suppress = 8780,8891,1491,12110\nwarning = 8891' modelsim.ini; \
 	cd ../;
 
-xcelium/xilinx_lib: $(XILINX_VIVADO)
+modelsim/modelsim.ini: $(ESP_ROOT)/.cache/modelsim/xilinx_lib
+	$(QUIET_MAKE)mkdir -p modelsim
+	@cp $(ESP_ROOT)/.cache/modelsim/modelsim.ini $@
+
+
+$(ESP_ROOT)/.cache/xcelium/xilinx_lib:
 	$(QUIET_MKDIR)mkdir -p $@
 	@echo "compile_simlib -directory xilinx_lib -simulator xcelium -library unisim -no_ip_compile" > $@/simlib.tcl; \
-	cd xcelium; \
+	cd $(ESP_ROOT)/.cache/xcelium; \
 	if ! vivado $(VIVADO_BATCH_OPT) -source xilinx_lib/simlib.tcl; then \
 		echo "$(SPACES)ERROR: Xilinx library compilation failed!"; rm -rf xilinx_lib cds.lib; exit 1; \
 	fi;
 
+xcelium/cds.lib: $(ESP_ROOT)/.cache/xcelium/xilinx_lib
+	$(QUIET_MAKE)mkdir -p xcelium
+	@cp $(ESP_ROOT)/.cache/xcelium/cds.lib $@
 
-incisive/xilinx_lib: $(XILINX_VIVADO)
+xcelium/hdl.var: xcelium/cds.lib
+	@cp $(ESP_ROOT)/.cache/xcelium/hdl.var $@
+
+
+$(ESP_ROOT)/.cache/incisive/xilinx_lib:
 	$(QUIET_MKDIR)mkdir -p $@
 	@echo "compile_simlib -directory xilinx_lib -simulator ies -library unisim -no_ip_compile" > $@/simlib.tcl; \
-	cd incisive; \
+	cd $(ESP_ROOT)/.cache/incisive; \
 	if ! vivado $(VIVADO_BATCH_OPT) -source xilinx_lib/simlib.tcl; then \
 		echo "$(SPACES)ERROR: Xilinx library compilation failed!"; rm -rf xilinx_lib cds.lib; exit 1; \
 	fi;
+
+incisive/cds.lib: $(ESP_ROOT)/.cache/incisive/xilinx_lib
+	$(QUIET_MAKE)mkdir -p incisive
+	@cp $(ESP_ROOT)/.cache/incisive/cds.lib $@
+
+incisive/hdl.var: incisive/cds.lib
+	@cp $(ESP_ROOT)/.cache/incisive/hdl.var $@
+
 
 
 xilinx_lib-clean:
@@ -931,16 +953,16 @@ xilinx_lib-clean:
 
 xilinx_lib-distclean: xilinx_lib-clean
 	$(QUIET_CLEAN)$(RM) \
-		modelsim/xilinx_lib \
-		xcelium/xilinx_lib \
-		incisive/xilinx_lib
+		$(ESP_ROOT)/.cache/modelsim/ 	\
+		$(ESP_ROOT)/.cache/xcelium/ 	\
+		$(ESP_ROOT)/.cache/incisive/
 
 .PHONY: xilinx_lib-clean xilinx_lib-distclean
 
 
 ### Xcelium targets ###
 
-xcelium/xmready: xcelium/xilinx_lib check_all_srcs.old $(PKG_LIST)
+xcelium/xmready: xcelium/hdl.var check_all_srcs.old $(PKG_LIST)
 	$(QUIET_MKDIR)mkdir -p xcelium
 ifneq ($(findstring profpga, $(BOARD)),)
 	@cd xcelium; \
@@ -1069,7 +1091,7 @@ xmsim-distclean: xmsim-clean
 
 ### Incisive targets ###
 
-incisive/ncready: incisive/xilinx_lib check_all_srcs.old $(PKG_LIST)
+incisive/ncready: incisive/hdl.var check_all_srcs.old $(PKG_LIST)
 	$(QUIET_MKDIR)mkdir -p incisive
 	@echo $(SPACES)"WARNING: The source code for Ariane cannot be compiled with Incisive!!! If you need Ariane, please switch to Modelsim or Xcelium";
 ifneq ($(findstring profpga, $(BOARD)),)
@@ -1203,14 +1225,13 @@ ncsim-distclean: ncsim-clean
 # Note that vmake fails to find unisim.vcomponents, however produces the correct
 # makefile for future compilation and all components are properly bound in simulation.
 # Please keep 2> /dev/null until the bug is fixed with a newer Modelsim release.
-modelsim/vsim.mk: modelsim/xilinx_lib check_all_srcs.old $(PKG_LIST)
-	$(QUIET_MKDIR)mkdir -p modelsim
+modelsim/vsim.mk: modelsim/modelsim.ini check_all_srcs.old $(PKG_LIST)
 ifneq ($(findstring profpga, $(BOARD)),)
 	@cd modelsim; \
+	echo $(SPACES)"### Compile proFPGA source files ###"; \
 	if ! test -e profpga; then \
 		vlib -type directory profpga; \
-	fi
-	echo $(SPACES)"### Compile proFPGA source files ###"; \
+	fi; \
 	for vhd in $(VHDL_PROFPGA); do \
 		rtl=$(PROFPGA)/hdl/$$vhd; \
 		echo $(SPACES)"$(VCOM) -work profpga $$rtl"; \
@@ -1409,9 +1430,16 @@ ifeq ($(CONFIG_GRETH_ENABLE),y)
 	@if test -r $(ESP_ROOT)/constraints/$(BOARD)/sgmii.xci; then \
 		echo $(SPACES)"INFO including SGMII IP"; \
 		mkdir -p vivado/sgmii; \
-		cp $(ESP_ROOT)/constraints/$(BOARD)/sgmii.* ./vivado/sgmii; \
+		cp $(ESP_ROOT)/constraints/$(BOARD)/sgmii.xci ./vivado/sgmii; \
 		echo "set_property target_language verilog [current_project]" >> $@; \
 		echo "import_ip -files ./sgmii/sgmii.xci" >> $@; \
+		echo "generate_target  all [get_ips sgmii] -force " >> $@; \
+	elif test -r $(ESP_ROOT)/constraints/$(BOARD)/sgmii.tcl; then \
+		echo $(SPACES)"INFO including SGMII IP"; \
+		mkdir -p vivado/sgmii; \
+		cp $(ESP_ROOT)/constraints/$(BOARD)/sgmii.tcl ./vivado/sgmii; \
+		echo "set_property target_language verilog [current_project]" >> $@; \
+		echo "source ./sgmii/sgmii.tcl" >> $@; \
 		echo "generate_target  all [get_ips sgmii] -force " >> $@; \
 	else \
 		echo $(SPACES)"WARNING: no SGMII IP was found"; \
@@ -1461,7 +1489,7 @@ vivado/program.tcl: vivado
 	@echo "set part [lindex \$$argv 2]" >> $@
 	@echo "set bit [lindex \$$argv 3]" >> $@
 	@echo "" >> $@
-	@echo "open_hw" >> $@
+	@echo "open_hw_manager" >> $@
 	@echo "connect_hw_server -url \$$fpga_host:\$$port" >> $@
 	@echo "puts \"Connected to \$$fpga_host\"" >> $@
 	@echo "puts \"Searching for \$$part...\"" >> $@
@@ -1564,6 +1592,7 @@ vivado-clean:
 vivado-distclean: vivado-clean
 	$(QUIET_CLEAN)$(RM) \
 		vivado	\
+		mem_tile_floorplanning.xdc \
 		*.bit
 
 .PHONY: vivado-clean vivado-distclean vivado-syn vivado-prog-fpga vivado/$(DESIGN) vivado-setup vivado-gui
@@ -1701,7 +1730,6 @@ distclean:	check_all_srcs-distclean 	\
 		linux-distclean			\
 		barec-distclean			\
 		examples-clean			\
-		xilinx_lib-distclean 		\
 		sim-distclean			\
 		ncsim-distclean			\
 		xmsim-distclean			\
