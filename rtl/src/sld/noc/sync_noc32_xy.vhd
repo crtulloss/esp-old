@@ -178,7 +178,7 @@ architecture mesh of sync_noc32_xy is
       sync_data_void_in <= fwd_rd_empty_o when sync_stop_out = '0' else '1';
       inferred_async_fifo_1: inferred_async_fifo
         generic map (
-          g_data_width => NOC_FLIT_SIZE,
+          g_data_width => MISC_NOC_FLIT_SIZE,
           g_size       => 8)
         port map (
           rst_n_i    => rst,
@@ -197,7 +197,7 @@ architecture mesh of sync_noc32_xy is
       data_void_out(4) <= rev_rd_empty_o;-- when stop_in = '0' else '1';
       inferred_async_fifo_2: inferred_async_fifo
         generic map (
-          g_data_width => NOC_FLIT_SIZE,
+          g_data_width => MISC_NOC_FLIT_SIZE,
           g_size       => 8)
         port map (
           rst_n_i      => rst,
