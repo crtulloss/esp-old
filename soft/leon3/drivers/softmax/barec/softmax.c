@@ -16,7 +16,7 @@ typedef int64_t token_t;
 
 static unsigned DMA_WORD_PER_BEAT(unsigned _st)
 {
-        return (sizeof(void *) / _st);
+    return (sizeof(void *) / _st);
 }
 
 
@@ -24,7 +24,7 @@ static unsigned DMA_WORD_PER_BEAT(unsigned _st)
 #define DEV_NAME "sld,softmax"
 
 /* <<--params-->> */
-const int32_t batch = 4;
+const int32_t batch = 16;
 
 static unsigned in_words_adj;
 static unsigned out_words_adj;
@@ -46,7 +46,6 @@ const int32_t size = 128;
 
 /* User defined registers */
 /* <<--regs-->> */
-#define SOFTMAX_SIZE_REG 0x44
 #define SOFTMAX_BATCH_REG 0x40
 
 float abs_float(const float input)
@@ -70,7 +69,7 @@ static int validate_buf(token_t *out, token_t *gold)
 	print_uart("       output data @"); print_uart_addr((uintptr_t) out); print_uart("\n");
 #endif
 
-	for (i = 0; i < 1; i++) {
+	for (i = 0; i < batch; i++) {
 		for (j = 0; j < size; j++)
         {
             token_t gold_data_fxd = gold[i * out_words_adj + j];
@@ -128,7 +127,7 @@ static void init_buf (token_t *in, token_t * gold)
 	print_uart("       input  data @"); print_uart_addr((uintptr_t) in); print_uart("\n");
 #endif
 
-	for (i = 0; i < 1; i++)
+	for (i = 0; i < batch; i++)
     {
 		for (j = 0; j < size; j++)
         {
@@ -138,9 +137,9 @@ static void init_buf (token_t *in, token_t * gold)
         }
     }
 
-    float in_local_gold[size];
-    float out_local_gold[size];
-	for (i = 0; i < 1; i++)
+    float in_local_gold[batch*size];
+    float out_local_gold[batch*size];
+	for (i = 0; i < batch; i++)
     {
 		for (j = 0; j < size; j++)
         {
@@ -155,7 +154,7 @@ static void init_buf (token_t *in, token_t * gold)
 	print_uart("  gold output data @"); print_uart_addr((uintptr_t) gold); print_uart("\n");
 #endif
 
-    for (i = 0; i < 1; i++) {
+    for (i = 0; i < batch; i++) {
 		for (j = 0; j < size; j++) {
             float data_flt = out_local_gold[i * size + j];
             token_t data_fxd = float_to_fixed32(data_flt, 2);
@@ -179,19 +178,21 @@ int main(int argc, char * argv[])
 	unsigned errors = 0;
 
 	if (DMA_WORD_PER_BEAT(sizeof(token_t)) == 0) {
-		in_words_adj = size;
-		out_words_adj = size;
+		in_words_adj = size * batch;
+		out_words_adj = size * batch;
 	} else {
-		in_words_adj = round_up(size, DMA_WORD_PER_BEAT(sizeof(token_t)));
-		out_words_adj = round_up(size, DMA_WORD_PER_BEAT(sizeof(token_t)));
+		in_words_adj = round_up(size * batch, DMA_WORD_PER_BEAT(sizeof(token_t)));
+		out_words_adj = round_up(size * batch, DMA_WORD_PER_BEAT(sizeof(token_t)));
 	}
-	in_len = in_words_adj * (1);
-	out_len = out_words_adj * (1);
+
+    // TODO: why in_len and out_len require an additional batch factor?
+	in_len = in_words_adj * (batch);
+	out_len = out_words_adj * (batch);
 	in_size = in_len * sizeof(token_t);
 	out_size = out_len * sizeof(token_t);
 	out_offset  = in_len;
-	mem_size = (out_offset * sizeof(token_t)) + out_size;
-
+	//mem_size = (out_offset * sizeof(token_t)) + out_size;
+	mem_size = in_size + out_size;
 
 	// Search for the device
 #ifndef __riscv
@@ -261,6 +262,12 @@ int main(int argc, char * argv[])
  
         init_buf(mem, gold);
 
+#ifndef __riscv
+		printf("  ... input ready!\n");
+#else
+		print_uart("  ... input ready!\n");
+#endif
+
 		// Pass common configuration parameters
 
 		iowrite32(dev, SELECT_REG, ioread32(dev, DEVID_REG));
@@ -328,6 +335,12 @@ int main(int argc, char * argv[])
 		aligned_free(mem);
 		aligned_free(gold);
 	}
+
+#ifndef __riscv
+	printf("DONE\n");
+#else
+    print_uart("DONE\n");
+#endif
 
 	return 0;
 }
