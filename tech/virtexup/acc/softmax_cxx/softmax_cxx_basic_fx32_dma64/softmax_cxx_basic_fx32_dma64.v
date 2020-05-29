@@ -1,5 +1,5 @@
 
-//------> ./softmax_cxx_ccs_out_buf_wait_v4.v 
+//------> ./softmax_cxx_ccs_out_wait_v1.v 
 //------------------------------------------------------------------------------
 // Catapult Synthesis - Sample I/O Port Library
 //
@@ -17,153 +17,32 @@
 //
 //------------------------------------------------------------------------------
 
-module esp_acc_softmax_cxx_ccs_out_buf_wait_v4 (clk, en, arst, srst, ivld, irdy, idat, rdy, vld, dat, is_idle);
 
-    parameter integer rscid   = 1;
-    parameter integer width   = 8;
-    parameter integer ph_clk  =  1;
-    parameter integer ph_en   =  1;
-    parameter integer ph_arst =  1;
-    parameter integer ph_srst =  1;
+module esp_acc_softmax_cxx_ccs_out_wait_v1 (dat, irdy, vld, idat, rdy, ivld);
 
-    input              clk;
-    input              en;
-    input              arst;
-    input              srst;
-    input              rdy;
-    output             vld;
-    input  [width-1:0] idat;
-    output             irdy;
-    input              ivld;
-    output [width-1:0] dat;
-    output             is_idle;
+  parameter integer rscid = 1;
+  parameter integer width = 8;
 
-    reg                filled;
-    wire               filled_next;
-    reg                lbuf;
-    wire               lbuf_next;
-    reg    [width-1:0] abuf;
-    wire               fbuf;
-    reg                is_idle;
+  output [width-1:0] dat;
+  output             irdy;
+  output             vld;
+  input  [width-1:0] idat;
+  input              rdy;
+  input              ivld;
 
-    assign lbuf_next = ~vld | rdy;
-    assign filled_next = lbuf ? ivld : filled;
-    assign vld = filled_next;
-    assign irdy = lbuf_next;
-    assign dat = lbuf ? idat : abuf;
+  wire   [width-1:0] dat;
+  wire               irdy;
+  wire               vld;
 
-    assign fbuf = (lbuf_next && ivld) || (rdy && filled_next);
-
-//    assign is_idle = (~((rdy && vld) || (irdy && ivld))) && ~lbuf && (lbuf==lbuf_next);
-
-    // Generate is_idle flag
-    always@(lbuf, lbuf_next, fbuf)
-      begin
-        if (lbuf == lbuf_next)
-          is_idle <= ~fbuf && ~lbuf;
-        else
-          is_idle <= 0;
-      end
-
-
-    // Output registers:
-    generate
-    if (ph_arst == 0 && ph_clk==1)
-    begin: POS_CLK_NEG_ARST
-        always @(posedge clk or negedge arst)
-        if (arst == 1'b0)
-        begin
-            abuf  <= {width{1'b0}};
-            filled <= 1'b0;
-            lbuf <= 1'b0;
-        end
-        else if (srst == ph_srst)
-        begin
-            abuf  <= {width{1'b0}};
-            filled <= 1'b0;
-            lbuf <= 1'b0;
-        end
-        else if (en == ph_en)
-        begin
-            abuf  <= dat;
-            filled <= filled_next;
-            lbuf <= lbuf_next;
-        end
-    end
-    else if (ph_arst==1 && ph_clk==1)
-    begin: POS_CLK_POS_ARST
-        always @(posedge clk or posedge arst)
-        if (arst == 1'b1)
-        begin
-            abuf  <= {width{1'b0}};
-            filled <= 1'b0;
-            lbuf <= 1'b0;
-        end
-        else if (srst == ph_srst)
-        begin
-            abuf  <= {width{1'b0}};
-            filled <= 1'b0;
-            lbuf <= 1'b0;
-        end
-        else if (en == ph_en)
-        begin
-            abuf  <= dat;
-            filled <= filled_next;
-            lbuf <= lbuf_next;
-        end
-    end
-    else if (ph_arst == 0 && ph_clk==0)
-    begin: NEG_CLK_NEG_ARST
-        always @(negedge clk or negedge arst)
-        if (arst == 1'b0)
-        begin
-            abuf  <= {width{1'b0}};
-            filled <= 1'b0;
-            lbuf <= 1'b0;
-        end
-        else if (srst == ph_srst)
-        begin
-            abuf  <= {width{1'b0}};
-            filled <= 1'b0;
-            lbuf <= 1'b0;
-        end
-        else if (en == ph_en)
-        begin
-            abuf  <= dat;
-            filled <= filled_next;
-            lbuf <= lbuf_next;
-        end
-    end
-    else if (ph_arst==1 && ph_clk==0)
-    begin: NEG_CLK_POS_ARST
-        always @(negedge clk or posedge arst)
-        if (arst == 1'b1)
-        begin
-            abuf  <= {width{1'b0}};
-            filled <= 1'b0;
-            lbuf <= 1'b0;
-        end
-        else if (srst == ph_srst)
-        begin
-            abuf  <= {width{1'b0}};
-            filled <= 1'b0;
-            lbuf <= 1'b0;
-        end
-        else if (en == ph_en)
-        begin
-            abuf  <= dat;
-            filled <= filled_next;
-            lbuf <= lbuf_next;
-        end
-    end
-    endgenerate
+  assign dat = idat;
+  assign irdy = rdy;
+  assign vld = ivld;
 
 endmodule
 
 
 
-
-//------> ./softmax_cxx_ccs_ctrl_in_buf_wait_v4.v 
+//------> ./softmax_cxx_ccs_in_wait_v1.v 
 //------------------------------------------------------------------------------
 // Catapult Synthesis - Sample I/O Port Library
 //
@@ -179,177 +58,30 @@ endmodule
 // their own custom interfaces. This design does not necessarily present a
 // complete implementation of the named protocol or standard.
 //
-// Change History:
-//    2019-01-24 - Add assertion to verify rdy signal behavior under reset.
-//                 Fix bug in that behavior.
-//    2019-01-04 - Fixed bug 54073 - rdy signal should not be asserted during
-//                 reset
-//    2018-11-19 - Improved code coverage for is_idle
-//    2018-08-22 - Added is_idle to interface (as compare to
-//                 ccs_ctrl_in_buf_wait_v2)
 //------------------------------------------------------------------------------
 
 
-module esp_acc_softmax_cxx_ccs_ctrl_in_buf_wait_v4 (clk, en, arst, srst, irdy, ivld, idat, vld, rdy, dat, is_idle);
+module esp_acc_softmax_cxx_ccs_in_wait_v1 (idat, rdy, ivld, dat, irdy, vld);
 
-    parameter integer rscid   = 1;
-    parameter integer width   = 8;
-    parameter integer ph_clk  =  1;
-    parameter integer ph_en   =  1;
-    parameter integer ph_arst =  1;
-    parameter integer ph_srst =  1;
+  parameter integer rscid = 1;
+  parameter integer width = 8;
 
-    input              clk;
-    input              en;
-    input              arst;
-    input              srst;
-    input              irdy;
-    output             ivld;
-    input  [width-1:0] dat;
-    output             rdy;
-    input              vld;
-    output [width-1:0] idat;
-    output             is_idle;
+  output [width-1:0] idat;
+  output             rdy;
+  output             ivld;
+  input  [width-1:0] dat;
+  input              irdy;
+  input              vld;
 
-    reg                filled;
-    wire               filled_next;
-    wire               lbuf;
-    wire               fbuf;
-    reg    [width-1:0] abuf;
-    reg                hs_init;
+  wire   [width-1:0] idat;
+  wire               rdy;
+  wire               ivld;
 
-    assign lbuf = ~filled | irdy;
-    assign filled_next = lbuf ? (vld && hs_init) : filled;
-
-    assign rdy = lbuf && hs_init;
-
-    assign ivld = filled_next;
-    assign idat = abuf;
-
-    assign fbuf = (lbuf && vld && hs_init) || (irdy && filled_next);
-    assign is_idle = !fbuf && !lbuf;
-
-    //assign is_idle = (~((rdy && vld && hs_init) || (irdy && ivld))) && !lbuf ;
-
-    // Output registers:
-
-    generate
-    if (ph_arst == 0 && ph_clk==1)
-    begin: POS_CLK_NEG_ARST
-        always @(posedge clk or negedge arst)
-        if (arst == 1'b0)
-        begin
-            abuf  <= {width{1'b0}};
-            filled <= 1'b0;
-            hs_init <= 1'b0;
-        end
-        else if (srst == ph_srst)
-        begin
-            abuf  <= {width{1'b0}};
-            filled <= 1'b0;
-            hs_init <= 1'b0;
-        end
-        else if (en == ph_en)
-        begin
-            abuf  <= lbuf ? dat : abuf;
-            filled <= filled_next;
-            hs_init <= 1'b1;
-        end
-    end
-    else if (ph_arst==1 && ph_clk==1)
-    begin: POS_CLK_POS_ARST
-        always @(posedge clk or posedge arst)
-        if (arst == 1'b1)
-        begin
-            abuf  <= {width{1'b0}};
-            filled <= 1'b0;
-            hs_init <= 1'b0;
-        end
-        else if (srst == ph_srst)
-        begin
-            abuf  <= {width{1'b0}};
-            filled <= 1'b0;
-            hs_init <= 1'b0;
-        end
-        else if (en == ph_en)
-        begin
-            abuf  <= lbuf ? dat : abuf;
-            filled <= filled_next;
-            hs_init <= 1'b1;
-        end
-    end
-    else if (ph_arst == 0 && ph_clk==0)
-    begin: NEG_CLK_NEG_ARST
-        always @(negedge clk or negedge arst)
-        if (arst == 1'b0)
-        begin
-            abuf  <= {width{1'b0}};
-            filled <= 1'b0;
-            hs_init <= 1'b0;
-        end
-        else if (srst == ph_srst)
-        begin
-            abuf  <= {width{1'b0}};
-            filled <= 1'b0;
-            hs_init <= 1'b0;
-        end
-        else if (en == ph_en)
-        begin
-            abuf  <= lbuf ? dat : abuf;
-            filled <= filled_next;
-            hs_init <= 1'b1;
-        end
-    end
-    else if (ph_arst==1 && ph_clk==0)
-    begin: NEG_CLK_POS_ARST
-        always @(negedge clk or posedge arst)
-        if (arst == 1'b1)
-        begin
-            abuf  <= {width{1'b0}};
-            filled <= 1'b0;
-            hs_init <= 1'b0;
-        end
-        else if (srst == ph_srst)
-        begin
-            abuf  <= {width{1'b0}};
-            filled <= 1'b0;
-            hs_init <= 1'b0;
-        end
-        else if (en == ph_en)
-        begin
-            abuf  <= lbuf ? dat : abuf;
-            filled <= filled_next;
-            hs_init <= 1'b1;
-        end
-    end
-    endgenerate
-
-
-`ifdef RDY_ASRT
-    generate
-    if (ph_clk==1)
-    begin: POS_CLK_ASSERT
-
-       property rdyAsrt ;
-         @(posedge clk) ((srst==ph_srst) || (arst==ph_arst)) |=> (rdy==0);
-       endproperty
-       a1: assert property(rdyAsrt);
-
-    end else if (ph_clk==0)
-    begin: NEG_CLK_ASSERT
-
-       property rdyAsrt ;
-         @(negedge clk) ((srst==ph_srst) || (arst==ph_arst)) |=> (rdy==0);
-       endproperty
-       a1: assert property(rdyAsrt);
-
-    end
-    endgenerate
-
-`endif
+  assign idat = dat;
+  assign rdy = irdy;
+  assign ivld = vld;
 
 endmodule
-
 
 
 //------> ./softmax_cxx_ccs_sync_out_vld_v1.v 
@@ -409,75 +141,6 @@ module esp_acc_softmax_cxx_mgc_io_sync_v2 (ld, lz);
     wire   lz;
 
     assign lz = ld;
-
-endmodule
-
-
-//------> ./softmax_cxx_ccs_out_v1.v 
-//------------------------------------------------------------------------------
-// Catapult Synthesis - Sample I/O Port Library
-//
-// Copyright (c) 2003-2015 Mentor Graphics Corp.
-//       All Rights Reserved
-//
-// This document may be used and distributed without restriction provided that
-// this copyright statement is not removed from the file and that any derivative
-// work contains this copyright notice.
-//
-// The design information contained in this file is intended to be an example
-// of the functionality which the end user may study in preparation for creating
-// their own custom interfaces. This design does not necessarily present a
-// complete implementation of the named protocol or standard.
-//
-//------------------------------------------------------------------------------
-
-module esp_acc_softmax_cxx_ccs_out_v1 (dat, idat);
-
-  parameter integer rscid = 1;
-  parameter integer width = 8;
-
-  output   [width-1:0] dat;
-  input    [width-1:0] idat;
-
-  wire     [width-1:0] dat;
-
-  assign dat = idat;
-
-endmodule
-
-
-
-
-//------> ./softmax_cxx_ccs_in_v1.v 
-//------------------------------------------------------------------------------
-// Catapult Synthesis - Sample I/O Port Library
-//
-// Copyright (c) 2003-2017 Mentor Graphics Corp.
-//       All Rights Reserved
-//
-// This document may be used and distributed without restriction provided that
-// this copyright statement is not removed from the file and that any derivative
-// work contains this copyright notice.
-//
-// The design information contained in this file is intended to be an example
-// of the functionality which the end user may study in preparation for creating
-// their own custom interfaces. This design does not necessarily present a
-// complete implementation of the named protocol or standard.
-//
-//------------------------------------------------------------------------------
-
-
-module esp_acc_softmax_cxx_ccs_in_v1 (idat, dat);
-
-  parameter integer rscid = 1;
-  parameter integer width = 8;
-
-  output [width-1:0] idat;
-  input  [width-1:0] dat;
-
-  wire   [width-1:0] idat;
-
-  assign idat = dat;
 
 endmodule
 
@@ -646,6 +309,75 @@ module esp_acc_softmax_cxx_mgc_mul_pipe (a, b, clk, en, a_rst, s_rst, z);
 
     assign z = reg_array[stages-2];
 endmodule
+
+//------> ./softmax_cxx_ccs_out_v1.v 
+//------------------------------------------------------------------------------
+// Catapult Synthesis - Sample I/O Port Library
+//
+// Copyright (c) 2003-2015 Mentor Graphics Corp.
+//       All Rights Reserved
+//
+// This document may be used and distributed without restriction provided that
+// this copyright statement is not removed from the file and that any derivative
+// work contains this copyright notice.
+//
+// The design information contained in this file is intended to be an example
+// of the functionality which the end user may study in preparation for creating
+// their own custom interfaces. This design does not necessarily present a
+// complete implementation of the named protocol or standard.
+//
+//------------------------------------------------------------------------------
+
+module esp_acc_softmax_cxx_ccs_out_v1 (dat, idat);
+
+  parameter integer rscid = 1;
+  parameter integer width = 8;
+
+  output   [width-1:0] dat;
+  input    [width-1:0] idat;
+
+  wire     [width-1:0] dat;
+
+  assign dat = idat;
+
+endmodule
+
+
+
+
+//------> ./softmax_cxx_ccs_in_v1.v 
+//------------------------------------------------------------------------------
+// Catapult Synthesis - Sample I/O Port Library
+//
+// Copyright (c) 2003-2017 Mentor Graphics Corp.
+//       All Rights Reserved
+//
+// This document may be used and distributed without restriction provided that
+// this copyright statement is not removed from the file and that any derivative
+// work contains this copyright notice.
+//
+// The design information contained in this file is intended to be an example
+// of the functionality which the end user may study in preparation for creating
+// their own custom interfaces. This design does not necessarily present a
+// complete implementation of the named protocol or standard.
+//
+//------------------------------------------------------------------------------
+
+
+module esp_acc_softmax_cxx_ccs_in_v1 (idat, dat);
+
+  parameter integer rscid = 1;
+  parameter integer width = 8;
+
+  output [width-1:0] idat;
+  input  [width-1:0] dat;
+
+  wire   [width-1:0] idat;
+
+  assign idat = dat;
+
+endmodule
+
 
 //------> ./softmax_cxx_mgc_shift_br_beh_v5.v 
 module esp_acc_softmax_cxx_mgc_shift_br_v5(a,s,z);
@@ -871,7 +603,7 @@ endmodule
 //  HLS Date:       Tue Apr 14 07:55:32 PDT 2020
 //
 //  Generated by:   giuseppe@fastml02
-//  Generated date: Tue May 26 13:47:13 2020
+//  Generated date: Fri May 29 16:08:04 2020
 // ----------------------------------------------------------------------
 
 //
@@ -1271,7 +1003,7 @@ endmodule
 //  HLS Date:       Tue Apr 14 07:55:32 PDT 2020
 // 
 //  Generated by:   giuseppe@fastml02
-//  Generated date: Tue May 26 13:47:33 2020
+//  Generated date: Fri May 29 16:08:28 2020
 // ----------------------------------------------------------------------
 
 // 
@@ -1312,109 +1044,32 @@ module esp_acc_softmax_cxx_softmax_cxx_Xilinx_RAMS_BLOCK_1R1W_RBW_rwport_en_10_7
 endmodule
 
 // ------------------------------------------------------------------
-//  Design Unit:    esp_acc_softmax_cxx_softmax_cxx_Xilinx_RAMS_BLOCK_1R1W_RBW_rwport_en_9_7_32_128_128_32_1_gen
-// ------------------------------------------------------------------
-
-
-module esp_acc_softmax_cxx_softmax_cxx_Xilinx_RAMS_BLOCK_1R1W_RBW_rwport_en_9_7_32_128_128_32_1_gen
-    (
-  clken, q, radr, we, d, wadr, clken_d, d_d, q_d, radr_d, wadr_d, we_d, writeA_w_ram_ir_internal_WMASK_B_d,
-      readA_r_ram_ir_internal_RMASK_B_d
-);
-  output clken;
-  input [31:0] q;
-  output [6:0] radr;
-  output we;
-  output [31:0] d;
-  output [6:0] wadr;
-  input clken_d;
-  input [31:0] d_d;
-  output [31:0] q_d;
-  input [6:0] radr_d;
-  input [6:0] wadr_d;
-  input we_d;
-  input writeA_w_ram_ir_internal_WMASK_B_d;
-  input readA_r_ram_ir_internal_RMASK_B_d;
-
-
-
-  // Interconnect Declarations for Component Instantiations 
-  assign clken = (clken_d);
-  assign q_d = q;
-  assign radr = (radr_d);
-  assign we = (writeA_w_ram_ir_internal_WMASK_B_d);
-  assign d = (d_d);
-  assign wadr = (wadr_d);
-endmodule
-
-// ------------------------------------------------------------------
-//  Design Unit:    esp_acc_softmax_cxx_softmax_cxx_Xilinx_RAMS_BLOCK_1R1W_RBW_rwport_en_8_7_32_128_128_32_1_gen
-// ------------------------------------------------------------------
-
-
-module esp_acc_softmax_cxx_softmax_cxx_Xilinx_RAMS_BLOCK_1R1W_RBW_rwport_en_8_7_32_128_128_32_1_gen
-    (
-  clken, q, radr, we, d, wadr, clken_d, d_d, q_d, radr_d, wadr_d, we_d, writeA_w_ram_ir_internal_WMASK_B_d,
-      readA_r_ram_ir_internal_RMASK_B_d
-);
-  output clken;
-  input [31:0] q;
-  output [6:0] radr;
-  output we;
-  output [31:0] d;
-  output [6:0] wadr;
-  input clken_d;
-  input [31:0] d_d;
-  output [31:0] q_d;
-  input [6:0] radr_d;
-  input [6:0] wadr_d;
-  input we_d;
-  input writeA_w_ram_ir_internal_WMASK_B_d;
-  input readA_r_ram_ir_internal_RMASK_B_d;
-
-
-
-  // Interconnect Declarations for Component Instantiations 
-  assign clken = (clken_d);
-  assign q_d = q;
-  assign radr = (radr_d);
-  assign we = (writeA_w_ram_ir_internal_WMASK_B_d);
-  assign d = (d_d);
-  assign wadr = (wadr_d);
-endmodule
-
-// ------------------------------------------------------------------
 //  Design Unit:    esp_acc_softmax_cxx_softmax_cxx_core_core_fsm
 //  FSM Module
 // ------------------------------------------------------------------
 
 
 module esp_acc_softmax_cxx_softmax_cxx_core_core_fsm (
-  clk, rst, core_wen, fsm_output, CONFIG_LOOP_C_0_tr0, LOAD_OUTER_LOOP_C_0_tr0, COMPUTE_LOOP_C_0_tr0,
-      STORE_OUTER_LOOP_C_0_tr0
+  clk, rst, core_wen, fsm_output, CONFIG_LOOP_C_0_tr0, BATCH_LOOP_C_0_tr0
 );
   input clk;
   input rst;
   input core_wen;
-  output [5:0] fsm_output;
-  reg [5:0] fsm_output;
+  output [3:0] fsm_output;
+  reg [3:0] fsm_output;
   input CONFIG_LOOP_C_0_tr0;
-  input LOAD_OUTER_LOOP_C_0_tr0;
-  input COMPUTE_LOOP_C_0_tr0;
-  input STORE_OUTER_LOOP_C_0_tr0;
+  input BATCH_LOOP_C_0_tr0;
 
 
   // FSM State Type Declaration for esp_acc_softmax_cxx_softmax_cxx_core_core_fsm_1
   parameter
-    main_C_0 = 3'd0,
-    CONFIG_LOOP_C_0 = 3'd1,
-    LOAD_OUTER_LOOP_C_0 = 3'd2,
-    COMPUTE_LOOP_C_0 = 3'd3,
-    STORE_OUTER_LOOP_C_0 = 3'd4,
-    main_C_1 = 3'd5;
+    main_C_0 = 2'd0,
+    CONFIG_LOOP_C_0 = 2'd1,
+    BATCH_LOOP_C_0 = 2'd2,
+    main_C_1 = 2'd3;
 
-  reg [2:0] state_var;
-  reg [2:0] state_var_NS;
+  reg [1:0] state_var;
+  reg [1:0] state_var_NS;
 
 
   // Interconnect Declarations for Component Instantiations 
@@ -1422,48 +1077,30 @@ module esp_acc_softmax_cxx_softmax_cxx_core_core_fsm (
   begin : esp_acc_softmax_cxx_softmax_cxx_core_core_fsm_1
     case (state_var)
       CONFIG_LOOP_C_0 : begin
-        fsm_output = 6'b000010;
+        fsm_output = 4'b0010;
         if ( CONFIG_LOOP_C_0_tr0 ) begin
-          state_var_NS = LOAD_OUTER_LOOP_C_0;
+          state_var_NS = BATCH_LOOP_C_0;
         end
         else begin
           state_var_NS = CONFIG_LOOP_C_0;
         end
       end
-      LOAD_OUTER_LOOP_C_0 : begin
-        fsm_output = 6'b000100;
-        if ( LOAD_OUTER_LOOP_C_0_tr0 ) begin
-          state_var_NS = COMPUTE_LOOP_C_0;
-        end
-        else begin
-          state_var_NS = LOAD_OUTER_LOOP_C_0;
-        end
-      end
-      COMPUTE_LOOP_C_0 : begin
-        fsm_output = 6'b001000;
-        if ( COMPUTE_LOOP_C_0_tr0 ) begin
-          state_var_NS = STORE_OUTER_LOOP_C_0;
-        end
-        else begin
-          state_var_NS = COMPUTE_LOOP_C_0;
-        end
-      end
-      STORE_OUTER_LOOP_C_0 : begin
-        fsm_output = 6'b010000;
-        if ( STORE_OUTER_LOOP_C_0_tr0 ) begin
+      BATCH_LOOP_C_0 : begin
+        fsm_output = 4'b0100;
+        if ( BATCH_LOOP_C_0_tr0 ) begin
           state_var_NS = main_C_1;
         end
         else begin
-          state_var_NS = STORE_OUTER_LOOP_C_0;
+          state_var_NS = BATCH_LOOP_C_0;
         end
       end
       main_C_1 : begin
-        fsm_output = 6'b100000;
+        fsm_output = 4'b1000;
         state_var_NS = main_C_0;
       end
       // main_C_0
       default : begin
-        fsm_output = 6'b000001;
+        fsm_output = 4'b0001;
         state_var_NS = CONFIG_LOOP_C_0;
       end
     endcase
@@ -1515,6 +1152,218 @@ module esp_acc_softmax_cxx_softmax_cxx_core_staller (
       core_wten_reg <= ~ core_wen;
     end
   end
+endmodule
+
+// ------------------------------------------------------------------
+//  Design Unit:    esp_acc_softmax_cxx_softmax_cxx_core_CALC_SOFTMAX_LOOP_mul_cmp_mgc_mul_pipe_67_0_94_0_95_1_1_0_0_6_1_wait_dp
+// ------------------------------------------------------------------
+
+
+module esp_acc_softmax_cxx_softmax_cxx_core_CALC_SOFTMAX_LOOP_mul_cmp_mgc_mul_pipe_67_0_94_0_95_1_1_0_0_6_1_wait_dp
+    (
+  clk, rst, CALC_SOFTMAX_LOOP_mul_cmp_bawt, CALC_SOFTMAX_LOOP_mul_cmp_z_mxwt, CALC_SOFTMAX_LOOP_mul_cmp_biwt,
+      CALC_SOFTMAX_LOOP_mul_cmp_bdwt, CALC_SOFTMAX_LOOP_mul_cmp_z
+);
+  input clk;
+  input rst;
+  output CALC_SOFTMAX_LOOP_mul_cmp_bawt;
+  output [31:0] CALC_SOFTMAX_LOOP_mul_cmp_z_mxwt;
+  input CALC_SOFTMAX_LOOP_mul_cmp_biwt;
+  input CALC_SOFTMAX_LOOP_mul_cmp_bdwt;
+  input [94:0] CALC_SOFTMAX_LOOP_mul_cmp_z;
+
+
+  // Interconnect Declarations
+  reg [2:0] CALC_SOFTMAX_LOOP_mul_cmp_bcwt;
+  wire [3:0] nl_CALC_SOFTMAX_LOOP_mul_cmp_bcwt;
+  reg [31:0] CALC_SOFTMAX_LOOP_mul_cmp_z_bfwt_5_94_63;
+  reg [31:0] CALC_SOFTMAX_LOOP_mul_cmp_z_bfwt_4_94_63;
+  reg [31:0] CALC_SOFTMAX_LOOP_mul_cmp_z_bfwt_3_94_63;
+  reg [31:0] CALC_SOFTMAX_LOOP_mul_cmp_z_bfwt_2_94_63;
+  reg [31:0] CALC_SOFTMAX_LOOP_mul_cmp_z_bfwt_1_94_63;
+  reg [31:0] CALC_SOFTMAX_LOOP_mul_cmp_z_bfwt_94_63;
+
+  wire[2:0] CALC_SOFTMAX_LOOP_acc_1_nl;
+  wire[3:0] nl_CALC_SOFTMAX_LOOP_acc_1_nl;
+  wire[1:0] CALC_SOFTMAX_LOOP_acc_2_nl;
+  wire[2:0] nl_CALC_SOFTMAX_LOOP_acc_2_nl;
+
+  // Interconnect Declarations for Component Instantiations 
+  assign CALC_SOFTMAX_LOOP_mul_cmp_bawt = CALC_SOFTMAX_LOOP_mul_cmp_biwt | (CALC_SOFTMAX_LOOP_mul_cmp_bcwt!=3'b000);
+  assign CALC_SOFTMAX_LOOP_mul_cmp_z_mxwt = MUX_v_32_7_2((CALC_SOFTMAX_LOOP_mul_cmp_z[94:63]),
+      CALC_SOFTMAX_LOOP_mul_cmp_z_bfwt_94_63, CALC_SOFTMAX_LOOP_mul_cmp_z_bfwt_1_94_63,
+      CALC_SOFTMAX_LOOP_mul_cmp_z_bfwt_2_94_63, CALC_SOFTMAX_LOOP_mul_cmp_z_bfwt_3_94_63,
+      CALC_SOFTMAX_LOOP_mul_cmp_z_bfwt_4_94_63, CALC_SOFTMAX_LOOP_mul_cmp_z_bfwt_5_94_63,
+      CALC_SOFTMAX_LOOP_mul_cmp_bcwt);
+  always @(posedge clk) begin
+    if ( ~ rst ) begin
+      CALC_SOFTMAX_LOOP_mul_cmp_bcwt <= 3'b000;
+    end
+    else begin
+      CALC_SOFTMAX_LOOP_mul_cmp_bcwt <= nl_CALC_SOFTMAX_LOOP_mul_cmp_bcwt[2:0];
+    end
+  end
+  always @(posedge clk) begin
+    if ( ~ rst ) begin
+      CALC_SOFTMAX_LOOP_mul_cmp_z_bfwt_94_63 <= 32'b00000000000000000000000000000000;
+      CALC_SOFTMAX_LOOP_mul_cmp_z_bfwt_1_94_63 <= 32'b00000000000000000000000000000000;
+      CALC_SOFTMAX_LOOP_mul_cmp_z_bfwt_2_94_63 <= 32'b00000000000000000000000000000000;
+      CALC_SOFTMAX_LOOP_mul_cmp_z_bfwt_3_94_63 <= 32'b00000000000000000000000000000000;
+      CALC_SOFTMAX_LOOP_mul_cmp_z_bfwt_4_94_63 <= 32'b00000000000000000000000000000000;
+      CALC_SOFTMAX_LOOP_mul_cmp_z_bfwt_5_94_63 <= 32'b00000000000000000000000000000000;
+    end
+    else if ( CALC_SOFTMAX_LOOP_mul_cmp_biwt ) begin
+      CALC_SOFTMAX_LOOP_mul_cmp_z_bfwt_94_63 <= CALC_SOFTMAX_LOOP_mul_cmp_z[94:63];
+      CALC_SOFTMAX_LOOP_mul_cmp_z_bfwt_1_94_63 <= CALC_SOFTMAX_LOOP_mul_cmp_z_bfwt_94_63;
+      CALC_SOFTMAX_LOOP_mul_cmp_z_bfwt_2_94_63 <= CALC_SOFTMAX_LOOP_mul_cmp_z_bfwt_1_94_63;
+      CALC_SOFTMAX_LOOP_mul_cmp_z_bfwt_3_94_63 <= CALC_SOFTMAX_LOOP_mul_cmp_z_bfwt_2_94_63;
+      CALC_SOFTMAX_LOOP_mul_cmp_z_bfwt_4_94_63 <= CALC_SOFTMAX_LOOP_mul_cmp_z_bfwt_3_94_63;
+      CALC_SOFTMAX_LOOP_mul_cmp_z_bfwt_5_94_63 <= CALC_SOFTMAX_LOOP_mul_cmp_z_bfwt_4_94_63;
+    end
+  end
+  assign nl_CALC_SOFTMAX_LOOP_acc_1_nl = CALC_SOFTMAX_LOOP_mul_cmp_bcwt + 3'b111;
+  assign CALC_SOFTMAX_LOOP_acc_1_nl = nl_CALC_SOFTMAX_LOOP_acc_1_nl[2:0];
+  assign nl_CALC_SOFTMAX_LOOP_acc_2_nl = conv_u2u_1_2(CALC_SOFTMAX_LOOP_mul_cmp_biwt)
+      + conv_u2u_1_2(~ CALC_SOFTMAX_LOOP_mul_cmp_bdwt);
+  assign CALC_SOFTMAX_LOOP_acc_2_nl = nl_CALC_SOFTMAX_LOOP_acc_2_nl[1:0];
+  assign nl_CALC_SOFTMAX_LOOP_mul_cmp_bcwt  = CALC_SOFTMAX_LOOP_acc_1_nl + conv_u2u_2_3(CALC_SOFTMAX_LOOP_acc_2_nl);
+
+  function automatic [31:0] MUX_v_32_7_2;
+    input [31:0] input_0;
+    input [31:0] input_1;
+    input [31:0] input_2;
+    input [31:0] input_3;
+    input [31:0] input_4;
+    input [31:0] input_5;
+    input [31:0] input_6;
+    input [2:0] sel;
+    reg [31:0] result;
+  begin
+    case (sel)
+      3'b000 : begin
+        result = input_0;
+      end
+      3'b001 : begin
+        result = input_1;
+      end
+      3'b010 : begin
+        result = input_2;
+      end
+      3'b011 : begin
+        result = input_3;
+      end
+      3'b100 : begin
+        result = input_4;
+      end
+      3'b101 : begin
+        result = input_5;
+      end
+      default : begin
+        result = input_6;
+      end
+    endcase
+    MUX_v_32_7_2 = result;
+  end
+  endfunction
+
+
+  function automatic [1:0] conv_u2u_1_2 ;
+    input [0:0]  vector ;
+  begin
+    conv_u2u_1_2 = {1'b0, vector};
+  end
+  endfunction
+
+
+  function automatic [2:0] conv_u2u_2_3 ;
+    input [1:0]  vector ;
+  begin
+    conv_u2u_2_3 = {1'b0, vector};
+  end
+  endfunction
+
+endmodule
+
+// ------------------------------------------------------------------
+//  Design Unit:    esp_acc_softmax_cxx_softmax_cxx_core_CALC_SOFTMAX_LOOP_mul_cmp_mgc_mul_pipe_67_0_94_0_95_1_1_0_0_6_1_wait_ctrl
+// ------------------------------------------------------------------
+
+
+module esp_acc_softmax_cxx_softmax_cxx_core_CALC_SOFTMAX_LOOP_mul_cmp_mgc_mul_pipe_67_0_94_0_95_1_1_0_0_6_1_wait_ctrl
+    (
+  clk, rst, core_wen, core_wten, CALC_SOFTMAX_LOOP_mul_cmp_oswt_unreg, CALC_SOFTMAX_LOOP_mul_cmp_iswt5,
+      CALC_SOFTMAX_LOOP_mul_cmp_biwt, CALC_SOFTMAX_LOOP_mul_cmp_bdwt
+);
+  input clk;
+  input rst;
+  input core_wen;
+  input core_wten;
+  input CALC_SOFTMAX_LOOP_mul_cmp_oswt_unreg;
+  input CALC_SOFTMAX_LOOP_mul_cmp_iswt5;
+  output CALC_SOFTMAX_LOOP_mul_cmp_biwt;
+  output CALC_SOFTMAX_LOOP_mul_cmp_bdwt;
+
+
+  // Interconnect Declarations
+  reg CALC_SOFTMAX_LOOP_mul_cmp_ALC_SOFTMAX_LOOP_mul_cmp_pdswt4;
+  reg CALC_SOFTMAX_LOOP_mul_cmp_ALC_SOFTMAX_LOOP_mul_cmp_pdswt3;
+  reg CALC_SOFTMAX_LOOP_mul_cmp_ALC_SOFTMAX_LOOP_mul_cmp_pdswt2;
+  reg CALC_SOFTMAX_LOOP_mul_cmp_ALC_SOFTMAX_LOOP_mul_cmp_pdswt1;
+  reg CALC_SOFTMAX_LOOP_mul_cmp_ALC_SOFTMAX_LOOP_mul_cmp_pdswt0;
+  reg [2:0] CALC_SOFTMAX_LOOP_mul_cmp_icwt;
+  wire [3:0] nl_CALC_SOFTMAX_LOOP_mul_cmp_icwt;
+
+  wire[2:0] CALC_SOFTMAX_LOOP_acc_2_nl;
+  wire[3:0] nl_CALC_SOFTMAX_LOOP_acc_2_nl;
+  wire[1:0] CALC_SOFTMAX_LOOP_acc_3_nl;
+  wire[2:0] nl_CALC_SOFTMAX_LOOP_acc_3_nl;
+
+  // Interconnect Declarations for Component Instantiations 
+  assign CALC_SOFTMAX_LOOP_mul_cmp_bdwt = CALC_SOFTMAX_LOOP_mul_cmp_oswt_unreg &
+      core_wen;
+  assign CALC_SOFTMAX_LOOP_mul_cmp_biwt = CALC_SOFTMAX_LOOP_mul_cmp_ALC_SOFTMAX_LOOP_mul_cmp_pdswt0
+      | (CALC_SOFTMAX_LOOP_mul_cmp_icwt!=3'b000);
+  always @(posedge clk) begin
+    if ( ~ rst ) begin
+      CALC_SOFTMAX_LOOP_mul_cmp_ALC_SOFTMAX_LOOP_mul_cmp_pdswt4 <= 1'b0;
+      CALC_SOFTMAX_LOOP_mul_cmp_ALC_SOFTMAX_LOOP_mul_cmp_pdswt3 <= 1'b0;
+      CALC_SOFTMAX_LOOP_mul_cmp_ALC_SOFTMAX_LOOP_mul_cmp_pdswt2 <= 1'b0;
+      CALC_SOFTMAX_LOOP_mul_cmp_ALC_SOFTMAX_LOOP_mul_cmp_pdswt1 <= 1'b0;
+      CALC_SOFTMAX_LOOP_mul_cmp_ALC_SOFTMAX_LOOP_mul_cmp_pdswt0 <= 1'b0;
+      CALC_SOFTMAX_LOOP_mul_cmp_icwt <= 3'b000;
+    end
+    else begin
+      CALC_SOFTMAX_LOOP_mul_cmp_ALC_SOFTMAX_LOOP_mul_cmp_pdswt4 <= (~ core_wten)
+          & CALC_SOFTMAX_LOOP_mul_cmp_iswt5;
+      CALC_SOFTMAX_LOOP_mul_cmp_ALC_SOFTMAX_LOOP_mul_cmp_pdswt3 <= CALC_SOFTMAX_LOOP_mul_cmp_ALC_SOFTMAX_LOOP_mul_cmp_pdswt4;
+      CALC_SOFTMAX_LOOP_mul_cmp_ALC_SOFTMAX_LOOP_mul_cmp_pdswt2 <= CALC_SOFTMAX_LOOP_mul_cmp_ALC_SOFTMAX_LOOP_mul_cmp_pdswt3;
+      CALC_SOFTMAX_LOOP_mul_cmp_ALC_SOFTMAX_LOOP_mul_cmp_pdswt1 <= CALC_SOFTMAX_LOOP_mul_cmp_ALC_SOFTMAX_LOOP_mul_cmp_pdswt2;
+      CALC_SOFTMAX_LOOP_mul_cmp_ALC_SOFTMAX_LOOP_mul_cmp_pdswt0 <= CALC_SOFTMAX_LOOP_mul_cmp_ALC_SOFTMAX_LOOP_mul_cmp_pdswt1;
+      CALC_SOFTMAX_LOOP_mul_cmp_icwt <= nl_CALC_SOFTMAX_LOOP_mul_cmp_icwt[2:0];
+    end
+  end
+  assign nl_CALC_SOFTMAX_LOOP_acc_2_nl = CALC_SOFTMAX_LOOP_mul_cmp_icwt + 3'b111;
+  assign CALC_SOFTMAX_LOOP_acc_2_nl = nl_CALC_SOFTMAX_LOOP_acc_2_nl[2:0];
+  assign nl_CALC_SOFTMAX_LOOP_acc_3_nl = conv_u2u_1_2(CALC_SOFTMAX_LOOP_mul_cmp_ALC_SOFTMAX_LOOP_mul_cmp_pdswt0)
+      + conv_u2u_1_2(~ CALC_SOFTMAX_LOOP_mul_cmp_biwt);
+  assign CALC_SOFTMAX_LOOP_acc_3_nl = nl_CALC_SOFTMAX_LOOP_acc_3_nl[1:0];
+  assign nl_CALC_SOFTMAX_LOOP_mul_cmp_icwt  = CALC_SOFTMAX_LOOP_acc_2_nl + conv_u2u_2_3(CALC_SOFTMAX_LOOP_acc_3_nl);
+
+  function automatic [1:0] conv_u2u_1_2 ;
+    input [0:0]  vector ;
+  begin
+    conv_u2u_1_2 = {1'b0, vector};
+  end
+  endfunction
+
+
+  function automatic [2:0] conv_u2u_2_3 ;
+    input [1:0]  vector ;
+  begin
+    conv_u2u_2_3 = {1'b0, vector};
+  end
+  endfunction
+
 endmodule
 
 // ------------------------------------------------------------------
@@ -1595,51 +1444,80 @@ module esp_acc_softmax_cxx_softmax_cxx_core_acc_done_synci_acc_done_wait_ctrl (
 endmodule
 
 // ------------------------------------------------------------------
-//  Design Unit:    esp_acc_softmax_cxx_softmax_cxx_core_plm_out_data_rsci_1_plm_out_data_rsc_wait_dp
+//  Design Unit:    esp_acc_softmax_cxx_softmax_cxx_core_ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_1_ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsc_wait_dp
 // ------------------------------------------------------------------
 
 
-module esp_acc_softmax_cxx_softmax_cxx_core_plm_out_data_rsci_1_plm_out_data_rsc_wait_dp
+module esp_acc_softmax_cxx_softmax_cxx_core_ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_1_ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsc_wait_dp
     (
-  clk, rst, plm_out_data_rsci_q_d, plm_out_data_rsci_q_d_mxwt, plm_out_data_rsci_biwt_1,
-      plm_out_data_rsci_bdwt_2
+  clk, rst, ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_q_d,
+      ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_bawt,
+      ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_q_d_mxwt,
+      ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_biwt,
+      ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_bdwt,
+      ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_biwt_1,
+      ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_bdwt_2
 );
   input clk;
   input rst;
-  input [31:0] plm_out_data_rsci_q_d;
-  output [31:0] plm_out_data_rsci_q_d_mxwt;
-  input plm_out_data_rsci_biwt_1;
-  input plm_out_data_rsci_bdwt_2;
+  input [66:0] ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_q_d;
+  output ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_bawt;
+  output [66:0] ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_q_d_mxwt;
+  input ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_biwt;
+  input ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_bdwt;
+  input ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_biwt_1;
+  input ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_bdwt_2;
 
 
   // Interconnect Declarations
-  reg plm_out_data_rsci_bcwt_1;
-  reg [31:0] plm_out_data_rsci_q_d_bfwt;
+  reg ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_bcwt;
+  reg ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_bcwt_1;
+  reg [66:0] ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_q_d_bfwt;
 
 
   // Interconnect Declarations for Component Instantiations 
-  assign plm_out_data_rsci_q_d_mxwt = MUX_v_32_2_2(plm_out_data_rsci_q_d, plm_out_data_rsci_q_d_bfwt,
-      plm_out_data_rsci_bcwt_1);
+  assign ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_bawt
+      = ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_biwt
+      | ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_bcwt;
+  assign ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_q_d_mxwt
+      = MUX_v_67_2_2(ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_q_d,
+      ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_q_d_bfwt,
+      ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_bcwt_1);
   always @(posedge clk) begin
     if ( ~ rst ) begin
-      plm_out_data_rsci_bcwt_1 <= 1'b0;
+      ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_bcwt
+          <= 1'b0;
+      ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_bcwt_1
+          <= 1'b0;
     end
     else begin
-      plm_out_data_rsci_bcwt_1 <= ~((~(plm_out_data_rsci_bcwt_1 | plm_out_data_rsci_biwt_1))
-          | plm_out_data_rsci_bdwt_2);
+      ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_bcwt
+          <= ~((~(ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_bcwt
+          | ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_biwt))
+          | ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_bdwt);
+      ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_bcwt_1
+          <= ~((~(ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_bcwt_1
+          | ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_biwt_1))
+          | ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_bdwt_2);
     end
   end
   always @(posedge clk) begin
-    if ( plm_out_data_rsci_biwt_1 ) begin
-      plm_out_data_rsci_q_d_bfwt <= plm_out_data_rsci_q_d;
+    if ( ~ rst ) begin
+      ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_q_d_bfwt
+          <= 67'b0000000000000000000000000000000000000000000000000000000000000000000;
+    end
+    else if ( ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_biwt_1
+        ) begin
+      ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_q_d_bfwt
+          <= ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_q_d;
     end
   end
 
-  function automatic [31:0] MUX_v_32_2_2;
-    input [31:0] input_0;
-    input [31:0] input_1;
+  function automatic [66:0] MUX_v_67_2_2;
+    input [66:0] input_0;
+    input [66:0] input_1;
     input [0:0] sel;
-    reg [31:0] result;
+    reg [66:0] result;
   begin
     case (sel)
       1'b0 : begin
@@ -1649,149 +1527,65 @@ module esp_acc_softmax_cxx_softmax_cxx_core_plm_out_data_rsci_1_plm_out_data_rsc
         result = input_1;
       end
     endcase
-    MUX_v_32_2_2 = result;
+    MUX_v_67_2_2 = result;
   end
   endfunction
 
 endmodule
 
 // ------------------------------------------------------------------
-//  Design Unit:    esp_acc_softmax_cxx_softmax_cxx_core_plm_out_data_rsci_1_plm_out_data_rsc_wait_ctrl
+//  Design Unit:    esp_acc_softmax_cxx_softmax_cxx_core_ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_1_ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsc_wait_ctrl
 // ------------------------------------------------------------------
 
 
-module esp_acc_softmax_cxx_softmax_cxx_core_plm_out_data_rsci_1_plm_out_data_rsc_wait_ctrl
+module esp_acc_softmax_cxx_softmax_cxx_core_ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_1_ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsc_wait_ctrl
     (
-  core_wen, core_wten, plm_out_data_rsci_oswt_unreg_1, plm_out_data_rsci_iswt0_1,
-      plm_out_data_rsci_biwt_1, plm_out_data_rsci_bdwt_2, plm_out_data_rsci_readA_r_ram_ir_internal_RMASK_B_d_core_sct,
-      plm_out_data_rsci_we_d_core_sct_pff, plm_out_data_rsci_iswt0_pff, plm_out_data_rsci_iswt0_1_pff
+  core_wen, core_wten, ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_oswt_unreg,
+      ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_iswt0,
+      ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_oswt_unreg_1,
+      ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_iswt0_1,
+      ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_biwt,
+      ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_bdwt,
+      ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_biwt_1,
+      ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_bdwt_2,
+      ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_readA_r_ram_ir_internal_RMASK_B_d_core_sct,
+      ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_we_d_core_sct_pff,
+      ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_iswt0_pff,
+      ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_iswt0_1_pff
 );
   input core_wen;
   input core_wten;
-  input plm_out_data_rsci_oswt_unreg_1;
-  input plm_out_data_rsci_iswt0_1;
-  output plm_out_data_rsci_biwt_1;
-  output plm_out_data_rsci_bdwt_2;
-  output plm_out_data_rsci_readA_r_ram_ir_internal_RMASK_B_d_core_sct;
-  output plm_out_data_rsci_we_d_core_sct_pff;
-  input plm_out_data_rsci_iswt0_pff;
-  input plm_out_data_rsci_iswt0_1_pff;
+  input ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_oswt_unreg;
+  input ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_iswt0;
+  input ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_oswt_unreg_1;
+  input ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_iswt0_1;
+  output ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_biwt;
+  output ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_bdwt;
+  output ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_biwt_1;
+  output ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_bdwt_2;
+  output ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_readA_r_ram_ir_internal_RMASK_B_d_core_sct;
+  output ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_we_d_core_sct_pff;
+  input ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_iswt0_pff;
+  input ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_iswt0_1_pff;
 
 
 
   // Interconnect Declarations for Component Instantiations 
-  assign plm_out_data_rsci_bdwt_2 = plm_out_data_rsci_oswt_unreg_1 & core_wen;
-  assign plm_out_data_rsci_biwt_1 = (~ core_wten) & plm_out_data_rsci_iswt0_1;
-  assign plm_out_data_rsci_we_d_core_sct_pff = plm_out_data_rsci_iswt0_pff & core_wen;
-  assign plm_out_data_rsci_readA_r_ram_ir_internal_RMASK_B_d_core_sct = plm_out_data_rsci_iswt0_1_pff
+  assign ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_bdwt
+      = ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_oswt_unreg
       & core_wen;
-endmodule
-
-// ------------------------------------------------------------------
-//  Design Unit:    esp_acc_softmax_cxx_softmax_cxx_core_plm_in_data_rsci_1_plm_in_data_rsc_wait_dp
-// ------------------------------------------------------------------
-
-
-module esp_acc_softmax_cxx_softmax_cxx_core_plm_in_data_rsci_1_plm_in_data_rsc_wait_dp
-    (
-  clk, rst, plm_in_data_rsci_q_d, plm_in_data_rsci_bawt, plm_in_data_rsci_q_d_mxwt,
-      plm_in_data_rsci_biwt, plm_in_data_rsci_bdwt, plm_in_data_rsci_biwt_1, plm_in_data_rsci_bdwt_2
-);
-  input clk;
-  input rst;
-  input [31:0] plm_in_data_rsci_q_d;
-  output plm_in_data_rsci_bawt;
-  output [31:0] plm_in_data_rsci_q_d_mxwt;
-  input plm_in_data_rsci_biwt;
-  input plm_in_data_rsci_bdwt;
-  input plm_in_data_rsci_biwt_1;
-  input plm_in_data_rsci_bdwt_2;
-
-
-  // Interconnect Declarations
-  reg plm_in_data_rsci_bcwt;
-  reg plm_in_data_rsci_bcwt_1;
-  reg [31:0] plm_in_data_rsci_q_d_bfwt;
-
-
-  // Interconnect Declarations for Component Instantiations 
-  assign plm_in_data_rsci_bawt = plm_in_data_rsci_biwt | plm_in_data_rsci_bcwt;
-  assign plm_in_data_rsci_q_d_mxwt = MUX_v_32_2_2(plm_in_data_rsci_q_d, plm_in_data_rsci_q_d_bfwt,
-      plm_in_data_rsci_bcwt_1);
-  always @(posedge clk) begin
-    if ( ~ rst ) begin
-      plm_in_data_rsci_bcwt <= 1'b0;
-      plm_in_data_rsci_bcwt_1 <= 1'b0;
-    end
-    else begin
-      plm_in_data_rsci_bcwt <= ~((~(plm_in_data_rsci_bcwt | plm_in_data_rsci_biwt))
-          | plm_in_data_rsci_bdwt);
-      plm_in_data_rsci_bcwt_1 <= ~((~(plm_in_data_rsci_bcwt_1 | plm_in_data_rsci_biwt_1))
-          | plm_in_data_rsci_bdwt_2);
-    end
-  end
-  always @(posedge clk) begin
-    if ( plm_in_data_rsci_biwt_1 ) begin
-      plm_in_data_rsci_q_d_bfwt <= plm_in_data_rsci_q_d;
-    end
-  end
-
-  function automatic [31:0] MUX_v_32_2_2;
-    input [31:0] input_0;
-    input [31:0] input_1;
-    input [0:0] sel;
-    reg [31:0] result;
-  begin
-    case (sel)
-      1'b0 : begin
-        result = input_0;
-      end
-      default : begin
-        result = input_1;
-      end
-    endcase
-    MUX_v_32_2_2 = result;
-  end
-  endfunction
-
-endmodule
-
-// ------------------------------------------------------------------
-//  Design Unit:    esp_acc_softmax_cxx_softmax_cxx_core_plm_in_data_rsci_1_plm_in_data_rsc_wait_ctrl
-// ------------------------------------------------------------------
-
-
-module esp_acc_softmax_cxx_softmax_cxx_core_plm_in_data_rsci_1_plm_in_data_rsc_wait_ctrl
-    (
-  core_wen, core_wten, plm_in_data_rsci_oswt_unreg, plm_in_data_rsci_iswt0, plm_in_data_rsci_oswt_unreg_1,
-      plm_in_data_rsci_iswt0_1, plm_in_data_rsci_biwt, plm_in_data_rsci_bdwt, plm_in_data_rsci_biwt_1,
-      plm_in_data_rsci_bdwt_2, plm_in_data_rsci_readA_r_ram_ir_internal_RMASK_B_d_core_sct,
-      plm_in_data_rsci_we_d_core_sct_pff, plm_in_data_rsci_iswt0_pff, plm_in_data_rsci_iswt0_1_pff
-);
-  input core_wen;
-  input core_wten;
-  input plm_in_data_rsci_oswt_unreg;
-  input plm_in_data_rsci_iswt0;
-  input plm_in_data_rsci_oswt_unreg_1;
-  input plm_in_data_rsci_iswt0_1;
-  output plm_in_data_rsci_biwt;
-  output plm_in_data_rsci_bdwt;
-  output plm_in_data_rsci_biwt_1;
-  output plm_in_data_rsci_bdwt_2;
-  output plm_in_data_rsci_readA_r_ram_ir_internal_RMASK_B_d_core_sct;
-  output plm_in_data_rsci_we_d_core_sct_pff;
-  input plm_in_data_rsci_iswt0_pff;
-  input plm_in_data_rsci_iswt0_1_pff;
-
-
-
-  // Interconnect Declarations for Component Instantiations 
-  assign plm_in_data_rsci_bdwt = plm_in_data_rsci_oswt_unreg & core_wen;
-  assign plm_in_data_rsci_biwt = (~ core_wten) & plm_in_data_rsci_iswt0;
-  assign plm_in_data_rsci_bdwt_2 = plm_in_data_rsci_oswt_unreg_1 & core_wen;
-  assign plm_in_data_rsci_biwt_1 = (~ core_wten) & plm_in_data_rsci_iswt0_1;
-  assign plm_in_data_rsci_we_d_core_sct_pff = plm_in_data_rsci_iswt0_pff & core_wen;
-  assign plm_in_data_rsci_readA_r_ram_ir_internal_RMASK_B_d_core_sct = plm_in_data_rsci_iswt0_1_pff
+  assign ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_biwt
+      = (~ core_wten) & ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_iswt0;
+  assign ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_bdwt_2
+      = ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_oswt_unreg_1
+      & core_wen;
+  assign ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_biwt_1
+      = (~ core_wten) & ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_iswt0_1;
+  assign ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_we_d_core_sct_pff
+      = ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_iswt0_pff
+      & core_wen;
+  assign ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_readA_r_ram_ir_internal_RMASK_B_d_core_sct
+      = ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_iswt0_1_pff
       & core_wen;
 endmodule
 
@@ -1838,15 +1632,14 @@ endmodule
 
 module esp_acc_softmax_cxx_softmax_cxx_core_dma_write_chnl_rsci_dma_write_chnl_wait_ctrl
     (
-  core_wen, dma_write_chnl_rsci_oswt_unreg, dma_write_chnl_rsci_iswt0, dma_write_chnl_rsci_irdy_oreg,
-      dma_write_chnl_rsci_ivld_core_psct, dma_write_chnl_rsci_biwt, dma_write_chnl_rsci_bdwt,
-      dma_write_chnl_rsci_bcwt, dma_write_chnl_rsci_ivld_core_sct
+  core_wen, dma_write_chnl_rsci_oswt_unreg, dma_write_chnl_rsci_iswt0, dma_write_chnl_rsci_irdy,
+      dma_write_chnl_rsci_biwt, dma_write_chnl_rsci_bdwt, dma_write_chnl_rsci_bcwt,
+      dma_write_chnl_rsci_ivld_core_sct
 );
   input core_wen;
   input dma_write_chnl_rsci_oswt_unreg;
   input dma_write_chnl_rsci_iswt0;
-  input dma_write_chnl_rsci_irdy_oreg;
-  input dma_write_chnl_rsci_ivld_core_psct;
+  input dma_write_chnl_rsci_irdy;
   output dma_write_chnl_rsci_biwt;
   output dma_write_chnl_rsci_bdwt;
   input dma_write_chnl_rsci_bcwt;
@@ -1859,10 +1652,9 @@ module esp_acc_softmax_cxx_softmax_cxx_core_dma_write_chnl_rsci_dma_write_chnl_w
 
   // Interconnect Declarations for Component Instantiations 
   assign dma_write_chnl_rsci_bdwt = dma_write_chnl_rsci_oswt_unreg & core_wen;
-  assign dma_write_chnl_rsci_biwt = dma_write_chnl_rsci_ogwt & dma_write_chnl_rsci_irdy_oreg;
+  assign dma_write_chnl_rsci_biwt = dma_write_chnl_rsci_ogwt & dma_write_chnl_rsci_irdy;
   assign dma_write_chnl_rsci_ogwt = dma_write_chnl_rsci_iswt0 & (~ dma_write_chnl_rsci_bcwt);
-  assign dma_write_chnl_rsci_ivld_core_sct = dma_write_chnl_rsci_ivld_core_psct &
-      dma_write_chnl_rsci_ogwt;
+  assign dma_write_chnl_rsci_ivld_core_sct = dma_write_chnl_rsci_ogwt;
 endmodule
 
 // ------------------------------------------------------------------
@@ -1908,7 +1700,10 @@ module esp_acc_softmax_cxx_softmax_cxx_core_dma_read_chnl_rsci_dma_read_chnl_wai
     end
   end
   always @(posedge clk) begin
-    if ( dma_read_chnl_rsci_biwt ) begin
+    if ( ~ rst ) begin
+      dma_read_chnl_rsci_idat_bfwt_31_0 <= 32'b00000000000000000000000000000000;
+    end
+    else if ( dma_read_chnl_rsci_biwt ) begin
       dma_read_chnl_rsci_idat_bfwt_31_0 <= dma_read_chnl_rsci_idat[31:0];
     end
   end
@@ -1940,19 +1735,18 @@ endmodule
 
 module esp_acc_softmax_cxx_softmax_cxx_core_dma_read_chnl_rsci_dma_read_chnl_wait_ctrl
     (
-  core_wen, dma_read_chnl_rsci_oswt_unreg, dma_read_chnl_rsci_iswt0, dma_read_chnl_rsci_irdy_core_psct,
-      dma_read_chnl_rsci_ivld_oreg, dma_read_chnl_rsci_biwt, dma_read_chnl_rsci_bdwt,
-      dma_read_chnl_rsci_bcwt, dma_read_chnl_rsci_irdy_core_sct
+  core_wen, dma_read_chnl_rsci_oswt_unreg, dma_read_chnl_rsci_iswt0, dma_read_chnl_rsci_biwt,
+      dma_read_chnl_rsci_bdwt, dma_read_chnl_rsci_bcwt, dma_read_chnl_rsci_irdy_core_sct,
+      dma_read_chnl_rsci_ivld
 );
   input core_wen;
   input dma_read_chnl_rsci_oswt_unreg;
   input dma_read_chnl_rsci_iswt0;
-  input dma_read_chnl_rsci_irdy_core_psct;
-  input dma_read_chnl_rsci_ivld_oreg;
   output dma_read_chnl_rsci_biwt;
   output dma_read_chnl_rsci_bdwt;
   input dma_read_chnl_rsci_bcwt;
   output dma_read_chnl_rsci_irdy_core_sct;
+  input dma_read_chnl_rsci_ivld;
 
 
   // Interconnect Declarations
@@ -1961,9 +1755,9 @@ module esp_acc_softmax_cxx_softmax_cxx_core_dma_read_chnl_rsci_dma_read_chnl_wai
 
   // Interconnect Declarations for Component Instantiations 
   assign dma_read_chnl_rsci_bdwt = dma_read_chnl_rsci_oswt_unreg & core_wen;
-  assign dma_read_chnl_rsci_biwt = dma_read_chnl_rsci_ogwt & dma_read_chnl_rsci_ivld_oreg;
+  assign dma_read_chnl_rsci_biwt = dma_read_chnl_rsci_ogwt & dma_read_chnl_rsci_ivld;
   assign dma_read_chnl_rsci_ogwt = dma_read_chnl_rsci_iswt0 & (~ dma_read_chnl_rsci_bcwt);
-  assign dma_read_chnl_rsci_irdy_core_sct = dma_read_chnl_rsci_irdy_core_psct & dma_read_chnl_rsci_ogwt;
+  assign dma_read_chnl_rsci_irdy_core_sct = dma_read_chnl_rsci_ogwt;
 endmodule
 
 // ------------------------------------------------------------------
@@ -2009,15 +1803,14 @@ endmodule
 
 module esp_acc_softmax_cxx_softmax_cxx_core_dma_write_ctrl_rsci_dma_write_ctrl_wait_ctrl
     (
-  core_wen, dma_write_ctrl_rsci_oswt_unreg, dma_write_ctrl_rsci_iswt0, dma_write_ctrl_rsci_irdy_oreg,
-      dma_write_ctrl_rsci_ivld_core_psct, dma_write_ctrl_rsci_biwt, dma_write_ctrl_rsci_bdwt,
-      dma_write_ctrl_rsci_bcwt, dma_write_ctrl_rsci_ivld_core_sct
+  core_wen, dma_write_ctrl_rsci_oswt_unreg, dma_write_ctrl_rsci_iswt0, dma_write_ctrl_rsci_irdy,
+      dma_write_ctrl_rsci_biwt, dma_write_ctrl_rsci_bdwt, dma_write_ctrl_rsci_bcwt,
+      dma_write_ctrl_rsci_ivld_core_sct
 );
   input core_wen;
   input dma_write_ctrl_rsci_oswt_unreg;
   input dma_write_ctrl_rsci_iswt0;
-  input dma_write_ctrl_rsci_irdy_oreg;
-  input dma_write_ctrl_rsci_ivld_core_psct;
+  input dma_write_ctrl_rsci_irdy;
   output dma_write_ctrl_rsci_biwt;
   output dma_write_ctrl_rsci_bdwt;
   input dma_write_ctrl_rsci_bcwt;
@@ -2030,10 +1823,9 @@ module esp_acc_softmax_cxx_softmax_cxx_core_dma_write_ctrl_rsci_dma_write_ctrl_w
 
   // Interconnect Declarations for Component Instantiations 
   assign dma_write_ctrl_rsci_bdwt = dma_write_ctrl_rsci_oswt_unreg & core_wen;
-  assign dma_write_ctrl_rsci_biwt = dma_write_ctrl_rsci_ogwt & dma_write_ctrl_rsci_irdy_oreg;
+  assign dma_write_ctrl_rsci_biwt = dma_write_ctrl_rsci_ogwt & dma_write_ctrl_rsci_irdy;
   assign dma_write_ctrl_rsci_ogwt = dma_write_ctrl_rsci_iswt0 & (~ dma_write_ctrl_rsci_bcwt);
-  assign dma_write_ctrl_rsci_ivld_core_sct = dma_write_ctrl_rsci_ivld_core_psct &
-      dma_write_ctrl_rsci_ogwt;
+  assign dma_write_ctrl_rsci_ivld_core_sct = dma_write_ctrl_rsci_ogwt;
 endmodule
 
 // ------------------------------------------------------------------
@@ -2079,15 +1871,14 @@ endmodule
 
 module esp_acc_softmax_cxx_softmax_cxx_core_dma_read_ctrl_rsci_dma_read_ctrl_wait_ctrl
     (
-  core_wen, dma_read_ctrl_rsci_oswt_unreg, dma_read_ctrl_rsci_iswt0, dma_read_ctrl_rsci_irdy_oreg,
-      dma_read_ctrl_rsci_ivld_core_psct, dma_read_ctrl_rsci_biwt, dma_read_ctrl_rsci_bdwt,
-      dma_read_ctrl_rsci_bcwt, dma_read_ctrl_rsci_ivld_core_sct
+  core_wen, dma_read_ctrl_rsci_oswt_unreg, dma_read_ctrl_rsci_iswt0, dma_read_ctrl_rsci_irdy,
+      dma_read_ctrl_rsci_biwt, dma_read_ctrl_rsci_bdwt, dma_read_ctrl_rsci_bcwt,
+      dma_read_ctrl_rsci_ivld_core_sct
 );
   input core_wen;
   input dma_read_ctrl_rsci_oswt_unreg;
   input dma_read_ctrl_rsci_iswt0;
-  input dma_read_ctrl_rsci_irdy_oreg;
-  input dma_read_ctrl_rsci_ivld_core_psct;
+  input dma_read_ctrl_rsci_irdy;
   output dma_read_ctrl_rsci_biwt;
   output dma_read_ctrl_rsci_bdwt;
   input dma_read_ctrl_rsci_bcwt;
@@ -2100,59 +1891,84 @@ module esp_acc_softmax_cxx_softmax_cxx_core_dma_read_ctrl_rsci_dma_read_ctrl_wai
 
   // Interconnect Declarations for Component Instantiations 
   assign dma_read_ctrl_rsci_bdwt = dma_read_ctrl_rsci_oswt_unreg & core_wen;
-  assign dma_read_ctrl_rsci_biwt = dma_read_ctrl_rsci_ogwt & dma_read_ctrl_rsci_irdy_oreg;
+  assign dma_read_ctrl_rsci_biwt = dma_read_ctrl_rsci_ogwt & dma_read_ctrl_rsci_irdy;
   assign dma_read_ctrl_rsci_ogwt = dma_read_ctrl_rsci_iswt0 & (~ dma_read_ctrl_rsci_bcwt);
-  assign dma_read_ctrl_rsci_ivld_core_sct = dma_read_ctrl_rsci_ivld_core_psct & dma_read_ctrl_rsci_ogwt;
+  assign dma_read_ctrl_rsci_ivld_core_sct = dma_read_ctrl_rsci_ogwt;
 endmodule
 
 // ------------------------------------------------------------------
-//  Design Unit:    esp_acc_softmax_cxx_softmax_cxx_core_wait_dp
+//  Design Unit:    esp_acc_softmax_cxx_softmax_cxx_core_CALC_SOFTMAX_LOOP_mul_cmp
 // ------------------------------------------------------------------
 
 
-module esp_acc_softmax_cxx_softmax_cxx_core_wait_dp (
-  clk, rst, dma_read_ctrl_rsci_irdy, dma_read_ctrl_rsci_irdy_oreg, dma_write_ctrl_rsci_irdy,
-      dma_write_ctrl_rsci_irdy_oreg, dma_read_chnl_rsci_ivld, dma_read_chnl_rsci_ivld_oreg,
-      dma_write_chnl_rsci_irdy, dma_write_chnl_rsci_irdy_oreg
+module esp_acc_softmax_cxx_softmax_cxx_core_CALC_SOFTMAX_LOOP_mul_cmp (
+  clk, rst, core_wen, core_wten, CALC_SOFTMAX_LOOP_mul_cmp_oswt_unreg, CALC_SOFTMAX_LOOP_mul_cmp_bawt,
+      CALC_SOFTMAX_LOOP_mul_cmp_iswt5, CALC_SOFTMAX_LOOP_mul_cmp_a_core, CALC_SOFTMAX_LOOP_mul_cmp_b_core,
+      CALC_SOFTMAX_LOOP_mul_cmp_z_mxwt
 );
   input clk;
   input rst;
-  input dma_read_ctrl_rsci_irdy;
-  output dma_read_ctrl_rsci_irdy_oreg;
-  input dma_write_ctrl_rsci_irdy;
-  output dma_write_ctrl_rsci_irdy_oreg;
-  input dma_read_chnl_rsci_ivld;
-  output dma_read_chnl_rsci_ivld_oreg;
-  input dma_write_chnl_rsci_irdy;
-  output dma_write_chnl_rsci_irdy_oreg;
+  input core_wen;
+  input core_wten;
+  input CALC_SOFTMAX_LOOP_mul_cmp_oswt_unreg;
+  output CALC_SOFTMAX_LOOP_mul_cmp_bawt;
+  input CALC_SOFTMAX_LOOP_mul_cmp_iswt5;
+  input [66:0] CALC_SOFTMAX_LOOP_mul_cmp_a_core;
+  input [93:0] CALC_SOFTMAX_LOOP_mul_cmp_b_core;
+  output [31:0] CALC_SOFTMAX_LOOP_mul_cmp_z_mxwt;
 
 
   // Interconnect Declarations
-  reg dma_read_ctrl_rsci_irdy_oreg_rneg;
-  reg dma_write_ctrl_rsci_irdy_oreg_rneg;
-  reg dma_read_chnl_rsci_ivld_oreg_rneg;
-  reg dma_write_chnl_rsci_irdy_oreg_rneg;
+  wire CALC_SOFTMAX_LOOP_mul_cmp_biwt;
+  wire CALC_SOFTMAX_LOOP_mul_cmp_bdwt;
+  wire [94:0] CALC_SOFTMAX_LOOP_mul_cmp_z;
+  wire [31:0] CALC_SOFTMAX_LOOP_mul_cmp_z_mxwt_pconst;
 
 
   // Interconnect Declarations for Component Instantiations 
-  assign dma_read_ctrl_rsci_irdy_oreg = ~ dma_read_ctrl_rsci_irdy_oreg_rneg;
-  assign dma_write_ctrl_rsci_irdy_oreg = ~ dma_write_ctrl_rsci_irdy_oreg_rneg;
-  assign dma_read_chnl_rsci_ivld_oreg = ~ dma_read_chnl_rsci_ivld_oreg_rneg;
-  assign dma_write_chnl_rsci_irdy_oreg = ~ dma_write_chnl_rsci_irdy_oreg_rneg;
-  always @(posedge clk) begin
-    if ( ~ rst ) begin
-      dma_read_ctrl_rsci_irdy_oreg_rneg <= 1'b0;
-      dma_write_ctrl_rsci_irdy_oreg_rneg <= 1'b0;
-      dma_read_chnl_rsci_ivld_oreg_rneg <= 1'b0;
-      dma_write_chnl_rsci_irdy_oreg_rneg <= 1'b0;
-    end
-    else begin
-      dma_read_ctrl_rsci_irdy_oreg_rneg <= ~ dma_read_ctrl_rsci_irdy;
-      dma_write_ctrl_rsci_irdy_oreg_rneg <= ~ dma_write_ctrl_rsci_irdy;
-      dma_read_chnl_rsci_ivld_oreg_rneg <= ~ dma_read_chnl_rsci_ivld;
-      dma_write_chnl_rsci_irdy_oreg_rneg <= ~ dma_write_chnl_rsci_irdy;
-    end
-  end
+  esp_acc_softmax_cxx_mgc_mul_pipe #(.width_a(32'sd67),
+  .signd_a(32'sd0),
+  .width_b(32'sd94),
+  .signd_b(32'sd0),
+  .width_z(32'sd95),
+  .clock_edge(32'sd1),
+  .enable_active(32'sd1),
+  .a_rst_active(32'sd0),
+  .s_rst_active(32'sd0),
+  .stages(32'sd6),
+  .n_inreg(32'sd1)) CALC_SOFTMAX_LOOP_mul_cmp (
+      .a(CALC_SOFTMAX_LOOP_mul_cmp_a_core),
+      .b(CALC_SOFTMAX_LOOP_mul_cmp_b_core),
+      .clk(clk),
+      .en(1'b1),
+      .a_rst(1'b1),
+      .s_rst(rst),
+      .z(CALC_SOFTMAX_LOOP_mul_cmp_z)
+    );
+  esp_acc_softmax_cxx_softmax_cxx_core_CALC_SOFTMAX_LOOP_mul_cmp_mgc_mul_pipe_67_0_94_0_95_1_1_0_0_6_1_wait_ctrl
+      softmax_cxx_core_CALC_SOFTMAX_LOOP_mul_cmp_mgc_mul_pipe_67_0_94_0_95_1_1_0_0_6_1_wait_ctrl_inst
+      (
+      .clk(clk),
+      .rst(rst),
+      .core_wen(core_wen),
+      .core_wten(core_wten),
+      .CALC_SOFTMAX_LOOP_mul_cmp_oswt_unreg(CALC_SOFTMAX_LOOP_mul_cmp_oswt_unreg),
+      .CALC_SOFTMAX_LOOP_mul_cmp_iswt5(CALC_SOFTMAX_LOOP_mul_cmp_iswt5),
+      .CALC_SOFTMAX_LOOP_mul_cmp_biwt(CALC_SOFTMAX_LOOP_mul_cmp_biwt),
+      .CALC_SOFTMAX_LOOP_mul_cmp_bdwt(CALC_SOFTMAX_LOOP_mul_cmp_bdwt)
+    );
+  esp_acc_softmax_cxx_softmax_cxx_core_CALC_SOFTMAX_LOOP_mul_cmp_mgc_mul_pipe_67_0_94_0_95_1_1_0_0_6_1_wait_dp
+      softmax_cxx_core_CALC_SOFTMAX_LOOP_mul_cmp_mgc_mul_pipe_67_0_94_0_95_1_1_0_0_6_1_wait_dp_inst
+      (
+      .clk(clk),
+      .rst(rst),
+      .CALC_SOFTMAX_LOOP_mul_cmp_bawt(CALC_SOFTMAX_LOOP_mul_cmp_bawt),
+      .CALC_SOFTMAX_LOOP_mul_cmp_z_mxwt(CALC_SOFTMAX_LOOP_mul_cmp_z_mxwt_pconst),
+      .CALC_SOFTMAX_LOOP_mul_cmp_biwt(CALC_SOFTMAX_LOOP_mul_cmp_biwt),
+      .CALC_SOFTMAX_LOOP_mul_cmp_bdwt(CALC_SOFTMAX_LOOP_mul_cmp_bdwt),
+      .CALC_SOFTMAX_LOOP_mul_cmp_z(CALC_SOFTMAX_LOOP_mul_cmp_z)
+    );
+  assign CALC_SOFTMAX_LOOP_mul_cmp_z_mxwt = CALC_SOFTMAX_LOOP_mul_cmp_z_mxwt_pconst;
 endmodule
 
 // ------------------------------------------------------------------
@@ -2279,133 +2095,86 @@ module esp_acc_softmax_cxx_softmax_cxx_core_acc_done_synci (
 endmodule
 
 // ------------------------------------------------------------------
-//  Design Unit:    esp_acc_softmax_cxx_softmax_cxx_core_plm_out_data_rsci_1
+//  Design Unit:    esp_acc_softmax_cxx_softmax_cxx_core_ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_1
 // ------------------------------------------------------------------
 
 
-module esp_acc_softmax_cxx_softmax_cxx_core_plm_out_data_rsci_1 (
-  clk, rst, plm_out_data_rsci_q_d, plm_out_data_rsci_readA_r_ram_ir_internal_RMASK_B_d,
-      core_wen, core_wten, plm_out_data_rsci_oswt_unreg_1, plm_out_data_rsci_iswt0_1,
-      plm_out_data_rsci_q_d_mxwt, plm_out_data_rsci_we_d_pff, plm_out_data_rsci_iswt0_pff,
-      plm_out_data_rsci_iswt0_1_pff
+module esp_acc_softmax_cxx_softmax_cxx_core_ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_1
+    (
+  clk, rst, ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_q_d,
+      ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_readA_r_ram_ir_internal_RMASK_B_d,
+      core_wen, core_wten, ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_oswt_unreg,
+      ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_bawt,
+      ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_iswt0,
+      ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_oswt_unreg_1,
+      ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_iswt0_1,
+      ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_q_d_mxwt,
+      ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_we_d_pff,
+      ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_iswt0_pff,
+      ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_iswt0_1_pff
 );
   input clk;
   input rst;
-  input [31:0] plm_out_data_rsci_q_d;
-  output plm_out_data_rsci_readA_r_ram_ir_internal_RMASK_B_d;
+  input [66:0] ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_q_d;
+  output ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_readA_r_ram_ir_internal_RMASK_B_d;
   input core_wen;
   input core_wten;
-  input plm_out_data_rsci_oswt_unreg_1;
-  input plm_out_data_rsci_iswt0_1;
-  output [31:0] plm_out_data_rsci_q_d_mxwt;
-  output plm_out_data_rsci_we_d_pff;
-  input plm_out_data_rsci_iswt0_pff;
-  input plm_out_data_rsci_iswt0_1_pff;
+  input ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_oswt_unreg;
+  output ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_bawt;
+  input ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_iswt0;
+  input ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_oswt_unreg_1;
+  input ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_iswt0_1;
+  output [66:0] ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_q_d_mxwt;
+  output ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_we_d_pff;
+  input ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_iswt0_pff;
+  input ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_iswt0_1_pff;
 
 
   // Interconnect Declarations
-  wire plm_out_data_rsci_biwt_1;
-  wire plm_out_data_rsci_bdwt_2;
-  wire plm_out_data_rsci_readA_r_ram_ir_internal_RMASK_B_d_core_sct;
-  wire plm_out_data_rsci_we_d_core_sct_iff;
+  wire ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_biwt;
+  wire ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_bdwt;
+  wire ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_biwt_1;
+  wire ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_bdwt_2;
+  wire ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_readA_r_ram_ir_internal_RMASK_B_d_core_sct;
+  wire ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_we_d_core_sct_iff;
 
 
   // Interconnect Declarations for Component Instantiations 
-  esp_acc_softmax_cxx_softmax_cxx_core_plm_out_data_rsci_1_plm_out_data_rsc_wait_ctrl
-      softmax_cxx_core_plm_out_data_rsci_1_plm_out_data_rsc_wait_ctrl_inst (
+  esp_acc_softmax_cxx_softmax_cxx_core_ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_1_ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsc_wait_ctrl
+      softmax_cxx_core_ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_1_ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsc_wait_ctrl_inst
+      (
       .core_wen(core_wen),
       .core_wten(core_wten),
-      .plm_out_data_rsci_oswt_unreg_1(plm_out_data_rsci_oswt_unreg_1),
-      .plm_out_data_rsci_iswt0_1(plm_out_data_rsci_iswt0_1),
-      .plm_out_data_rsci_biwt_1(plm_out_data_rsci_biwt_1),
-      .plm_out_data_rsci_bdwt_2(plm_out_data_rsci_bdwt_2),
-      .plm_out_data_rsci_readA_r_ram_ir_internal_RMASK_B_d_core_sct(plm_out_data_rsci_readA_r_ram_ir_internal_RMASK_B_d_core_sct),
-      .plm_out_data_rsci_we_d_core_sct_pff(plm_out_data_rsci_we_d_core_sct_iff),
-      .plm_out_data_rsci_iswt0_pff(plm_out_data_rsci_iswt0_pff),
-      .plm_out_data_rsci_iswt0_1_pff(plm_out_data_rsci_iswt0_1_pff)
+      .ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_oswt_unreg(ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_oswt_unreg),
+      .ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_iswt0(ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_iswt0),
+      .ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_oswt_unreg_1(ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_oswt_unreg_1),
+      .ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_iswt0_1(ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_iswt0_1),
+      .ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_biwt(ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_biwt),
+      .ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_bdwt(ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_bdwt),
+      .ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_biwt_1(ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_biwt_1),
+      .ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_bdwt_2(ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_bdwt_2),
+      .ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_readA_r_ram_ir_internal_RMASK_B_d_core_sct(ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_readA_r_ram_ir_internal_RMASK_B_d_core_sct),
+      .ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_we_d_core_sct_pff(ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_we_d_core_sct_iff),
+      .ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_iswt0_pff(ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_iswt0_pff),
+      .ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_iswt0_1_pff(ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_iswt0_1_pff)
     );
-  esp_acc_softmax_cxx_softmax_cxx_core_plm_out_data_rsci_1_plm_out_data_rsc_wait_dp
-      softmax_cxx_core_plm_out_data_rsci_1_plm_out_data_rsc_wait_dp_inst (
+  esp_acc_softmax_cxx_softmax_cxx_core_ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_1_ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsc_wait_dp
+      softmax_cxx_core_ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_1_ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsc_wait_dp_inst
+      (
       .clk(clk),
       .rst(rst),
-      .plm_out_data_rsci_q_d(plm_out_data_rsci_q_d),
-      .plm_out_data_rsci_q_d_mxwt(plm_out_data_rsci_q_d_mxwt),
-      .plm_out_data_rsci_biwt_1(plm_out_data_rsci_biwt_1),
-      .plm_out_data_rsci_bdwt_2(plm_out_data_rsci_bdwt_2)
+      .ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_q_d(ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_q_d),
+      .ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_bawt(ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_bawt),
+      .ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_q_d_mxwt(ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_q_d_mxwt),
+      .ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_biwt(ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_biwt),
+      .ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_bdwt(ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_bdwt),
+      .ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_biwt_1(ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_biwt_1),
+      .ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_bdwt_2(ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_bdwt_2)
     );
-  assign plm_out_data_rsci_we_d_pff = plm_out_data_rsci_we_d_core_sct_iff;
-  assign plm_out_data_rsci_readA_r_ram_ir_internal_RMASK_B_d = plm_out_data_rsci_readA_r_ram_ir_internal_RMASK_B_d_core_sct;
-endmodule
-
-// ------------------------------------------------------------------
-//  Design Unit:    esp_acc_softmax_cxx_softmax_cxx_core_plm_in_data_rsci_1
-// ------------------------------------------------------------------
-
-
-module esp_acc_softmax_cxx_softmax_cxx_core_plm_in_data_rsci_1 (
-  clk, rst, plm_in_data_rsci_q_d, plm_in_data_rsci_readA_r_ram_ir_internal_RMASK_B_d,
-      core_wen, core_wten, plm_in_data_rsci_oswt_unreg, plm_in_data_rsci_bawt, plm_in_data_rsci_iswt0,
-      plm_in_data_rsci_oswt_unreg_1, plm_in_data_rsci_iswt0_1, plm_in_data_rsci_q_d_mxwt,
-      plm_in_data_rsci_we_d_pff, plm_in_data_rsci_iswt0_pff, plm_in_data_rsci_iswt0_1_pff
-);
-  input clk;
-  input rst;
-  input [31:0] plm_in_data_rsci_q_d;
-  output plm_in_data_rsci_readA_r_ram_ir_internal_RMASK_B_d;
-  input core_wen;
-  input core_wten;
-  input plm_in_data_rsci_oswt_unreg;
-  output plm_in_data_rsci_bawt;
-  input plm_in_data_rsci_iswt0;
-  input plm_in_data_rsci_oswt_unreg_1;
-  input plm_in_data_rsci_iswt0_1;
-  output [31:0] plm_in_data_rsci_q_d_mxwt;
-  output plm_in_data_rsci_we_d_pff;
-  input plm_in_data_rsci_iswt0_pff;
-  input plm_in_data_rsci_iswt0_1_pff;
-
-
-  // Interconnect Declarations
-  wire plm_in_data_rsci_biwt;
-  wire plm_in_data_rsci_bdwt;
-  wire plm_in_data_rsci_biwt_1;
-  wire plm_in_data_rsci_bdwt_2;
-  wire plm_in_data_rsci_readA_r_ram_ir_internal_RMASK_B_d_core_sct;
-  wire plm_in_data_rsci_we_d_core_sct_iff;
-
-
-  // Interconnect Declarations for Component Instantiations 
-  esp_acc_softmax_cxx_softmax_cxx_core_plm_in_data_rsci_1_plm_in_data_rsc_wait_ctrl
-      softmax_cxx_core_plm_in_data_rsci_1_plm_in_data_rsc_wait_ctrl_inst (
-      .core_wen(core_wen),
-      .core_wten(core_wten),
-      .plm_in_data_rsci_oswt_unreg(plm_in_data_rsci_oswt_unreg),
-      .plm_in_data_rsci_iswt0(plm_in_data_rsci_iswt0),
-      .plm_in_data_rsci_oswt_unreg_1(plm_in_data_rsci_oswt_unreg_1),
-      .plm_in_data_rsci_iswt0_1(plm_in_data_rsci_iswt0_1),
-      .plm_in_data_rsci_biwt(plm_in_data_rsci_biwt),
-      .plm_in_data_rsci_bdwt(plm_in_data_rsci_bdwt),
-      .plm_in_data_rsci_biwt_1(plm_in_data_rsci_biwt_1),
-      .plm_in_data_rsci_bdwt_2(plm_in_data_rsci_bdwt_2),
-      .plm_in_data_rsci_readA_r_ram_ir_internal_RMASK_B_d_core_sct(plm_in_data_rsci_readA_r_ram_ir_internal_RMASK_B_d_core_sct),
-      .plm_in_data_rsci_we_d_core_sct_pff(plm_in_data_rsci_we_d_core_sct_iff),
-      .plm_in_data_rsci_iswt0_pff(plm_in_data_rsci_iswt0_pff),
-      .plm_in_data_rsci_iswt0_1_pff(plm_in_data_rsci_iswt0_1_pff)
-    );
-  esp_acc_softmax_cxx_softmax_cxx_core_plm_in_data_rsci_1_plm_in_data_rsc_wait_dp
-      softmax_cxx_core_plm_in_data_rsci_1_plm_in_data_rsc_wait_dp_inst (
-      .clk(clk),
-      .rst(rst),
-      .plm_in_data_rsci_q_d(plm_in_data_rsci_q_d),
-      .plm_in_data_rsci_bawt(plm_in_data_rsci_bawt),
-      .plm_in_data_rsci_q_d_mxwt(plm_in_data_rsci_q_d_mxwt),
-      .plm_in_data_rsci_biwt(plm_in_data_rsci_biwt),
-      .plm_in_data_rsci_bdwt(plm_in_data_rsci_bdwt),
-      .plm_in_data_rsci_biwt_1(plm_in_data_rsci_biwt_1),
-      .plm_in_data_rsci_bdwt_2(plm_in_data_rsci_bdwt_2)
-    );
-  assign plm_in_data_rsci_we_d_pff = plm_in_data_rsci_we_d_core_sct_iff;
-  assign plm_in_data_rsci_readA_r_ram_ir_internal_RMASK_B_d = plm_in_data_rsci_readA_r_ram_ir_internal_RMASK_B_d_core_sct;
+  assign ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_we_d_pff
+      = ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_we_d_core_sct_iff;
+  assign ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_readA_r_ram_ir_internal_RMASK_B_d
+      = ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_readA_r_ram_ir_internal_RMASK_B_d_core_sct;
 endmodule
 
 // ------------------------------------------------------------------
@@ -2415,9 +2184,8 @@ endmodule
 
 module esp_acc_softmax_cxx_softmax_cxx_core_dma_write_chnl_rsci (
   clk, rst, dma_write_chnl_rsc_dat, dma_write_chnl_rsc_vld, dma_write_chnl_rsc_rdy,
-      core_wen, dma_write_chnl_rsci_irdy, dma_write_chnl_rsci_oswt_unreg, dma_write_chnl_rsci_bawt,
-      dma_write_chnl_rsci_iswt0, dma_write_chnl_rsci_wen_comp, dma_write_chnl_rsci_irdy_oreg,
-      dma_write_chnl_rsci_ivld_core_psct, dma_write_chnl_rsci_idat
+      core_wen, dma_write_chnl_rsci_oswt_unreg, dma_write_chnl_rsci_bawt, dma_write_chnl_rsci_iswt0,
+      dma_write_chnl_rsci_wen_comp, dma_write_chnl_rsci_idat
 );
   input clk;
   input rst;
@@ -2425,52 +2193,39 @@ module esp_acc_softmax_cxx_softmax_cxx_core_dma_write_chnl_rsci (
   output dma_write_chnl_rsc_vld;
   input dma_write_chnl_rsc_rdy;
   input core_wen;
-  output dma_write_chnl_rsci_irdy;
   input dma_write_chnl_rsci_oswt_unreg;
   output dma_write_chnl_rsci_bawt;
   input dma_write_chnl_rsci_iswt0;
   output dma_write_chnl_rsci_wen_comp;
-  input dma_write_chnl_rsci_irdy_oreg;
-  input dma_write_chnl_rsci_ivld_core_psct;
   input [63:0] dma_write_chnl_rsci_idat;
 
 
   // Interconnect Declarations
+  wire dma_write_chnl_rsci_irdy;
   wire dma_write_chnl_rsci_biwt;
   wire dma_write_chnl_rsci_bdwt;
   wire dma_write_chnl_rsci_bcwt;
   wire dma_write_chnl_rsci_ivld_core_sct;
-  wire dma_write_chnl_rsc_is_idle;
 
 
   // Interconnect Declarations for Component Instantiations 
   wire [63:0] nl_dma_write_chnl_rsci_idat;
   assign nl_dma_write_chnl_rsci_idat = {32'b11011110101011011011111011101111 , (dma_write_chnl_rsci_idat[31:0])};
-  esp_acc_softmax_cxx_ccs_out_buf_wait_v4 #(.rscid(32'sd7),
-  .width(32'sd64),
-  .ph_clk(32'sd1),
-  .ph_en(32'sd0),
-  .ph_arst(32'sd0),
-  .ph_srst(32'sd0)) dma_write_chnl_rsci (
-      .clk(clk),
-      .en(1'b0),
-      .arst(1'b1),
-      .srst(rst),
+  esp_acc_softmax_cxx_ccs_out_wait_v1 #(.rscid(32'sd7),
+  .width(32'sd64)) dma_write_chnl_rsci (
       .irdy(dma_write_chnl_rsci_irdy),
       .ivld(dma_write_chnl_rsci_ivld_core_sct),
       .idat(nl_dma_write_chnl_rsci_idat[63:0]),
       .rdy(dma_write_chnl_rsc_rdy),
       .vld(dma_write_chnl_rsc_vld),
-      .dat(dma_write_chnl_rsc_dat),
-      .is_idle(dma_write_chnl_rsc_is_idle)
+      .dat(dma_write_chnl_rsc_dat)
     );
   esp_acc_softmax_cxx_softmax_cxx_core_dma_write_chnl_rsci_dma_write_chnl_wait_ctrl
       softmax_cxx_core_dma_write_chnl_rsci_dma_write_chnl_wait_ctrl_inst (
       .core_wen(core_wen),
       .dma_write_chnl_rsci_oswt_unreg(dma_write_chnl_rsci_oswt_unreg),
       .dma_write_chnl_rsci_iswt0(dma_write_chnl_rsci_iswt0),
-      .dma_write_chnl_rsci_irdy_oreg(dma_write_chnl_rsci_irdy_oreg),
-      .dma_write_chnl_rsci_ivld_core_psct(dma_write_chnl_rsci_ivld_core_psct),
+      .dma_write_chnl_rsci_irdy(dma_write_chnl_rsci_irdy),
       .dma_write_chnl_rsci_biwt(dma_write_chnl_rsci_biwt),
       .dma_write_chnl_rsci_bdwt(dma_write_chnl_rsci_bdwt),
       .dma_write_chnl_rsci_bcwt(dma_write_chnl_rsci_bcwt),
@@ -2497,8 +2252,7 @@ endmodule
 module esp_acc_softmax_cxx_softmax_cxx_core_dma_read_chnl_rsci (
   clk, rst, dma_read_chnl_rsc_dat, dma_read_chnl_rsc_vld, dma_read_chnl_rsc_rdy,
       core_wen, dma_read_chnl_rsci_oswt_unreg, dma_read_chnl_rsci_bawt, dma_read_chnl_rsci_iswt0,
-      dma_read_chnl_rsci_wen_comp, dma_read_chnl_rsci_irdy_core_psct, dma_read_chnl_rsci_ivld,
-      dma_read_chnl_rsci_ivld_oreg, dma_read_chnl_rsci_idat_mxwt
+      dma_read_chnl_rsci_wen_comp, dma_read_chnl_rsci_idat_mxwt
 );
   input clk;
   input rst;
@@ -2510,9 +2264,6 @@ module esp_acc_softmax_cxx_softmax_cxx_core_dma_read_chnl_rsci (
   output dma_read_chnl_rsci_bawt;
   input dma_read_chnl_rsci_iswt0;
   output dma_read_chnl_rsci_wen_comp;
-  input dma_read_chnl_rsci_irdy_core_psct;
-  output dma_read_chnl_rsci_ivld;
-  input dma_read_chnl_rsci_ivld_oreg;
   output [31:0] dma_read_chnl_rsci_idat_mxwt;
 
 
@@ -2521,41 +2272,31 @@ module esp_acc_softmax_cxx_softmax_cxx_core_dma_read_chnl_rsci (
   wire dma_read_chnl_rsci_bdwt;
   wire dma_read_chnl_rsci_bcwt;
   wire dma_read_chnl_rsci_irdy_core_sct;
+  wire dma_read_chnl_rsci_ivld;
   wire [63:0] dma_read_chnl_rsci_idat;
-  wire dma_read_chnl_rsc_is_idle;
   wire [31:0] dma_read_chnl_rsci_idat_mxwt_pconst;
 
 
   // Interconnect Declarations for Component Instantiations 
-  esp_acc_softmax_cxx_ccs_ctrl_in_buf_wait_v4 #(.rscid(32'sd6),
-  .width(32'sd64),
-  .ph_clk(32'sd1),
-  .ph_en(32'sd0),
-  .ph_arst(32'sd0),
-  .ph_srst(32'sd0)) dma_read_chnl_rsci (
-      .clk(clk),
-      .en(1'b0),
-      .arst(1'b1),
-      .srst(rst),
+  esp_acc_softmax_cxx_ccs_in_wait_v1 #(.rscid(32'sd6),
+  .width(32'sd64)) dma_read_chnl_rsci (
       .rdy(dma_read_chnl_rsc_rdy),
       .vld(dma_read_chnl_rsc_vld),
       .dat(dma_read_chnl_rsc_dat),
       .irdy(dma_read_chnl_rsci_irdy_core_sct),
       .ivld(dma_read_chnl_rsci_ivld),
-      .idat(dma_read_chnl_rsci_idat),
-      .is_idle(dma_read_chnl_rsc_is_idle)
+      .idat(dma_read_chnl_rsci_idat)
     );
   esp_acc_softmax_cxx_softmax_cxx_core_dma_read_chnl_rsci_dma_read_chnl_wait_ctrl
       softmax_cxx_core_dma_read_chnl_rsci_dma_read_chnl_wait_ctrl_inst (
       .core_wen(core_wen),
       .dma_read_chnl_rsci_oswt_unreg(dma_read_chnl_rsci_oswt_unreg),
       .dma_read_chnl_rsci_iswt0(dma_read_chnl_rsci_iswt0),
-      .dma_read_chnl_rsci_irdy_core_psct(dma_read_chnl_rsci_irdy_core_psct),
-      .dma_read_chnl_rsci_ivld_oreg(dma_read_chnl_rsci_ivld_oreg),
       .dma_read_chnl_rsci_biwt(dma_read_chnl_rsci_biwt),
       .dma_read_chnl_rsci_bdwt(dma_read_chnl_rsci_bdwt),
       .dma_read_chnl_rsci_bcwt(dma_read_chnl_rsci_bcwt),
-      .dma_read_chnl_rsci_irdy_core_sct(dma_read_chnl_rsci_irdy_core_sct)
+      .dma_read_chnl_rsci_irdy_core_sct(dma_read_chnl_rsci_irdy_core_sct),
+      .dma_read_chnl_rsci_ivld(dma_read_chnl_rsci_ivld)
     );
   esp_acc_softmax_cxx_softmax_cxx_core_dma_read_chnl_rsci_dma_read_chnl_wait_dp softmax_cxx_core_dma_read_chnl_rsci_dma_read_chnl_wait_dp_inst
       (
@@ -2580,9 +2321,8 @@ endmodule
 
 module esp_acc_softmax_cxx_softmax_cxx_core_dma_write_ctrl_rsci (
   clk, rst, dma_write_ctrl_rsc_dat, dma_write_ctrl_rsc_vld, dma_write_ctrl_rsc_rdy,
-      core_wen, dma_write_ctrl_rsci_irdy, dma_write_ctrl_rsci_oswt_unreg, dma_write_ctrl_rsci_bawt,
-      dma_write_ctrl_rsci_iswt0, dma_write_ctrl_rsci_wen_comp, dma_write_ctrl_rsci_irdy_oreg,
-      dma_write_ctrl_rsci_ivld_core_psct, dma_write_ctrl_rsci_idat
+      core_wen, dma_write_ctrl_rsci_oswt_unreg, dma_write_ctrl_rsci_bawt, dma_write_ctrl_rsci_iswt0,
+      dma_write_ctrl_rsci_wen_comp, dma_write_ctrl_rsci_idat
 );
   input clk;
   input rst;
@@ -2590,53 +2330,40 @@ module esp_acc_softmax_cxx_softmax_cxx_core_dma_write_ctrl_rsci (
   output dma_write_ctrl_rsc_vld;
   input dma_write_ctrl_rsc_rdy;
   input core_wen;
-  output dma_write_ctrl_rsci_irdy;
   input dma_write_ctrl_rsci_oswt_unreg;
   output dma_write_ctrl_rsci_bawt;
   input dma_write_ctrl_rsci_iswt0;
   output dma_write_ctrl_rsci_wen_comp;
-  input dma_write_ctrl_rsci_irdy_oreg;
-  input dma_write_ctrl_rsci_ivld_core_psct;
   input [66:0] dma_write_ctrl_rsci_idat;
 
 
   // Interconnect Declarations
+  wire dma_write_ctrl_rsci_irdy;
   wire dma_write_ctrl_rsci_biwt;
   wire dma_write_ctrl_rsci_bdwt;
   wire dma_write_ctrl_rsci_bcwt;
   wire dma_write_ctrl_rsci_ivld_core_sct;
-  wire dma_write_ctrl_rsc_is_idle;
 
 
   // Interconnect Declarations for Component Instantiations 
   wire [66:0] nl_dma_write_ctrl_rsci_idat;
   assign nl_dma_write_ctrl_rsci_idat = {56'b01100000000000000000000000010000000000000000000000000000
       , (dma_write_ctrl_rsci_idat[10:7]) , 7'b0000000};
-  esp_acc_softmax_cxx_ccs_out_buf_wait_v4 #(.rscid(32'sd5),
-  .width(32'sd67),
-  .ph_clk(32'sd1),
-  .ph_en(32'sd0),
-  .ph_arst(32'sd0),
-  .ph_srst(32'sd0)) dma_write_ctrl_rsci (
-      .clk(clk),
-      .en(1'b0),
-      .arst(1'b1),
-      .srst(rst),
+  esp_acc_softmax_cxx_ccs_out_wait_v1 #(.rscid(32'sd5),
+  .width(32'sd67)) dma_write_ctrl_rsci (
       .irdy(dma_write_ctrl_rsci_irdy),
       .ivld(dma_write_ctrl_rsci_ivld_core_sct),
       .idat(nl_dma_write_ctrl_rsci_idat[66:0]),
       .rdy(dma_write_ctrl_rsc_rdy),
       .vld(dma_write_ctrl_rsc_vld),
-      .dat(dma_write_ctrl_rsc_dat),
-      .is_idle(dma_write_ctrl_rsc_is_idle)
+      .dat(dma_write_ctrl_rsc_dat)
     );
   esp_acc_softmax_cxx_softmax_cxx_core_dma_write_ctrl_rsci_dma_write_ctrl_wait_ctrl
       softmax_cxx_core_dma_write_ctrl_rsci_dma_write_ctrl_wait_ctrl_inst (
       .core_wen(core_wen),
       .dma_write_ctrl_rsci_oswt_unreg(dma_write_ctrl_rsci_oswt_unreg),
       .dma_write_ctrl_rsci_iswt0(dma_write_ctrl_rsci_iswt0),
-      .dma_write_ctrl_rsci_irdy_oreg(dma_write_ctrl_rsci_irdy_oreg),
-      .dma_write_ctrl_rsci_ivld_core_psct(dma_write_ctrl_rsci_ivld_core_psct),
+      .dma_write_ctrl_rsci_irdy(dma_write_ctrl_rsci_irdy),
       .dma_write_ctrl_rsci_biwt(dma_write_ctrl_rsci_biwt),
       .dma_write_ctrl_rsci_bdwt(dma_write_ctrl_rsci_bdwt),
       .dma_write_ctrl_rsci_bcwt(dma_write_ctrl_rsci_bcwt),
@@ -2662,9 +2389,8 @@ endmodule
 
 module esp_acc_softmax_cxx_softmax_cxx_core_dma_read_ctrl_rsci (
   clk, rst, dma_read_ctrl_rsc_dat, dma_read_ctrl_rsc_vld, dma_read_ctrl_rsc_rdy,
-      core_wen, dma_read_ctrl_rsci_irdy, dma_read_ctrl_rsci_oswt_unreg, dma_read_ctrl_rsci_bawt,
-      dma_read_ctrl_rsci_iswt0, dma_read_ctrl_rsci_wen_comp, dma_read_ctrl_rsci_irdy_oreg,
-      dma_read_ctrl_rsci_ivld_core_psct, dma_read_ctrl_rsci_idat
+      core_wen, dma_read_ctrl_rsci_oswt_unreg, dma_read_ctrl_rsci_bawt, dma_read_ctrl_rsci_iswt0,
+      dma_read_ctrl_rsci_wen_comp, dma_read_ctrl_rsci_idat
 );
   input clk;
   input rst;
@@ -2672,53 +2398,40 @@ module esp_acc_softmax_cxx_softmax_cxx_core_dma_read_ctrl_rsci (
   output dma_read_ctrl_rsc_vld;
   input dma_read_ctrl_rsc_rdy;
   input core_wen;
-  output dma_read_ctrl_rsci_irdy;
   input dma_read_ctrl_rsci_oswt_unreg;
   output dma_read_ctrl_rsci_bawt;
   input dma_read_ctrl_rsci_iswt0;
   output dma_read_ctrl_rsci_wen_comp;
-  input dma_read_ctrl_rsci_irdy_oreg;
-  input dma_read_ctrl_rsci_ivld_core_psct;
   input [66:0] dma_read_ctrl_rsci_idat;
 
 
   // Interconnect Declarations
+  wire dma_read_ctrl_rsci_irdy;
   wire dma_read_ctrl_rsci_biwt;
   wire dma_read_ctrl_rsci_bdwt;
   wire dma_read_ctrl_rsci_bcwt;
   wire dma_read_ctrl_rsci_ivld_core_sct;
-  wire dma_read_ctrl_rsc_is_idle;
 
 
   // Interconnect Declarations for Component Instantiations 
   wire [66:0] nl_dma_read_ctrl_rsci_idat;
   assign nl_dma_read_ctrl_rsci_idat = {56'b01100000000000000000000000010000000000000000000000000000
       , (dma_read_ctrl_rsci_idat[10:7]) , 7'b0000000};
-  esp_acc_softmax_cxx_ccs_out_buf_wait_v4 #(.rscid(32'sd4),
-  .width(32'sd67),
-  .ph_clk(32'sd1),
-  .ph_en(32'sd0),
-  .ph_arst(32'sd0),
-  .ph_srst(32'sd0)) dma_read_ctrl_rsci (
-      .clk(clk),
-      .en(1'b0),
-      .arst(1'b1),
-      .srst(rst),
+  esp_acc_softmax_cxx_ccs_out_wait_v1 #(.rscid(32'sd4),
+  .width(32'sd67)) dma_read_ctrl_rsci (
       .irdy(dma_read_ctrl_rsci_irdy),
       .ivld(dma_read_ctrl_rsci_ivld_core_sct),
       .idat(nl_dma_read_ctrl_rsci_idat[66:0]),
       .rdy(dma_read_ctrl_rsc_rdy),
       .vld(dma_read_ctrl_rsc_vld),
-      .dat(dma_read_ctrl_rsc_dat),
-      .is_idle(dma_read_ctrl_rsc_is_idle)
+      .dat(dma_read_ctrl_rsc_dat)
     );
   esp_acc_softmax_cxx_softmax_cxx_core_dma_read_ctrl_rsci_dma_read_ctrl_wait_ctrl
       softmax_cxx_core_dma_read_ctrl_rsci_dma_read_ctrl_wait_ctrl_inst (
       .core_wen(core_wen),
       .dma_read_ctrl_rsci_oswt_unreg(dma_read_ctrl_rsci_oswt_unreg),
       .dma_read_ctrl_rsci_iswt0(dma_read_ctrl_rsci_iswt0),
-      .dma_read_ctrl_rsci_irdy_oreg(dma_read_ctrl_rsci_irdy_oreg),
-      .dma_read_ctrl_rsci_ivld_core_psct(dma_read_ctrl_rsci_ivld_core_psct),
+      .dma_read_ctrl_rsci_irdy(dma_read_ctrl_rsci_irdy),
       .dma_read_ctrl_rsci_biwt(dma_read_ctrl_rsci_biwt),
       .dma_read_ctrl_rsci_bdwt(dma_read_ctrl_rsci_bdwt),
       .dma_read_ctrl_rsci_bcwt(dma_read_ctrl_rsci_bcwt),
@@ -2747,14 +2460,11 @@ module esp_acc_softmax_cxx_softmax_cxx_core (
       conf_done_rsc_dat, conf_done_rsc_triosy_lz, dma_read_ctrl_rsc_dat, dma_read_ctrl_rsc_vld,
       dma_read_ctrl_rsc_rdy, dma_write_ctrl_rsc_dat, dma_write_ctrl_rsc_vld, dma_write_ctrl_rsc_rdy,
       dma_read_chnl_rsc_dat, dma_read_chnl_rsc_vld, dma_read_chnl_rsc_rdy, dma_write_chnl_rsc_dat,
-      dma_write_chnl_rsc_vld, dma_write_chnl_rsc_rdy, acc_done_sync_vld, plm_in_data_rsci_d_d,
-      plm_in_data_rsci_q_d, plm_in_data_rsci_radr_d, plm_in_data_rsci_wadr_d, plm_in_data_rsci_readA_r_ram_ir_internal_RMASK_B_d,
-      plm_out_data_rsci_d_d, plm_out_data_rsci_q_d, plm_out_data_rsci_radr_d, plm_out_data_rsci_wadr_d,
-      plm_out_data_rsci_readA_r_ram_ir_internal_RMASK_B_d, ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_clken_d,
-      ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_d_d,
+      dma_write_chnl_rsc_vld, dma_write_chnl_rsc_rdy, acc_done_sync_vld, ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_d_d,
       ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_q_d,
+      ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_radr_d,
+      ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_wadr_d,
       ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_readA_r_ram_ir_internal_RMASK_B_d,
-      plm_in_data_rsci_we_d_pff, plm_out_data_rsci_we_d_pff, ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_radr_d_pff,
       ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_we_d_pff
 );
   input clk;
@@ -2778,23 +2488,11 @@ module esp_acc_softmax_cxx_softmax_cxx_core (
   output dma_write_chnl_rsc_vld;
   input dma_write_chnl_rsc_rdy;
   output acc_done_sync_vld;
-  output [31:0] plm_in_data_rsci_d_d;
-  input [31:0] plm_in_data_rsci_q_d;
-  output [6:0] plm_in_data_rsci_radr_d;
-  output [6:0] plm_in_data_rsci_wadr_d;
-  output plm_in_data_rsci_readA_r_ram_ir_internal_RMASK_B_d;
-  output [31:0] plm_out_data_rsci_d_d;
-  input [31:0] plm_out_data_rsci_q_d;
-  output [6:0] plm_out_data_rsci_radr_d;
-  output [6:0] plm_out_data_rsci_wadr_d;
-  output plm_out_data_rsci_readA_r_ram_ir_internal_RMASK_B_d;
-  output ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_clken_d;
   output [66:0] ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_d_d;
   input [66:0] ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_q_d;
+  output [6:0] ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_radr_d;
+  output [6:0] ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_wadr_d;
   output ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_readA_r_ram_ir_internal_RMASK_B_d;
-  output plm_in_data_rsci_we_d_pff;
-  output plm_out_data_rsci_we_d_pff;
-  output [6:0] ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_radr_d_pff;
   output ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_we_d_pff;
 
 
@@ -2802,276 +2500,269 @@ module esp_acc_softmax_cxx_softmax_cxx_core (
   wire core_wen;
   wire [31:0] conf_info_batch_rsci_idat;
   wire conf_done_rsci_idat;
-  wire dma_read_ctrl_rsci_irdy;
   wire dma_read_ctrl_rsci_bawt;
-  reg dma_read_ctrl_rsci_iswt0;
   wire core_wten;
   wire dma_read_ctrl_rsci_wen_comp;
-  wire dma_read_ctrl_rsci_irdy_oreg;
-  reg dma_read_ctrl_rsci_ivld_core_psct;
-  wire dma_write_ctrl_rsci_irdy;
   wire dma_write_ctrl_rsci_bawt;
-  reg dma_write_ctrl_rsci_iswt0;
   wire dma_write_ctrl_rsci_wen_comp;
-  wire dma_write_ctrl_rsci_irdy_oreg;
-  reg dma_write_ctrl_rsci_ivld_core_psct;
   wire dma_read_chnl_rsci_bawt;
-  reg dma_read_chnl_rsci_iswt0;
   wire dma_read_chnl_rsci_wen_comp;
-  reg dma_read_chnl_rsci_irdy_core_psct;
-  wire dma_read_chnl_rsci_ivld;
-  wire dma_read_chnl_rsci_ivld_oreg;
   wire [31:0] dma_read_chnl_rsci_idat_mxwt;
-  wire dma_write_chnl_rsci_irdy;
   wire dma_write_chnl_rsci_bawt;
-  reg dma_write_chnl_rsci_iswt0;
   wire dma_write_chnl_rsci_wen_comp;
-  wire dma_write_chnl_rsci_irdy_oreg;
-  reg dma_write_chnl_rsci_ivld_core_psct;
-  wire plm_in_data_rsci_bawt;
-  wire [31:0] plm_in_data_rsci_q_d_mxwt;
-  wire [31:0] plm_out_data_rsci_q_d_mxwt;
-  wire [94:0] CALC_SOFTMAX_LOOP_mul_cmp_z;
+  wire ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_bawt;
+  wire [66:0] ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_q_d_mxwt;
+  wire CALC_SOFTMAX_LOOP_mul_cmp_bawt;
+  wire [31:0] CALC_SOFTMAX_LOOP_mul_cmp_z_mxwt;
   reg [3:0] dma_read_ctrl_rsci_idat_10_7;
   reg [3:0] dma_write_ctrl_rsci_idat_10_7;
   reg [31:0] dma_write_chnl_rsci_idat_31_0;
-  wire [5:0] fsm_output;
-  wire COMPUTE_LOOP_nor_tmp;
-  wire [4:0] COMPUTE_LOOP_acc_1_tmp;
-  wire [5:0] nl_COMPUTE_LOOP_acc_1_tmp;
+  wire [3:0] fsm_output;
+  wire BATCH_LOOP_nor_12_tmp;
   wire [7:0] SUM_EXP_LOOP_acc_2_tmp;
   wire [8:0] nl_SUM_EXP_LOOP_acc_2_tmp;
   wire [7:0] CALC_EXP_LOOP_acc_1_tmp;
   wire [8:0] nl_CALC_EXP_LOOP_acc_1_tmp;
-  wire or_tmp_1;
-  wire nor_tmp;
+  wire [7:0] LOAD_LOOP_acc_1_tmp;
+  wire [8:0] nl_LOAD_LOOP_acc_1_tmp;
+  wire [4:0] BATCH_LOOP_acc_3_tmp;
+  wire [5:0] nl_BATCH_LOOP_acc_3_tmp;
+  wire [7:0] STORE_LOOP_acc_1_tmp;
+  wire [8:0] nl_STORE_LOOP_acc_1_tmp;
+  wire [7:0] CALC_SOFTMAX_LOOP_acc_1_tmp;
+  wire [8:0] nl_CALC_SOFTMAX_LOOP_acc_1_tmp;
+  wire BATCH_LOOP_and_34_tmp;
+  wire BATCH_LOOP_and_31_tmp;
+  wire or_tmp_7;
+  wire nand_tmp;
   wire or_tmp_10;
-  wire or_dcpl_14;
-  wire and_dcpl_3;
-  wire and_dcpl_6;
-  wire or_dcpl_20;
-  wire and_dcpl_24;
-  wire or_dcpl_32;
-  wire mux_tmp_48;
-  wire and_dcpl_115;
-  wire or_dcpl_54;
-  wire and_dcpl_118;
-  wire and_dcpl_119;
-  wire or_dcpl_56;
-  wire and_dcpl_121;
-  wire and_dcpl_122;
-  wire or_dcpl_59;
-  wire or_dcpl_60;
-  wire or_dcpl_62;
-  wire and_dcpl_125;
-  wire or_dcpl_63;
-  wire and_dcpl_127;
-  wire and_dcpl_132;
-  wire and_dcpl_133;
-  wire and_dcpl_134;
-  wire and_dcpl_135;
-  wire and_dcpl_136;
-  wire and_dcpl_137;
-  wire and_dcpl_144;
-  wire nand_tmp_14;
-  wire not_tmp_118;
-  wire and_dcpl_152;
-  wire nor_tmp_27;
+  wire mux_tmp_8;
+  wire not_tmp_10;
+  wire mux_tmp_20;
   wire nand_tmp_15;
-  wire or_tmp_80;
-  wire and_dcpl_157;
-  wire or_dcpl_86;
-  wire or_dcpl_87;
-  wire or_dcpl_89;
-  wire and_dcpl_167;
-  wire or_dcpl_91;
-  wire and_dcpl_174;
-  wire mux_tmp_93;
-  wire and_dcpl_181;
-  wire or_dcpl_94;
-  wire or_dcpl_95;
-  wire mux_tmp_94;
-  wire and_dcpl_200;
-  wire and_dcpl_207;
-  wire or_dcpl_176;
-  wire and_dcpl_218;
-  wire or_dcpl_183;
-  wire and_dcpl_223;
-  wire or_tmp_104;
-  wire or_dcpl_197;
-  wire or_tmp_112;
-  wire or_tmp_116;
-  wire or_tmp_122;
-  wire or_tmp_130;
-  wire or_tmp_133;
-  wire or_tmp_142;
-  wire or_tmp_149;
-  wire or_tmp_150;
-  wire or_tmp_156;
-  wire or_tmp_165;
-  wire or_tmp_203;
-  wire or_tmp_209;
-  reg CALC_EXP_LOOP_and_svs_st_1;
-  reg exitL_exit_STORE_INNER_LOOP_sva;
-  wire exit_COMPUTE_LOOP_lpi_2_dfm_1;
+  wire and_tmp_47;
+  wire and_tmp_50;
+  wire mux_tmp_99;
+  wire mux_tmp_100;
+  wire mux_tmp_101;
+  wire nand_tmp_27;
+  wire or_tmp_64;
+  wire mux_tmp_295;
+  wire or_dcpl_5;
+  wire and_dcpl_34;
+  wire or_tmp_230;
+  wire and_dcpl_46;
+  wire or_dcpl_14;
+  wire or_dcpl_20;
+  wire not_tmp_193;
+  wire and_dcpl_63;
+  wire and_dcpl_73;
+  wire mux_tmp_354;
+  wire and_dcpl_89;
+  wire or_dcpl_42;
+  wire and_dcpl_144;
+  wire or_dcpl_64;
+  wire or_dcpl_65;
+  wire and_tmp_164;
+  wire and_dcpl_163;
+  wire and_tmp_206;
+  wire or_dcpl_73;
+  wire and_dcpl_271;
+  wire or_tmp_404;
+  wire or_tmp_411;
+  wire or_tmp_417;
+  wire or_tmp_418;
+  wire or_tmp_427;
+  wire or_tmp_430;
+  wire or_tmp_432;
+  wire or_tmp_435;
+  wire or_tmp_441;
+  wire or_tmp_442;
+  wire or_tmp_448;
+  wire or_tmp_449;
+  wire or_tmp_453;
+  wire or_tmp_462;
+  wire BATCH_LOOP_BATCH_LOOP_or_6_cse;
+  reg conf_done_sva;
+  wire exit_BATCH_LOOP_lpi_2_dfm_mx0w1;
+  wire CALC_SOFTMAX_LOOP_and_svs_1;
   wire CALC_SOFTMAX_LOOP_equal_tmp_2;
-  wire lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_1_1_mx0;
-  wire lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_1_0_mx0;
+  wire lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_1_mx0;
+  wire lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_0_mx0;
   reg exitL_exit_CALC_SOFTMAX_LOOP_sva;
-  wire CALC_SOFTMAX_LOOP_equal_tmp_3;
-  reg lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_1;
-  wire CALC_SOFTMAX_LOOP_and_6_ssc_1;
-  wire CALC_SOFTMAX_LOOP_and_7_ssc_1;
-  wire CALC_EXP_LOOP_and_svs_1;
-  wire CALC_SOFTMAX_LOOP_or_tmp_1;
-  wire [66:0] operator_67_47_false_AC_TRN_AC_WRAP_lshift_ncse_sva_1;
-  wire [73:0] ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_sva_2;
-  wire [74:0] nl_ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_sva_2;
-  reg exitL_exit_LOAD_INNER_LOOP_sva;
-  reg CALC_EXP_LOOP_and_svs_st_4;
-  reg CALC_EXP_LOOP_and_svs_st_6;
-  reg CALC_EXP_LOOP_and_svs_st_5;
-  reg CALC_EXP_LOOP_and_svs_st_2;
-  reg LOAD_OUTER_LOOP_stage_0_1;
-  reg STORE_INNER_LOOP_asn_itm_2;
-  reg exit_STORE_OUTER_LOOP_sva_1_st_2;
-  reg CALC_EXP_LOOP_and_svs_st_3;
-  reg STORE_INNER_LOOP_asn_itm;
-  reg CALC_SOFTMAX_LOOP_CALC_SOFTMAX_LOOP_nor_2_itm_1;
-  reg exit_STORE_OUTER_LOOP_lpi_2_dfm_st_2;
-  reg CALC_SOFTMAX_LOOP_CALC_SOFTMAX_LOOP_nor_2_itm_4;
-  reg exit_LOAD_OUTER_LOOP_lpi_2_dfm_st_2;
-  reg lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_10_0;
-  reg lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_10_1;
-  reg exit_COMPUTE_LOOP_lpi_2_dfm_st_10;
-  reg lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_5_1;
-  reg CALC_SOFTMAX_LOOP_and_13_itm_5;
-  reg exit_COMPUTE_LOOP_lpi_2_dfm_st_5;
-  reg COMPUTE_LOOP_stage_0_6;
   reg lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_4_1;
-  reg exit_COMPUTE_LOOP_lpi_2_dfm_st_4;
-  reg lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_3_1;
-  reg exit_COMPUTE_LOOP_lpi_2_dfm_st_3;
-  reg COMPUTE_LOOP_stage_0_4;
-  reg lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_3_0;
-  reg lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_2_1;
-  reg exit_COMPUTE_LOOP_lpi_2_dfm_st_2;
-  reg COMPUTE_LOOP_stage_0_3;
-  reg exit_COMPUTE_LOOP_lpi_2_dfm_st_1;
-  reg lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_0;
-  reg COMPUTE_LOOP_stage_0;
-  reg CALC_SOFTMAX_LOOP_CALC_SOFTMAX_LOOP_nor_2_itm_3;
-  reg CALC_SOFTMAX_LOOP_asn_itm_2;
-  reg CALC_SOFTMAX_LOOP_CALC_SOFTMAX_LOOP_nor_2_itm_2;
-  reg lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_1_1;
-  reg exit_COMPUTE_LOOP_lpi_2_dfm_st_9;
-  reg lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_9_0;
-  reg lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_9_1;
-  reg CALC_SOFTMAX_LOOP_and_13_itm_4;
-  reg lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_2_0;
-  reg exit_COMPUTE_LOOP_lpi_2_dfm_st_8;
-  reg lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_8_0;
-  reg lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_8_1;
-  reg CALC_SOFTMAX_LOOP_and_13_itm_3;
-  reg lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_1_0;
-  reg CALC_SOFTMAX_LOOP_asn_itm_1;
-  reg exit_COMPUTE_LOOP_lpi_2_dfm_st_7;
-  reg lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_7_0;
-  reg lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_7_1;
-  reg exit_COMPUTE_LOOP_lpi_2_dfm_st_6;
-  reg lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_6_0;
-  reg lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_6_1;
-  reg lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_5_0;
-  reg lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_4_0;
-  reg exit_LOAD_OUTER_LOOP_lpi_2_dfm_st_1;
-  reg exit_LOAD_OUTER_LOOP_sva_1_st_1;
-  reg LOAD_INNER_LOOP_asn_itm_1;
-  reg LOAD_INNER_LOOP_asn_itm;
+  reg exit_BATCH_LOOP_lpi_2_dfm_st_4;
+  reg BATCH_LOOP_stage_v_4;
+  reg lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_10_1;
+  reg lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_10_0;
+  reg exit_BATCH_LOOP_lpi_2_dfm_st_10;
+  reg BATCH_LOOP_stage_v_10;
+  reg LOAD_LOOP_and_1_svs_st_11;
+  wire CALC_SOFTMAX_LOOP_or_cse_1;
+  reg BATCH_LOOP_stage_v_11;
   reg lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_11_1;
+  wire BATCH_LOOP_or_cse_1;
   reg lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_11_0;
-  reg COMPUTE_LOOP_stage_0_12;
-  reg exit_COMPUTE_LOOP_lpi_2_dfm_st_11;
-  reg COMPUTE_LOOP_stage_0_7;
-  reg CALC_SOFTMAX_LOOP_asn_14_itm_6;
-  reg COMPUTE_LOOP_stage_0_5;
-  reg CALC_SOFTMAX_LOOP_asn_14_itm_4;
-  reg [73:0] ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_sva_1_1;
-  reg COMPUTE_LOOP_stage_0_2;
-  reg CALC_SOFTMAX_LOOP_and_13_itm_6;
-  reg CALC_SOFTMAX_LOOP_asn_2_itm_3;
+  reg exit_BATCH_LOOP_sva_1_st_11;
+  reg CALC_SOFTMAX_LOOP_asn_itm_11;
+  wire CALC_SOFTMAX_LOOP_equal_tmp_3;
+  wire CALC_SOFTMAX_LOOP_or_tmp_1;
+  wire CALC_SOFTMAX_LOOP_and_11_ssc_1;
+  wire CALC_SOFTMAX_LOOP_and_9_ssc_1;
+  wire LOAD_LOOP_and_1_svs_1;
+  wire [66:0] operator_67_47_false_AC_TRN_AC_WRAP_lshift_ncse_sva_mx0w1;
+  wire [73:0] ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_sva_1_mx0w0;
+  wire [74:0] nl_ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_sva_1_mx0w0;
+  reg CALC_SOFTMAX_LOOP_asn_itm;
+  reg BATCH_LOOP_stage_0;
+  reg BATCH_LOOP_stage_v_3;
+  reg exit_BATCH_LOOP_lpi_2_dfm_st_3;
+  reg lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_3_1;
+  reg LOAD_LOOP_and_1_svs_st_3;
+  reg BATCH_LOOP_stage_0_6;
+  reg exit_BATCH_LOOP_lpi_2_dfm_st_11;
+  reg BATCH_LOOP_stage_0_11;
+  reg BATCH_LOOP_stage_0_10;
+  reg BATCH_LOOP_stage_v_9;
+  reg BATCH_LOOP_stage_0_9;
+  reg BATCH_LOOP_stage_v_8;
+  reg BATCH_LOOP_stage_0_8;
+  reg BATCH_LOOP_stage_v_7;
+  reg BATCH_LOOP_stage_0_7;
+  reg BATCH_LOOP_stage_v_6;
+  reg BATCH_LOOP_stage_v_5;
+  reg BATCH_LOOP_stage_0_5;
+  reg LOAD_LOOP_and_1_svs_st_2;
+  reg BATCH_LOOP_stage_v_2;
+  reg BATCH_LOOP_stage_0_3;
+  reg BATCH_LOOP_stage_0_4;
+  reg CALC_SOFTMAX_LOOP_and_20_itm_5;
+  reg exit_BATCH_LOOP_lpi_2_dfm_st_5;
+  reg lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_5_1;
+  reg LOAD_LOOP_and_1_svs_st_5;
+  reg LOAD_LOOP_and_1_svs_st_4;
+  reg CALC_SOFTMAX_LOOP_and_20_itm_4;
+  reg exit_BATCH_LOOP_sva_1_st_10;
+  reg CALC_SOFTMAX_LOOP_asn_itm_10;
+  reg CALC_SOFTMAX_LOOP_asn_itm_9;
+  reg exit_BATCH_LOOP_sva_1_st_9;
+  reg LOAD_LOOP_and_1_svs_st_9;
+  reg lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_9_1;
+  reg exit_BATCH_LOOP_lpi_2_dfm_st_9;
+  reg LOAD_LOOP_and_1_svs_st_10;
+  reg lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_1;
+  reg lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_0;
+  reg exit_BATCH_LOOP_sva_1_st_8;
+  reg CALC_SOFTMAX_LOOP_asn_itm_8;
+  reg LOAD_LOOP_and_1_svs_st_8;
+  reg lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_8_1;
+  reg exit_BATCH_LOOP_lpi_2_dfm_st_8;
+  reg exit_BATCH_LOOP_sva_1_st_7;
+  reg CALC_SOFTMAX_LOOP_asn_itm_7;
+  reg CALC_SOFTMAX_LOOP_asn_itm_6;
+  reg CALC_SOFTMAX_LOOP_asn_itm_5;
+  reg BATCH_LOOP_stage_v;
+  reg CALC_SOFTMAX_LOOP_asn_17_itm_5;
+  reg lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_3_0;
+  reg lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_1_1;
+  reg exit_BATCH_LOOP_lpi_2_dfm_st_1;
+  reg CALC_SOFTMAX_LOOP_asn_17_itm_3;
+  reg lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_2_1;
+  reg exit_BATCH_LOOP_lpi_2_dfm_st_2;
+  reg [73:0] ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_sva_1_st_1;
+  reg lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_4_0;
+  reg CALC_SOFTMAX_LOOP_CALC_SOFTMAX_LOOP_nor_2_itm_3;
+  reg CALC_SOFTMAX_LOOP_asn_2_itm_2;
   wire [73:0] ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_lpi_2_dfm_4;
   wire [73:0] ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_lpi_2_mx1;
-  wire or_186_tmp;
-  wire or_303_tmp;
-  wire CALC_SOFTMAX_LOOP_and_10_tmp;
-  wire or_27_cse;
-  wire LOAD_OUTER_LOOP_and_cse;
-  wire LOAD_INNER_LOOP_data_ac_LOAD_INNER_LOOP_data_ac_or_cse;
-  wire LOAD_INNER_LOOP_data_ac_and_cse;
-  wire STORE_OUTER_LOOP_and_cse;
-  wire STORE_INNER_LOOP_and_cse;
-  wire ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_and_8_cse;
-  wire ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_and_9_cse;
-  wire ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_and_10_cse;
-  wire ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_and_11_cse;
-  wire ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_and_12_cse;
-  wire ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_and_13_cse;
-  wire ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_and_14_cse;
-  wire ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_and_15_cse;
-  reg reg_dma_read_chnl_rsci_oswt_cse;
-  reg reg_plm_in_data_rsci_iswt0_1_cse;
-  reg reg_plm_out_data_rsci_iswt0_1_cse;
-  reg reg_acc_done_synci_iswt0_cse;
-  wire or_69_cse;
-  wire mux_107_cse;
-  reg [73:0] ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_lpi_2_dfm_1_1;
-  reg [73:0] ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_lpi_2;
-  wire and_286_m1c;
-  reg [31:0] plm_in_data_rsci_d_d_reg;
-  wire [31:0] LOAD_INNER_LOOP_data_ac_mux_rmff;
-  reg [6:0] plm_in_data_rsci_radr_d_reg;
-  wire [6:0] LOAD_INNER_LOOP_mux_1_rmff;
-  reg [6:0] plm_in_data_rsci_wadr_d_reg;
-  wire [6:0] CALC_EXP_LOOP_i_mux_rmff;
-  wire plm_in_data_rsci_we_d_iff;
-  wire and_476_rmff;
-  wire plm_in_data_rsci_readA_r_ram_ir_internal_RMASK_B_d_reg;
-  wire and_483_rmff;
-  reg [31:0] plm_out_data_rsci_d_d_reg;
-  wire [31:0] CALC_SOFTMAX_LOOP_mux_rmff;
-  reg [6:0] plm_out_data_rsci_radr_d_reg;
-  wire [6:0] STORE_INNER_LOOP_mux1h_3_rmff;
-  reg [6:0] plm_out_data_rsci_wadr_d_reg;
+  reg reg_dma_read_ctrl_rsci_iswt0_cse;
+  reg reg_dma_write_ctrl_rsci_iswt0_cse;
+  reg reg_dma_write_chnl_rsci_iswt0_cse;
+  reg reg_dma_read_chnl_rsci_iswt0_cse;
+  reg reg_conf_done_rsc_triosy_obj_ld_core_psct_cse;
+  reg reg_ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_writeA_w_ram_ir_internal_WMASK_B_d_core_psct_cse;
+  reg reg_ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_readA_r_ram_ir_internal_RMASK_B_d_core_psct_cse;
+  reg reg_CALC_SOFTMAX_LOOP_mul_cmp_iswt5_cse;
+  wire LOAD_LOOP_and_cse;
+  wire LOAD_LOOP_and_2_cse;
+  wire ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_temp_and_cse;
+  wire ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_and_cse;
+  wire or_84_cse;
+  wire nand_137_cse;
+  wire or_9_cse;
+  wire or_11_cse;
+  wire and_998_cse;
+  wire nand_121_cse;
+  wire and_988_cse;
+  wire and_986_cse;
+  wire and_1000_cse;
+  wire and_1002_cse;
+  wire STORE_LOOP_i_and_1_cse;
+  wire and_50_cse;
+  wire mux_374_cse;
+  wire or_12_cse;
+  wire mux_442_cse;
+  wire mux_441_cse;
+  wire mux_473_cse;
+  wire mux_474_cse;
+  wire nor_165_cse;
+  wire mux_421_cse;
+  wire mux_434_cse;
+  wire mux_327_cse;
+  wire mux_326_cse;
+  wire mux_527_cse;
+  wire mux_336_cse;
+  wire and_656_cse;
+  reg [66:0] ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_d_d_reg;
+  wire [66:0] operator_67_47_false_AC_TRN_AC_WRAP_mux_rmff;
+  reg [6:0] ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_radr_d_reg;
   wire [6:0] CALC_SOFTMAX_LOOP_i_mux_rmff;
-  wire plm_out_data_rsci_we_d_iff;
-  wire plm_out_data_rsci_readA_r_ram_ir_internal_RMASK_B_d_reg;
-  wire and_490_rmff;
-  reg [66:0] operator_67_47_false_AC_TRN_AC_WRAP_lshift_ncse_sva_1_1;
-  reg [6:0] CALC_EXP_LOOP_i_slc_CALC_EXP_LOOP_i_7_0_6_0_1_itm_4;
+  reg [6:0] ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_wadr_d_reg;
+  wire [6:0] CALC_EXP_LOOP_i_mux_rmff;
+  wire ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_we_d_iff;
+  wire and_887_rmff;
+  wire ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_readA_r_ram_ir_internal_RMASK_B_d_reg;
+  wire and_885_rmff;
+  wire and_879_rmff;
+  reg [93:0] ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_temp_lpi_2;
+  wire [93:0] ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_temp_lpi_2_dfm_4;
   wire [93:0] operator_94_21_false_AC_TRN_AC_WRAP_rshift_itm;
   wire [72:0] operator_74_0_false_AC_TRN_AC_WRAP_lshift_itm;
-  wire [3:0] z_out;
-  wire [4:0] nl_z_out;
-  wire [7:0] z_out_1;
-  wire [8:0] nl_z_out_1;
-  reg [93:0] ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_temp_lpi_2;
+  reg [73:0] ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_lpi_2;
   reg [31:0] conf_info_batch_sva;
+  reg [3:0] dma_read_data_index_10_7_sva;
   reg [3:0] dma_write_data_index_10_7_sva;
+  reg [73:0] ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_lpi_2_dfm_3;
   reg [93:0] ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_temp_lpi_2_dfm_3;
-  reg COMPUTE_LOOP_stage_0_8;
-  reg COMPUTE_LOOP_stage_0_9;
-  reg COMPUTE_LOOP_stage_0_10;
-  reg COMPUTE_LOOP_stage_0_11;
+  reg BATCH_LOOP_stage_v_1;
+  reg exit_BATCH_LOOP_sva_1_st;
+  reg [3:0] BATCH_LOOP_asn_itm;
+  reg [6:0] CALC_EXP_LOOP_i_slc_CALC_EXP_LOOP_i_7_0_6_0_1_itm;
+  reg LOAD_LOOP_and_1_svs_st;
   reg [7:0] ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_mux_itm;
   reg [9:0] ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_normalized_fixed_slc_ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_normalized_fixed_72_60_9_0_itm;
   reg [9:0] ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_mux_1_itm;
   reg [7:0] ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_expret_qif_acc_itm;
-  wire [8:0] nl_ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_expret_qif_acc_itm;
+  reg ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_expret_ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_expret_nor_itm;
+  reg [3:0] BATCH_LOOP_asn_2_itm;
+  reg [6:0] CALC_SOFTMAX_LOOP_i_slc_CALC_SOFTMAX_LOOP_i_7_0_6_0_1_itm;
   reg [93:0] ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_temp_sva_1_1;
-  reg exit_COMPUTE_LOOP_sva_1_1;
-  reg exit_COMPUTE_LOOP_sva_1_2;
-  reg exit_COMPUTE_LOOP_sva_1_3;
-  reg [31:0] ac_math_ac_exp_pwl_0_AC_TRN_32_6_true_AC_TRN_AC_WRAP_67_47_AC_TRN_AC_WRAP_asn_itm_1;
+  reg [73:0] ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_sva_1_1;
+  reg exit_BATCH_LOOP_sva_1_1;
+  reg exit_BATCH_LOOP_sva_1_2;
+  reg [73:0] ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_lpi_2_dfm_1_1;
+  reg [66:0] operator_67_47_false_AC_TRN_AC_WRAP_lshift_ncse_sva_1;
+  reg [3:0] BATCH_LOOP_asn_itm_1;
+  reg [3:0] BATCH_LOOP_asn_itm_2;
+  reg [3:0] BATCH_LOOP_asn_itm_3;
+  reg [3:0] BATCH_LOOP_asn_itm_4;
+  reg [3:0] BATCH_LOOP_asn_itm_5;
+  reg [3:0] BATCH_LOOP_asn_itm_6;
+  reg [3:0] BATCH_LOOP_asn_itm_7;
+  reg [3:0] BATCH_LOOP_asn_itm_8;
+  reg [3:0] BATCH_LOOP_asn_itm_9;
+  reg [3:0] BATCH_LOOP_asn_itm_10;
+  reg CALC_SOFTMAX_LOOP_asn_2_itm_1;
   reg [4:0] ac_math_ac_pow2_pwl_AC_TRN_33_7_true_AC_TRN_AC_WRAP_67_47_AC_TRN_AC_WRAP_output_pwl_mux_itm_1;
   reg [2:0] ac_math_ac_pow2_pwl_AC_TRN_33_7_true_AC_TRN_AC_WRAP_67_47_AC_TRN_AC_WRAP_output_pwl_mux_1_itm_1;
   reg [9:0] ac_math_ac_exp_pwl_0_AC_TRN_32_6_true_AC_TRN_AC_WRAP_67_47_AC_TRN_AC_WRAP_input_inter_slc_ac_math_ac_exp_pwl_0_AC_TRN_32_6_true_AC_TRN_AC_WRAP_67_47_AC_TRN_AC_WRAP_input_inter_32_14_11_0_1_itm_1;
@@ -3081,184 +2772,248 @@ module esp_acc_softmax_cxx_softmax_cxx_core (
   reg [6:0] CALC_EXP_LOOP_i_slc_CALC_EXP_LOOP_i_7_0_6_0_1_itm_1;
   reg [6:0] CALC_EXP_LOOP_i_slc_CALC_EXP_LOOP_i_7_0_6_0_1_itm_2;
   reg [6:0] CALC_EXP_LOOP_i_slc_CALC_EXP_LOOP_i_7_0_6_0_1_itm_3;
+  reg [7:0] ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_mux_itm_1;
+  reg [9:0] ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_normalized_fixed_slc_ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_normalized_fixed_72_60_9_0_itm_1;
+  reg [9:0] ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_mux_1_itm_1;
+  reg [7:0] ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_expret_qif_acc_itm_1;
   reg ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_expret_ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_expret_nor_itm_1;
   reg ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_expret_ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_expret_nor_itm_2;
   reg ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_expret_ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_expret_nor_itm_3;
-  reg [6:0] CALC_SOFTMAX_LOOP_i_slc_CALC_SOFTMAX_LOOP_i_7_0_6_0_itm_5;
-  reg [6:0] CALC_SOFTMAX_LOOP_i_slc_CALC_SOFTMAX_LOOP_i_7_0_6_0_itm_6;
-  reg [6:0] CALC_SOFTMAX_LOOP_i_slc_CALC_SOFTMAX_LOOP_i_7_0_6_0_itm_7;
-  reg [6:0] CALC_SOFTMAX_LOOP_i_slc_CALC_SOFTMAX_LOOP_i_7_0_6_0_itm_8;
-  reg [6:0] CALC_SOFTMAX_LOOP_i_slc_CALC_SOFTMAX_LOOP_i_7_0_6_0_itm_9;
-  reg [6:0] CALC_SOFTMAX_LOOP_i_slc_CALC_SOFTMAX_LOOP_i_7_0_6_0_itm_10;
-  reg [6:0] CALC_SOFTMAX_LOOP_i_slc_CALC_SOFTMAX_LOOP_i_7_0_6_0_itm_11;
-  reg CALC_SOFTMAX_LOOP_and_13_itm_1;
-  reg CALC_SOFTMAX_LOOP_and_13_itm_2;
-  reg CALC_SOFTMAX_LOOP_asn_14_itm_1;
-  reg CALC_SOFTMAX_LOOP_asn_14_itm_2;
-  reg CALC_SOFTMAX_LOOP_asn_14_itm_3;
-  reg CALC_SOFTMAX_LOOP_asn_14_itm_5;
+  reg [3:0] BATCH_LOOP_asn_2_itm_1;
+  reg [3:0] BATCH_LOOP_asn_2_itm_2;
+  reg [3:0] BATCH_LOOP_asn_2_itm_3;
+  reg [3:0] BATCH_LOOP_asn_2_itm_4;
+  reg [3:0] BATCH_LOOP_asn_2_itm_5;
+  reg [3:0] BATCH_LOOP_asn_2_itm_6;
+  reg [3:0] BATCH_LOOP_asn_2_itm_7;
+  reg [3:0] BATCH_LOOP_asn_2_itm_8;
+  reg [3:0] BATCH_LOOP_asn_2_itm_9;
+  reg [3:0] BATCH_LOOP_asn_2_itm_10;
+  reg [6:0] CALC_SOFTMAX_LOOP_i_slc_CALC_SOFTMAX_LOOP_i_7_0_6_0_1_itm_1;
+  reg [6:0] CALC_SOFTMAX_LOOP_i_slc_CALC_SOFTMAX_LOOP_i_7_0_6_0_1_itm_2;
+  reg [6:0] CALC_SOFTMAX_LOOP_i_slc_CALC_SOFTMAX_LOOP_i_7_0_6_0_1_itm_3;
+  reg CALC_SOFTMAX_LOOP_CALC_SOFTMAX_LOOP_nor_2_itm_1;
+  reg CALC_SOFTMAX_LOOP_CALC_SOFTMAX_LOOP_nor_2_itm_2;
+  reg CALC_SOFTMAX_LOOP_and_20_itm_1;
+  reg CALC_SOFTMAX_LOOP_and_20_itm_2;
+  reg CALC_SOFTMAX_LOOP_and_20_itm_3;
+  reg CALC_SOFTMAX_LOOP_asn_itm_1;
+  reg CALC_SOFTMAX_LOOP_asn_itm_2;
+  reg CALC_SOFTMAX_LOOP_asn_itm_3;
+  reg CALC_SOFTMAX_LOOP_asn_itm_4;
+  reg exit_BATCH_LOOP_sva_1_st_1;
+  reg exit_BATCH_LOOP_sva_1_st_2;
+  reg exit_BATCH_LOOP_sva_1_st_3;
+  reg exit_BATCH_LOOP_sva_1_st_4;
+  reg exit_BATCH_LOOP_sva_1_st_5;
+  reg exit_BATCH_LOOP_sva_1_st_6;
+  reg LOAD_LOOP_and_1_svs_st_1;
+  reg exit_BATCH_LOOP_lpi_2_dfm_st_6;
+  reg exit_BATCH_LOOP_lpi_2_dfm_st_7;
+  reg LOAD_LOOP_and_1_svs_st_6;
+  reg LOAD_LOOP_and_1_svs_st_7;
+  reg CALC_SOFTMAX_LOOP_asn_17_itm_1;
+  reg CALC_SOFTMAX_LOOP_asn_17_itm_2;
+  reg CALC_SOFTMAX_LOOP_asn_17_itm_4;
+  reg BATCH_LOOP_stage_0_1;
+  reg BATCH_LOOP_stage_0_2;
+  reg [6:0] LOAD_LOOP_i_7_0_lpi_2_6_0;
   reg [6:0] CALC_EXP_LOOP_i_7_0_lpi_2_6_0;
   reg [6:0] SUM_EXP_LOOP_i_7_0_lpi_2_6_0;
-  reg [3:0] COMPUTE_LOOP_b_4_0_sva_3_0;
+  reg [6:0] CALC_SOFTMAX_LOOP_i_7_0_lpi_2_6_0;
+  reg [6:0] STORE_LOOP_i_7_0_lpi_2_6_0;
+  reg [3:0] BATCH_LOOP_b_4_0_sva_3_0;
   reg lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_6_1;
   reg lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_6_0;
-  wire CALC_EXP_LOOP_and_svs_st_1_mx0c1;
-  wire exitL_exit_LOAD_INNER_LOOP_sva_mx0w1;
-  wire LOAD_INNER_LOOP_asn_itm_mx0c2;
-  wire LOAD_OUTER_LOOP_stage_0_1_mx0c2;
-  wire CALC_EXP_LOOP_and_svs_st_6_mx0c0;
-  wire CALC_EXP_LOOP_i_slc_CALC_EXP_LOOP_i_7_0_6_0_1_itm_1_mx0c0;
-  wire CALC_EXP_LOOP_i_slc_CALC_EXP_LOOP_i_7_0_6_0_1_itm_1_mx0c1;
-  wire [6:0] CALC_EXP_LOOP_i_slc_CALC_EXP_LOOP_i_7_0_6_0_1_itm_1_mx1;
-  wire COMPUTE_LOOP_b_4_0_sva_3_0_mx0c0;
-  wire COMPUTE_LOOP_if_COMPUTE_LOOP_if_and_4_mx0w0;
-  wire COMPUTE_LOOP_if_COMPUTE_LOOP_if_and_3_mx0w0;
-  wire [93:0] ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_temp_lpi_2_dfm_4;
+  reg lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_1;
+  reg lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_0;
+  reg lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_1_0;
+  reg lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_2_0;
+  reg lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_5_0;
+  reg lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_6_1;
+  reg lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_6_0;
+  reg lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_7_1;
+  reg lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_7_0;
+  reg lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_8_0;
+  reg lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_9_0;
+  wire [7:0] ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_expret_qif_acc_itm_mx0w1;
+  wire [8:0] nl_ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_expret_qif_acc_itm_mx0w1;
+  wire [9:0] ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_mux_1_itm_mx0w1;
+  wire [7:0] ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_mux_itm_mx0w1;
+  wire ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_expret_ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_expret_nor_itm_mx0w1;
+  wire [73:0] ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_lpi_2_dfm_3_mx1;
+  wire CALC_SOFTMAX_LOOP_mux_11_mx1w0;
+  wire BATCH_LOOP_stage_0_mx1;
+  wire [6:0] CALC_EXP_LOOP_i_7_0_lpi_2_dfm_1_6_0_mx0;
+  wire BATCH_LOOP_if_BATCH_LOOP_if_and_5_mx0w0;
+  wire BATCH_LOOP_if_BATCH_LOOP_if_and_4_mx0w0;
+  wire BATCH_LOOP_BATCH_LOOP_or_8_cse_1;
+  wire BATCH_LOOP_BATCH_LOOP_or_1_cse_1;
+  wire BATCH_LOOP_or_5_cse_1;
+  wire BATCH_LOOP_or_6_cse_1;
+  wire [18:0] ac_math_ac_pow2_pwl_AC_TRN_33_7_true_AC_TRN_AC_WRAP_67_47_AC_TRN_AC_WRAP_output_pwl_ac_math_ac_pow2_pwl_AC_TRN_33_7_true_AC_TRN_AC_WRAP_67_47_AC_TRN_AC_WRAP_output_pwl_mul_psp_sva_1;
   wire [18:0] ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_mul_psp_sva_1;
   wire signed [19:0] nl_ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_mul_psp_sva_1;
-  wire [18:0] ac_math_ac_pow2_pwl_AC_TRN_33_7_true_AC_TRN_AC_WRAP_67_47_AC_TRN_AC_WRAP_output_pwl_ac_math_ac_pow2_pwl_AC_TRN_33_7_true_AC_TRN_AC_WRAP_67_47_AC_TRN_AC_WRAP_output_pwl_mul_psp_sva_1;
   wire lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_5_1_1;
   wire lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_5_0_1;
-  wire [6:0] libraries_leading_sign_74_0_d122f99e9ffc18d7edc913ace0494619bed7_1;
-  wire mux_122_tmp;
-  wire or_284_tmp;
-  wire ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_temp_and_2_tmp;
-  wire and_279_rgt;
-  wire and_285_rgt;
-  wire ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_and_3_rgt;
-  wire CALC_SOFTMAX_LOOP_and_19_rgt;
-  wire and_342_rgt;
-  wire and_731_cse_1;
-  wire nand_64_cse;
+  wire [6:0] libraries_leading_sign_74_0_516239036a4348f23734e51cfda27e0bbee5_1;
+  wire or_305_tmp;
+  wire ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_temp_and_1_tmp;
+  wire CALC_SOFTMAX_LOOP_and_52_rgt;
+  wire and_827_rgt;
+  wire and_829_rgt;
+  wire and_845_rgt;
+  wire and_847_rgt;
+  wire and_851_rgt;
+  wire and_853_rgt;
+  wire and_859_rgt;
+  wire and_903_rgt;
+  wire and_921_rgt;
+  wire asn_CALC_SOFTMAX_LOOP_asn_itm_nand_cse;
+  wire CALC_SOFTMAX_LOOP_and_53_cse;
   wire ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_expret_qif_and_cse;
-  wire ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_and_cse;
-  wire CALC_SOFTMAX_LOOP_and_21_cse;
-  wire mux_133_itm;
+  wire CALC_SOFTMAX_LOOP_and_57_cse;
+  wire LOAD_LOOP_and_3_cse;
+  wire CALC_SOFTMAX_LOOP_and_56_cse;
+  wire CALC_EXP_LOOP_i_and_2_cse;
+  wire CALC_SOFTMAX_LOOP_and_55_cse;
+  wire SUM_EXP_LOOP_i_and_cse;
+  wire STORE_LOOP_i_and_cse;
+  wire BATCH_LOOP_acc_itm_32_1;
   wire [18:0] ac_math_ac_exp_pwl_0_AC_TRN_32_6_true_AC_TRN_AC_WRAP_67_47_AC_TRN_AC_WRAP_mul_itm_46_28;
-  wire COMPUTE_LOOP_acc_2_itm_32_1;
+  wire mux_535_cse;
+  wire mux_539_cse;
 
-  wire[0:0] nor_43_nl;
-  wire[0:0] or_313_nl;
-  wire[0:0] and_354_nl;
-  wire[0:0] and_356_nl;
-  wire[0:0] LOAD_INNER_LOOP_LOAD_INNER_LOOP_and_nl;
-  wire[0:0] and_362_nl;
-  wire[0:0] mux_99_nl;
-  wire[0:0] mux_98_nl;
-  wire[0:0] mux_97_nl;
-  wire[0:0] mux_95_nl;
   wire[0:0] ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_temp_or_nl;
   wire[0:0] ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_temp_and_4_nl;
-  wire[0:0] nand_63_nl;
+  wire[0:0] or_506_nl;
+  wire[0:0] nand_159_nl;
+  wire[0:0] ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_and_1_nl;
+  wire[3:0] dma_write_data_index_mux_nl;
+  wire[3:0] BATCH_LOOP_acc_5_nl;
+  wire[4:0] nl_BATCH_LOOP_acc_5_nl;
+  wire[0:0] dma_write_data_index_and_2_nl;
+  wire[3:0] dma_write_data_index_mux_4_nl;
+  wire[3:0] BATCH_LOOP_acc_4_nl;
+  wire[4:0] nl_BATCH_LOOP_acc_4_nl;
+  wire[0:0] dma_write_data_index_and_1_nl;
+  wire[3:0] dma_write_data_index_mux_3_nl;
+  wire[0:0] dma_write_data_index_and_nl;
+  wire[0:0] mux_392_nl;
+  wire[0:0] CALC_SOFTMAX_LOOP_mux1h_nl;
   wire[0:0] and_452_nl;
   wire[0:0] and_454_nl;
-  wire[0:0] or_365_nl;
-  wire[0:0] ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_and_4_nl;
-  wire[0:0] conf_done_mux1h_nl;
-  wire[0:0] conf_done_and_1_nl;
-  wire[0:0] conf_done_and_2_nl;
-  wire[0:0] LOAD_INNER_LOOP_mux_12_nl;
-  wire[3:0] dma_write_data_index_mux_nl;
-  wire[0:0] dma_write_data_index_and_3_nl;
-  wire[0:0] not_494_nl;
-  wire[0:0] mux_113_nl;
-  wire[0:0] and_298_nl;
-  wire[0:0] CALC_EXP_LOOP_mux1h_6_nl;
-  wire[0:0] CALC_EXP_LOOP_CALC_EXP_LOOP_or_nl;
-  wire[0:0] operator_74_54_false_AC_TRN_AC_WRAP_1_operator_74_54_false_AC_TRN_AC_WRAP_1_and_nl;
-  wire[0:0] CALC_EXP_LOOP_and_8_nl;
-  wire[0:0] CALC_EXP_LOOP_and_9_nl;
-  wire[0:0] LOAD_INNER_LOOP_mux_11_nl;
-  wire[0:0] CALC_EXP_LOOP_CALC_EXP_LOOP_or_1_nl;
-  wire[0:0] operator_74_54_false_AC_TRN_AC_WRAP_1_operator_74_54_false_AC_TRN_AC_WRAP_1_and_1_nl;
+  wire[0:0] CALC_SOFTMAX_LOOP_mux_87_nl;
+  wire[0:0] and_487_nl;
+  wire[0:0] mux_440_nl;
+  wire[0:0] and_486_nl;
+  wire[0:0] mux_439_nl;
+  wire[0:0] and_485_nl;
+  wire[0:0] mux_438_nl;
+  wire[0:0] mux_548_nl;
+  wire[0:0] and_488_nl;
+  wire[0:0] mux_488_nl;
   wire[0:0] operator_74_54_false_AC_TRN_AC_WRAP_1_mux_nl;
-  wire[0:0] or_295_nl;
-  wire[0:0] mux_120_nl;
-  wire[0:0] mux_119_nl;
-  wire[0:0] mux_118_nl;
-  wire[0:0] nand_57_nl;
-  wire[0:0] mux_121_nl;
-  wire[0:0] nand_20_nl;
-  wire[0:0] CALC_EXP_LOOP_mux1h_12_nl;
-  wire[0:0] ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_leading_1_ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_leading_1_or_nl;
-  wire[0:0] CALC_EXP_LOOP_CALC_EXP_LOOP_and_nl;
-  wire[0:0] CALC_EXP_LOOP_and_5_nl;
-  wire[0:0] CALC_EXP_LOOP_and_6_nl;
-  wire[0:0] and_712_nl;
-  wire[0:0] mux_114_nl;
-  wire[0:0] nor_45_nl;
-  wire[0:0] CALC_EXP_LOOP_mux1h_16_nl;
-  wire[0:0] CALC_EXP_LOOP_nor_3_nl;
-  wire[0:0] CALC_EXP_LOOP_nor_4_nl;
-  wire[0:0] CALC_EXP_LOOP_nor_5_nl;
-  wire[0:0] mux_126_nl;
-  wire[0:0] CALC_EXP_LOOP_CALC_EXP_LOOP_and_1_nl;
-  wire[0:0] ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_leading_1_ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_leading_1_or_3_nl;
-  wire[0:0] LOAD_INNER_LOOP_i_or_nl;
-  wire[0:0] LOAD_INNER_LOOP_i_and_2_nl;
-  wire[0:0] CALC_SOFTMAX_LOOP_and_16_nl;
-  wire[0:0] LOAD_INNER_LOOP_i_and_3_nl;
-  wire[0:0] LOAD_INNER_LOOP_or_3_nl;
-  wire[0:0] LOAD_INNER_LOOP_and_4_nl;
-  wire[3:0] mux_nl;
-  wire[0:0] or_497_nl;
-  wire[0:0] nor_74_nl;
-  wire[3:0] dma_read_data_index_and_nl;
-  wire[3:0] dma_read_data_index_mux1h_nl;
-  wire[0:0] and_660_nl;
-  wire[0:0] or_462_nl;
-  wire[0:0] and_665_nl;
-  wire[0:0] STORE_OUTER_LOOP_not_4_nl;
-  wire[0:0] mux_129_nl;
-  wire[0:0] or_309_nl;
-  wire[0:0] LOAD_OUTER_LOOP_LOAD_OUTER_LOOP_mux_nl;
-  wire[0:0] STORE_INNER_LOOP_STORE_INNER_LOOP_and_nl;
-  wire[0:0] CALC_SOFTMAX_LOOP_CALC_SOFTMAX_LOOP_CALC_SOFTMAX_LOOP_nor_nl;
-  wire[0:0] ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_leading_1_ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_leading_1_or_4_nl;
-  wire[0:0] LOAD_INNER_LOOP_mux1h_nl;
-  wire[0:0] and_346_nl;
-  wire[0:0] and_348_nl;
-  wire[0:0] LOAD_INNER_LOOP_mux_10_nl;
-  wire[0:0] ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_nor_1_nl;
-  wire[0:0] ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_and_1_nl;
-  wire[73:0] CALC_SOFTMAX_LOOP_mux_23_nl;
-  wire[0:0] CALC_SOFTMAX_LOOP_mux_28_nl;
-  wire[0:0] CALC_SOFTMAX_LOOP_or_14_nl;
-  wire[6:0] CALC_SOFTMAX_LOOP_mux_29_nl;
+  wire[0:0] BATCH_LOOP_mux_85_nl;
+  wire[0:0] nor_176_nl;
+  wire[0:0] BATCH_LOOP_mux_84_nl;
+  wire[0:0] and_462_nl;
+  wire[0:0] mux_420_nl;
+  wire[0:0] mux_419_nl;
+  wire[0:0] mux_418_nl;
+  wire[0:0] mux_417_nl;
+  wire[0:0] mux_416_nl;
+  wire[0:0] mux_415_nl;
+  wire[0:0] mux_414_nl;
+  wire[0:0] mux_413_nl;
+  wire[0:0] mux_412_nl;
+  wire[0:0] BATCH_LOOP_mux_83_nl;
+  wire[0:0] mux_426_nl;
+  wire[0:0] nand_97_nl;
+  wire[0:0] nand_98_nl;
+  wire[0:0] mux_425_nl;
+  wire[0:0] mux_424_nl;
+  wire[0:0] mux_422_nl;
+  wire[0:0] and_985_nl;
+  wire[0:0] and_480_nl;
+  wire[0:0] BATCH_LOOP_mux_82_nl;
+  wire[0:0] mux_435_nl;
+  wire[0:0] nand_94_nl;
+  wire[0:0] nand_95_nl;
+  wire[0:0] BATCH_LOOP_mux_81_nl;
+  wire[0:0] mux_450_nl;
+  wire[0:0] nand_89_nl;
+  wire[0:0] nand_90_nl;
+  wire[0:0] BATCH_LOOP_mux_80_nl;
+  wire[0:0] mux_465_nl;
+  wire[0:0] nand_86_nl;
+  wire[0:0] nand_87_nl;
+  wire[0:0] and_518_nl;
+  wire[0:0] mux_472_nl;
+  wire[0:0] mux_549_nl;
+  wire[0:0] and_519_nl;
+  wire[0:0] BATCH_LOOP_mux_79_nl;
+  wire[0:0] mux_475_nl;
+  wire[0:0] nand_83_nl;
+  wire[0:0] nand_84_nl;
+  wire[0:0] BATCH_LOOP_mux_78_nl;
+  wire[0:0] mux_482_nl;
+  wire[0:0] nand_80_nl;
+  wire[0:0] nand_81_nl;
+  wire[0:0] BATCH_LOOP_mux_77_nl;
+  wire[0:0] mux_483_nl;
+  wire[0:0] BATCH_LOOP_mux_nl;
+  wire[0:0] mux_487_nl;
+  wire[0:0] nand_76_nl;
+  wire[0:0] nand_77_nl;
+  wire[0:0] and_552_nl;
+  wire[0:0] mux_500_nl;
+  wire[0:0] and_560_nl;
+  wire[0:0] mux_499_nl;
+  wire[0:0] and_559_nl;
+  wire[0:0] and_659_nl;
+  wire[0:0] or_303_nl;
+  wire[32:0] BATCH_LOOP_acc_nl;
+  wire[33:0] nl_BATCH_LOOP_acc_nl;
+  wire[73:0] CALC_SOFTMAX_LOOP_mux_80_nl;
+  wire[6:0] CALC_SOFTMAX_LOOP_mux_79_nl;
+  wire[6:0] CALC_SOFTMAX_LOOP_mux_77_nl;
+  wire[0:0] CALC_SOFTMAX_LOOP_mux_81_nl;
   wire[46:0] ac_math_ac_exp_pwl_0_AC_TRN_32_6_true_AC_TRN_AC_WRAP_67_47_AC_TRN_AC_WRAP_mul_nl;
   wire signed [47:0] nl_ac_math_ac_exp_pwl_0_AC_TRN_32_6_true_AC_TRN_AC_WRAP_67_47_AC_TRN_AC_WRAP_mul_nl;
-  wire[32:0] COMPUTE_LOOP_acc_2_nl;
-  wire[33:0] nl_COMPUTE_LOOP_acc_2_nl;
-  wire[0:0] nor_68_nl;
-  wire[0:0] and_246_nl;
-  wire[0:0] nand_40_nl;
-  wire[0:0] mux_94_nl;
-  wire[0:0] mux_93_nl;
-  wire[0:0] mux_92_nl;
-  wire[0:0] mux_112_nl;
-  wire[0:0] and_708_nl;
-  wire[0:0] mux_111_nl;
-  wire[0:0] nor_42_nl;
-  wire[3:0] STORE_OUTER_LOOP_mux_6_nl;
-  wire[6:0] LOAD_INNER_LOOP_mux1h_11_nl;
-  wire[0:0] LOAD_INNER_LOOP_or_5_nl;
-  wire[0:0] LOAD_INNER_LOOP_and_11_nl;
-  wire[0:0] LOAD_INNER_LOOP_and_12_nl;
+  wire[0:0] mux_17_nl;
+  wire[0:0] mux_101_nl;
+  wire[0:0] mux_100_nl;
+  wire[0:0] and_51_nl;
+  wire[0:0] nor_164_nl;
+  wire[0:0] and_59_nl;
+  wire[0:0] and_60_nl;
+  wire[0:0] mux_129_nl;
+  wire[0:0] mux_128_nl;
+  wire[0:0] mux_127_nl;
+  wire[0:0] nor_163_nl;
+  wire[0:0] or_226_nl;
+  wire[0:0] and_327_nl;
+  wire[0:0] and_328_nl;
+  wire[0:0] and_335_nl;
+  wire[0:0] nor_147_nl;
+  wire[0:0] mux_363_nl;
+  wire[0:0] mux_362_nl;
+  wire[0:0] nor_148_nl;
+  wire[0:0] and_367_nl;
+  wire[0:0] mux_361_nl;
+  wire[0:0] mux_360_nl;
+  wire[0:0] mux_310_nl;
+  wire[0:0] mux_309_nl;
+  wire[0:0] and_1008_nl;
 
   // Interconnect Declarations for Component Instantiations 
-  wire[0:0] ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_temp_and_nl;
-  wire [93:0] nl_CALC_SOFTMAX_LOOP_mul_cmp_b;
-  assign ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_temp_and_nl
-      = CALC_SOFTMAX_LOOP_and_13_itm_6 & (~((~ COMPUTE_LOOP_stage_0_7) | CALC_SOFTMAX_LOOP_asn_14_itm_6));
-  assign nl_CALC_SOFTMAX_LOOP_mul_cmp_b = MUX_v_94_2_2(ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_temp_lpi_2,
-      ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_temp_lpi_2_dfm_4,
-      ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_temp_and_nl);
   wire[10:0] ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_acc_nl;
   wire[11:0] nl_ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_acc_nl;
   wire [73:0] nl_operator_94_21_false_AC_TRN_AC_WRAP_rshift_rg_a;
   assign nl_ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_acc_nl
       = conv_s2u_9_11(ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_mul_psp_sva_1[18:10])
-      + ({1'b1 , ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_mux_1_itm});
+      + ({1'b1 , ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_mux_1_itm_1});
   assign ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_acc_nl
       = nl_ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_acc_nl[10:0];
   assign nl_operator_94_21_false_AC_TRN_AC_WRAP_rshift_rg_a = {ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_acc_nl
@@ -3277,43 +3032,57 @@ module esp_acc_softmax_cxx_softmax_cxx_core (
       , (ac_math_ac_pow2_pwl_AC_TRN_33_7_true_AC_TRN_AC_WRAP_67_47_AC_TRN_AC_WRAP_output_pwl_ac_math_ac_pow2_pwl_AC_TRN_33_7_true_AC_TRN_AC_WRAP_67_47_AC_TRN_AC_WRAP_output_pwl_mul_psp_sva_1[9:0])};
   wire [72:0] nl_operator_74_0_false_AC_TRN_AC_WRAP_lshift_rg_a;
   assign nl_operator_74_0_false_AC_TRN_AC_WRAP_lshift_rg_a = ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_sva_1_1[72:0];
+  wire[0:0] mux_312_nl;
+  wire[0:0] mux_311_nl;
+  wire[0:0] and_978_nl;
+  wire[0:0] and_979_nl;
+  wire[0:0] nor_151_nl;
   wire [0:0] nl_softmax_cxx_core_dma_read_ctrl_rsci_inst_dma_read_ctrl_rsci_oswt_unreg;
+  assign and_978_nl = or_11_cse & dma_read_ctrl_rsci_bawt & CALC_SOFTMAX_LOOP_asn_itm_11
+      & (~ exit_BATCH_LOOP_sva_1_st_11);
+  assign and_979_nl = or_tmp_7 & dma_read_ctrl_rsci_bawt & CALC_SOFTMAX_LOOP_asn_itm_11
+      & (~ exit_BATCH_LOOP_sva_1_st_11);
+  assign mux_311_nl = MUX_s_1_2_2(and_978_nl, and_979_nl, lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_11_1);
+  assign nor_151_nl = ~((~ dma_read_ctrl_rsci_bawt) | (~ CALC_SOFTMAX_LOOP_asn_itm_11)
+      | exit_BATCH_LOOP_sva_1_st_11);
+  assign mux_312_nl = MUX_s_1_2_2(mux_311_nl, nor_151_nl, exit_BATCH_LOOP_lpi_2_dfm_st_11);
   assign nl_softmax_cxx_core_dma_read_ctrl_rsci_inst_dma_read_ctrl_rsci_oswt_unreg
-      = and_dcpl_135 & and_dcpl_144 & (fsm_output[2]);
+      = BATCH_LOOP_stage_v_11 & mux_312_nl & (fsm_output[2]);
   wire [66:0] nl_softmax_cxx_core_dma_read_ctrl_rsci_inst_dma_read_ctrl_rsci_idat;
   assign nl_softmax_cxx_core_dma_read_ctrl_rsci_inst_dma_read_ctrl_rsci_idat = {56'b01100000000000000000000000010000000000000000000000000000
       , dma_read_ctrl_rsci_idat_10_7 , 7'b0000000};
   wire [0:0] nl_softmax_cxx_core_dma_write_ctrl_rsci_inst_dma_write_ctrl_rsci_oswt_unreg;
   assign nl_softmax_cxx_core_dma_write_ctrl_rsci_inst_dma_write_ctrl_rsci_oswt_unreg
-      = CALC_SOFTMAX_LOOP_CALC_SOFTMAX_LOOP_nor_2_itm_1 & or_tmp_10 & dma_write_ctrl_rsci_bawt
-      & STORE_INNER_LOOP_asn_itm_2 & (~ exit_STORE_OUTER_LOOP_sva_1_st_2) & (fsm_output[4]);
+      = or_9_cse & dma_write_ctrl_rsci_bawt & LOAD_LOOP_and_1_svs_st_11 & (~ lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_11_1)
+      & and_dcpl_46 & (fsm_output[2]);
   wire [66:0] nl_softmax_cxx_core_dma_write_ctrl_rsci_inst_dma_write_ctrl_rsci_idat;
   assign nl_softmax_cxx_core_dma_write_ctrl_rsci_inst_dma_write_ctrl_rsci_idat =
       {56'b01100000000000000000000000010000000000000000000000000000 , dma_write_ctrl_rsci_idat_10_7
       , 7'b0000000};
+  wire [0:0] nl_softmax_cxx_core_dma_read_chnl_rsci_inst_dma_read_chnl_rsci_oswt_unreg;
+  assign nl_softmax_cxx_core_dma_read_chnl_rsci_inst_dma_read_chnl_rsci_oswt_unreg
+      = and_dcpl_73 & (fsm_output[2]);
   wire [0:0] nl_softmax_cxx_core_dma_write_chnl_rsci_inst_dma_write_chnl_rsci_oswt_unreg;
   assign nl_softmax_cxx_core_dma_write_chnl_rsci_inst_dma_write_chnl_rsci_oswt_unreg
-      = (~((~ CALC_SOFTMAX_LOOP_CALC_SOFTMAX_LOOP_nor_2_itm_1) | exit_STORE_OUTER_LOOP_lpi_2_dfm_st_2
-      | (~(dma_write_chnl_rsci_bawt & or_27_cse)))) & (fsm_output[4]);
+      = (~((~ BATCH_LOOP_stage_v_11) | exit_BATCH_LOOP_lpi_2_dfm_st_11 | (~ lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_11_1)
+      | lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_11_0 | (~(dma_write_chnl_rsci_bawt
+      & or_9_cse)))) & (fsm_output[2]);
   wire [63:0] nl_softmax_cxx_core_dma_write_chnl_rsci_inst_dma_write_chnl_rsci_idat;
   assign nl_softmax_cxx_core_dma_write_chnl_rsci_inst_dma_write_chnl_rsci_idat =
       {32'b11011110101011011011111011101111 , dma_write_chnl_rsci_idat_31_0};
-  wire [0:0] nl_softmax_cxx_core_plm_in_data_rsci_1_inst_plm_in_data_rsci_oswt_unreg;
-  assign nl_softmax_cxx_core_plm_in_data_rsci_1_inst_plm_in_data_rsci_oswt_unreg
-      = plm_in_data_rsci_bawt & (~ exit_LOAD_OUTER_LOOP_lpi_2_dfm_st_2) & CALC_EXP_LOOP_and_svs_st_5
-      & (fsm_output[2]);
-  wire [0:0] nl_softmax_cxx_core_plm_in_data_rsci_1_inst_plm_in_data_rsci_oswt_unreg_1;
-  assign nl_softmax_cxx_core_plm_in_data_rsci_1_inst_plm_in_data_rsci_oswt_unreg_1
-      = COMPUTE_LOOP_stage_0_2 & (~ exit_COMPUTE_LOOP_lpi_2_dfm_st_1) & (~ lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_1_1)
-      & (fsm_output[3]);
-  wire [0:0] nl_softmax_cxx_core_plm_out_data_rsci_1_inst_plm_out_data_rsci_iswt0_pff;
-  assign nl_softmax_cxx_core_plm_out_data_rsci_1_inst_plm_out_data_rsci_iswt0_pff
-      = COMPUTE_LOOP_stage_0_12 & (~ exit_COMPUTE_LOOP_lpi_2_dfm_st_11) & lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_11_1
-      & (~ lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_11_0) & (fsm_output[3]);
-  wire [0:0] nl_softmax_cxx_core_core_fsm_inst_LOAD_OUTER_LOOP_C_0_tr0;
-  assign nl_softmax_cxx_core_core_fsm_inst_LOAD_OUTER_LOOP_C_0_tr0 = or_dcpl_14 &
-      CALC_EXP_LOOP_and_svs_st_5 & (~(CALC_EXP_LOOP_and_svs_st_2 | LOAD_OUTER_LOOP_stage_0_1
-      | CALC_EXP_LOOP_and_svs_st_1));
+  wire [0:0] nl_softmax_cxx_core_ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_1_inst_ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_oswt_unreg;
+  assign nl_softmax_cxx_core_ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_1_inst_ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_oswt_unreg
+      = mux_434_cse & BATCH_LOOP_stage_0_5 & ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_bawt
+      & (~ lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_4_1) & (~ exit_BATCH_LOOP_lpi_2_dfm_st_4)
+      & BATCH_LOOP_stage_v_4 & (fsm_output[2]);
+  wire[0:0] ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_temp_and_2_nl;
+  wire [93:0] nl_softmax_cxx_core_CALC_SOFTMAX_LOOP_mul_cmp_inst_CALC_SOFTMAX_LOOP_mul_cmp_b_core;
+  assign ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_temp_and_2_nl
+      = CALC_SOFTMAX_LOOP_and_20_itm_5 & (~((~ BATCH_LOOP_stage_v_5) | CALC_SOFTMAX_LOOP_asn_17_itm_5));
+  assign nl_softmax_cxx_core_CALC_SOFTMAX_LOOP_mul_cmp_inst_CALC_SOFTMAX_LOOP_mul_cmp_b_core
+      = MUX_v_94_2_2(ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_temp_lpi_2,
+      ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_temp_lpi_2_dfm_4,
+      ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_temp_and_2_nl);
   esp_acc_softmax_cxx_ccs_out_v1 #(.rscid(32'sd1),
   .width(32'sd32)) debug_rsci (
       .idat(32'b00000000000000000000000000000000),
@@ -3329,31 +3098,12 @@ module esp_acc_softmax_cxx_softmax_cxx_core (
       .dat(conf_done_rsc_dat),
       .idat(conf_done_rsci_idat)
     );
-  esp_acc_softmax_cxx_mgc_mul_pipe #(.width_a(32'sd67),
-  .signd_a(32'sd0),
-  .width_b(32'sd94),
-  .signd_b(32'sd0),
-  .width_z(32'sd95),
-  .clock_edge(32'sd1),
-  .enable_active(32'sd1),
-  .a_rst_active(32'sd0),
-  .s_rst_active(32'sd0),
-  .stages(32'sd6),
-  .n_inreg(32'sd1)) CALC_SOFTMAX_LOOP_mul_cmp (
-      .a(ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_q_d),
-      .b(nl_CALC_SOFTMAX_LOOP_mul_cmp_b[93:0]),
-      .clk(clk),
-      .en(ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_clken_d),
-      .a_rst(1'b1),
-      .s_rst(rst),
-      .z(CALC_SOFTMAX_LOOP_mul_cmp_z)
-    );
   esp_acc_softmax_cxx_mgc_shift_br_v5 #(.width_a(32'sd74),
   .signd_a(32'sd0),
   .width_s(32'sd8),
   .width_z(32'sd94)) operator_94_21_false_AC_TRN_AC_WRAP_rshift_rg (
       .a(nl_operator_94_21_false_AC_TRN_AC_WRAP_rshift_rg_a[73:0]),
-      .s(ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_expret_qif_acc_itm),
+      .s(ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_expret_qif_acc_itm_1),
       .z(operator_94_21_false_AC_TRN_AC_WRAP_rshift_itm)
     );
   esp_acc_softmax_cxx_mgc_shift_bl_v5 #(.width_a(32'sd21),
@@ -3362,31 +3112,19 @@ module esp_acc_softmax_cxx_softmax_cxx_core (
   .width_z(32'sd67)) operator_67_47_false_AC_TRN_AC_WRAP_lshift_rg (
       .a(nl_operator_67_47_false_AC_TRN_AC_WRAP_lshift_rg_a[20:0]),
       .s(ac_math_ac_exp_pwl_0_AC_TRN_32_6_true_AC_TRN_AC_WRAP_67_47_AC_TRN_AC_WRAP_input_inter_slc_ac_math_ac_exp_pwl_0_AC_TRN_32_6_true_AC_TRN_AC_WRAP_67_47_AC_TRN_AC_WRAP_input_inter_32_14_18_12_itm_1),
-      .z(operator_67_47_false_AC_TRN_AC_WRAP_lshift_ncse_sva_1)
+      .z(operator_67_47_false_AC_TRN_AC_WRAP_lshift_ncse_sva_mx0w1)
     );
   esp_acc_softmax_cxx_mgc_shift_l_v5 #(.width_a(32'sd73),
   .signd_a(32'sd0),
   .width_s(32'sd7),
   .width_z(32'sd73)) operator_74_0_false_AC_TRN_AC_WRAP_lshift_rg (
       .a(nl_operator_74_0_false_AC_TRN_AC_WRAP_lshift_rg_a[72:0]),
-      .s(libraries_leading_sign_74_0_d122f99e9ffc18d7edc913ace0494619bed7_1),
+      .s(libraries_leading_sign_74_0_516239036a4348f23734e51cfda27e0bbee5_1),
       .z(operator_74_0_false_AC_TRN_AC_WRAP_lshift_itm)
     );
   esp_acc_softmax_cxx_leading_sign_74_0  leading_sign_74_0_rg (
       .mantissa(ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_sva_1_1),
-      .rtn(libraries_leading_sign_74_0_d122f99e9ffc18d7edc913ace0494619bed7_1)
-    );
-  esp_acc_softmax_cxx_softmax_cxx_core_wait_dp softmax_cxx_core_wait_dp_inst (
-      .clk(clk),
-      .rst(rst),
-      .dma_read_ctrl_rsci_irdy(dma_read_ctrl_rsci_irdy),
-      .dma_read_ctrl_rsci_irdy_oreg(dma_read_ctrl_rsci_irdy_oreg),
-      .dma_write_ctrl_rsci_irdy(dma_write_ctrl_rsci_irdy),
-      .dma_write_ctrl_rsci_irdy_oreg(dma_write_ctrl_rsci_irdy_oreg),
-      .dma_read_chnl_rsci_ivld(dma_read_chnl_rsci_ivld),
-      .dma_read_chnl_rsci_ivld_oreg(dma_read_chnl_rsci_ivld_oreg),
-      .dma_write_chnl_rsci_irdy(dma_write_chnl_rsci_irdy),
-      .dma_write_chnl_rsci_irdy_oreg(dma_write_chnl_rsci_irdy_oreg)
+      .rtn(libraries_leading_sign_74_0_516239036a4348f23734e51cfda27e0bbee5_1)
     );
   esp_acc_softmax_cxx_softmax_cxx_core_dma_read_ctrl_rsci softmax_cxx_core_dma_read_ctrl_rsci_inst
       (
@@ -3396,13 +3134,10 @@ module esp_acc_softmax_cxx_softmax_cxx_core (
       .dma_read_ctrl_rsc_vld(dma_read_ctrl_rsc_vld),
       .dma_read_ctrl_rsc_rdy(dma_read_ctrl_rsc_rdy),
       .core_wen(core_wen),
-      .dma_read_ctrl_rsci_irdy(dma_read_ctrl_rsci_irdy),
       .dma_read_ctrl_rsci_oswt_unreg(nl_softmax_cxx_core_dma_read_ctrl_rsci_inst_dma_read_ctrl_rsci_oswt_unreg[0:0]),
       .dma_read_ctrl_rsci_bawt(dma_read_ctrl_rsci_bawt),
-      .dma_read_ctrl_rsci_iswt0(dma_read_ctrl_rsci_iswt0),
+      .dma_read_ctrl_rsci_iswt0(reg_dma_read_ctrl_rsci_iswt0_cse),
       .dma_read_ctrl_rsci_wen_comp(dma_read_ctrl_rsci_wen_comp),
-      .dma_read_ctrl_rsci_irdy_oreg(dma_read_ctrl_rsci_irdy_oreg),
-      .dma_read_ctrl_rsci_ivld_core_psct(dma_read_ctrl_rsci_ivld_core_psct),
       .dma_read_ctrl_rsci_idat(nl_softmax_cxx_core_dma_read_ctrl_rsci_inst_dma_read_ctrl_rsci_idat[66:0])
     );
   esp_acc_softmax_cxx_softmax_cxx_core_dma_write_ctrl_rsci softmax_cxx_core_dma_write_ctrl_rsci_inst
@@ -3413,13 +3148,10 @@ module esp_acc_softmax_cxx_softmax_cxx_core (
       .dma_write_ctrl_rsc_vld(dma_write_ctrl_rsc_vld),
       .dma_write_ctrl_rsc_rdy(dma_write_ctrl_rsc_rdy),
       .core_wen(core_wen),
-      .dma_write_ctrl_rsci_irdy(dma_write_ctrl_rsci_irdy),
       .dma_write_ctrl_rsci_oswt_unreg(nl_softmax_cxx_core_dma_write_ctrl_rsci_inst_dma_write_ctrl_rsci_oswt_unreg[0:0]),
       .dma_write_ctrl_rsci_bawt(dma_write_ctrl_rsci_bawt),
-      .dma_write_ctrl_rsci_iswt0(dma_write_ctrl_rsci_iswt0),
+      .dma_write_ctrl_rsci_iswt0(reg_dma_write_ctrl_rsci_iswt0_cse),
       .dma_write_ctrl_rsci_wen_comp(dma_write_ctrl_rsci_wen_comp),
-      .dma_write_ctrl_rsci_irdy_oreg(dma_write_ctrl_rsci_irdy_oreg),
-      .dma_write_ctrl_rsci_ivld_core_psct(dma_write_ctrl_rsci_ivld_core_psct),
       .dma_write_ctrl_rsci_idat(nl_softmax_cxx_core_dma_write_ctrl_rsci_inst_dma_write_ctrl_rsci_idat[66:0])
     );
   esp_acc_softmax_cxx_softmax_cxx_core_dma_read_chnl_rsci softmax_cxx_core_dma_read_chnl_rsci_inst
@@ -3430,13 +3162,10 @@ module esp_acc_softmax_cxx_softmax_cxx_core (
       .dma_read_chnl_rsc_vld(dma_read_chnl_rsc_vld),
       .dma_read_chnl_rsc_rdy(dma_read_chnl_rsc_rdy),
       .core_wen(core_wen),
-      .dma_read_chnl_rsci_oswt_unreg(and_476_rmff),
+      .dma_read_chnl_rsci_oswt_unreg(nl_softmax_cxx_core_dma_read_chnl_rsci_inst_dma_read_chnl_rsci_oswt_unreg[0:0]),
       .dma_read_chnl_rsci_bawt(dma_read_chnl_rsci_bawt),
-      .dma_read_chnl_rsci_iswt0(dma_read_chnl_rsci_iswt0),
+      .dma_read_chnl_rsci_iswt0(reg_dma_read_chnl_rsci_iswt0_cse),
       .dma_read_chnl_rsci_wen_comp(dma_read_chnl_rsci_wen_comp),
-      .dma_read_chnl_rsci_irdy_core_psct(dma_read_chnl_rsci_irdy_core_psct),
-      .dma_read_chnl_rsci_ivld(dma_read_chnl_rsci_ivld),
-      .dma_read_chnl_rsci_ivld_oreg(dma_read_chnl_rsci_ivld_oreg),
       .dma_read_chnl_rsci_idat_mxwt(dma_read_chnl_rsci_idat_mxwt)
     );
   esp_acc_softmax_cxx_softmax_cxx_core_dma_write_chnl_rsci softmax_cxx_core_dma_write_chnl_rsci_inst
@@ -3447,71 +3176,67 @@ module esp_acc_softmax_cxx_softmax_cxx_core (
       .dma_write_chnl_rsc_vld(dma_write_chnl_rsc_vld),
       .dma_write_chnl_rsc_rdy(dma_write_chnl_rsc_rdy),
       .core_wen(core_wen),
-      .dma_write_chnl_rsci_irdy(dma_write_chnl_rsci_irdy),
       .dma_write_chnl_rsci_oswt_unreg(nl_softmax_cxx_core_dma_write_chnl_rsci_inst_dma_write_chnl_rsci_oswt_unreg[0:0]),
       .dma_write_chnl_rsci_bawt(dma_write_chnl_rsci_bawt),
-      .dma_write_chnl_rsci_iswt0(dma_write_chnl_rsci_iswt0),
+      .dma_write_chnl_rsci_iswt0(reg_dma_write_chnl_rsci_iswt0_cse),
       .dma_write_chnl_rsci_wen_comp(dma_write_chnl_rsci_wen_comp),
-      .dma_write_chnl_rsci_irdy_oreg(dma_write_chnl_rsci_irdy_oreg),
-      .dma_write_chnl_rsci_ivld_core_psct(dma_write_chnl_rsci_ivld_core_psct),
       .dma_write_chnl_rsci_idat(nl_softmax_cxx_core_dma_write_chnl_rsci_inst_dma_write_chnl_rsci_idat[63:0])
     );
-  esp_acc_softmax_cxx_softmax_cxx_core_plm_in_data_rsci_1 softmax_cxx_core_plm_in_data_rsci_1_inst
+  esp_acc_softmax_cxx_softmax_cxx_core_ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_1
+      softmax_cxx_core_ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_1_inst
       (
       .clk(clk),
       .rst(rst),
-      .plm_in_data_rsci_q_d(plm_in_data_rsci_q_d),
-      .plm_in_data_rsci_readA_r_ram_ir_internal_RMASK_B_d(plm_in_data_rsci_readA_r_ram_ir_internal_RMASK_B_d_reg),
+      .ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_q_d(ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_q_d),
+      .ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_readA_r_ram_ir_internal_RMASK_B_d(ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_readA_r_ram_ir_internal_RMASK_B_d_reg),
       .core_wen(core_wen),
       .core_wten(core_wten),
-      .plm_in_data_rsci_oswt_unreg(nl_softmax_cxx_core_plm_in_data_rsci_1_inst_plm_in_data_rsci_oswt_unreg[0:0]),
-      .plm_in_data_rsci_bawt(plm_in_data_rsci_bawt),
-      .plm_in_data_rsci_iswt0(reg_dma_read_chnl_rsci_oswt_cse),
-      .plm_in_data_rsci_oswt_unreg_1(nl_softmax_cxx_core_plm_in_data_rsci_1_inst_plm_in_data_rsci_oswt_unreg_1[0:0]),
-      .plm_in_data_rsci_iswt0_1(reg_plm_in_data_rsci_iswt0_1_cse),
-      .plm_in_data_rsci_q_d_mxwt(plm_in_data_rsci_q_d_mxwt),
-      .plm_in_data_rsci_we_d_pff(plm_in_data_rsci_we_d_iff),
-      .plm_in_data_rsci_iswt0_pff(and_476_rmff),
-      .plm_in_data_rsci_iswt0_1_pff(and_483_rmff)
-    );
-  esp_acc_softmax_cxx_softmax_cxx_core_plm_out_data_rsci_1 softmax_cxx_core_plm_out_data_rsci_1_inst
-      (
-      .clk(clk),
-      .rst(rst),
-      .plm_out_data_rsci_q_d(plm_out_data_rsci_q_d),
-      .plm_out_data_rsci_readA_r_ram_ir_internal_RMASK_B_d(plm_out_data_rsci_readA_r_ram_ir_internal_RMASK_B_d_reg),
-      .core_wen(core_wen),
-      .core_wten(core_wten),
-      .plm_out_data_rsci_oswt_unreg_1(or_tmp_150),
-      .plm_out_data_rsci_iswt0_1(reg_plm_out_data_rsci_iswt0_1_cse),
-      .plm_out_data_rsci_q_d_mxwt(plm_out_data_rsci_q_d_mxwt),
-      .plm_out_data_rsci_we_d_pff(plm_out_data_rsci_we_d_iff),
-      .plm_out_data_rsci_iswt0_pff(nl_softmax_cxx_core_plm_out_data_rsci_1_inst_plm_out_data_rsci_iswt0_pff[0:0]),
-      .plm_out_data_rsci_iswt0_1_pff(and_490_rmff)
+      .ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_oswt_unreg(nl_softmax_cxx_core_ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_1_inst_ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_oswt_unreg[0:0]),
+      .ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_bawt(ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_bawt),
+      .ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_iswt0(reg_ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_writeA_w_ram_ir_internal_WMASK_B_d_core_psct_cse),
+      .ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_oswt_unreg_1(and_879_rmff),
+      .ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_iswt0_1(reg_ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_readA_r_ram_ir_internal_RMASK_B_d_core_psct_cse),
+      .ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_q_d_mxwt(ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_q_d_mxwt),
+      .ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_we_d_pff(ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_we_d_iff),
+      .ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_iswt0_pff(and_887_rmff),
+      .ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_iswt0_1_pff(and_885_rmff)
     );
   esp_acc_softmax_cxx_softmax_cxx_core_acc_done_synci softmax_cxx_core_acc_done_synci_inst
       (
       .acc_done_sync_vld(acc_done_sync_vld),
       .core_wten(core_wten),
-      .acc_done_synci_iswt0(reg_acc_done_synci_iswt0_cse)
+      .acc_done_synci_iswt0(reg_conf_done_rsc_triosy_obj_ld_core_psct_cse)
     );
   esp_acc_softmax_cxx_softmax_cxx_core_debug_rsc_triosy_obj softmax_cxx_core_debug_rsc_triosy_obj_inst
       (
       .debug_rsc_triosy_lz(debug_rsc_triosy_lz),
       .core_wten(core_wten),
-      .debug_rsc_triosy_obj_iswt0(reg_acc_done_synci_iswt0_cse)
+      .debug_rsc_triosy_obj_iswt0(reg_conf_done_rsc_triosy_obj_ld_core_psct_cse)
     );
   esp_acc_softmax_cxx_softmax_cxx_core_conf_info_batch_rsc_triosy_obj softmax_cxx_core_conf_info_batch_rsc_triosy_obj_inst
       (
       .conf_info_batch_rsc_triosy_lz(conf_info_batch_rsc_triosy_lz),
       .core_wten(core_wten),
-      .conf_info_batch_rsc_triosy_obj_iswt0(reg_acc_done_synci_iswt0_cse)
+      .conf_info_batch_rsc_triosy_obj_iswt0(reg_conf_done_rsc_triosy_obj_ld_core_psct_cse)
     );
   esp_acc_softmax_cxx_softmax_cxx_core_conf_done_rsc_triosy_obj softmax_cxx_core_conf_done_rsc_triosy_obj_inst
       (
       .conf_done_rsc_triosy_lz(conf_done_rsc_triosy_lz),
       .core_wten(core_wten),
-      .conf_done_rsc_triosy_obj_iswt0(reg_acc_done_synci_iswt0_cse)
+      .conf_done_rsc_triosy_obj_iswt0(reg_conf_done_rsc_triosy_obj_ld_core_psct_cse)
+    );
+  esp_acc_softmax_cxx_softmax_cxx_core_CALC_SOFTMAX_LOOP_mul_cmp softmax_cxx_core_CALC_SOFTMAX_LOOP_mul_cmp_inst
+      (
+      .clk(clk),
+      .rst(rst),
+      .core_wen(core_wen),
+      .core_wten(core_wten),
+      .CALC_SOFTMAX_LOOP_mul_cmp_oswt_unreg(or_tmp_417),
+      .CALC_SOFTMAX_LOOP_mul_cmp_bawt(CALC_SOFTMAX_LOOP_mul_cmp_bawt),
+      .CALC_SOFTMAX_LOOP_mul_cmp_iswt5(reg_CALC_SOFTMAX_LOOP_mul_cmp_iswt5_cse),
+      .CALC_SOFTMAX_LOOP_mul_cmp_a_core(ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_q_d_mxwt),
+      .CALC_SOFTMAX_LOOP_mul_cmp_b_core(nl_softmax_cxx_core_CALC_SOFTMAX_LOOP_mul_cmp_inst_CALC_SOFTMAX_LOOP_mul_cmp_b_core[93:0]),
+      .CALC_SOFTMAX_LOOP_mul_cmp_z_mxwt(CALC_SOFTMAX_LOOP_mul_cmp_z_mxwt)
     );
   esp_acc_softmax_cxx_softmax_cxx_core_staller softmax_cxx_core_staller_inst (
       .clk(clk),
@@ -3528,354 +3253,869 @@ module esp_acc_softmax_cxx_softmax_cxx_core (
       .rst(rst),
       .core_wen(core_wen),
       .fsm_output(fsm_output),
-      .CONFIG_LOOP_C_0_tr0(CALC_EXP_LOOP_and_svs_st_1),
-      .LOAD_OUTER_LOOP_C_0_tr0(nl_softmax_cxx_core_core_fsm_inst_LOAD_OUTER_LOOP_C_0_tr0[0:0]),
-      .COMPUTE_LOOP_C_0_tr0(COMPUTE_LOOP_nor_tmp),
-      .STORE_OUTER_LOOP_C_0_tr0(and_dcpl_115)
+      .CONFIG_LOOP_C_0_tr0(conf_done_sva),
+      .BATCH_LOOP_C_0_tr0(BATCH_LOOP_nor_12_tmp)
     );
-  assign ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_clken_d
-      = core_wen;
-  assign and_731_cse_1 = (z_out_1[7]) & (COMPUTE_LOOP_acc_1_tmp[4]);
-  assign or_27_cse = (~ STORE_INNER_LOOP_asn_itm_2) | exit_STORE_OUTER_LOOP_sva_1_st_2
-      | dma_write_ctrl_rsci_bawt;
-  assign LOAD_OUTER_LOOP_and_cse = core_wen & ((and_dcpl_127 & COMPUTE_LOOP_acc_2_itm_32_1
-      & LOAD_INNER_LOOP_asn_itm & and_dcpl_132 & (fsm_output[2])) | or_tmp_116);
-  assign LOAD_INNER_LOOP_data_ac_mux_rmff = MUX_v_32_2_2(dma_read_chnl_rsci_idat_mxwt,
-      plm_in_data_rsci_d_d_reg, or_tmp_122);
-  assign CALC_EXP_LOOP_i_mux_rmff = MUX_v_7_2_2(CALC_EXP_LOOP_i_slc_CALC_EXP_LOOP_i_7_0_6_0_1_itm_1,
-      plm_in_data_rsci_wadr_d_reg, or_tmp_122);
-  assign LOAD_INNER_LOOP_data_ac_LOAD_INNER_LOOP_data_ac_or_cse = ~(((~ nand_tmp_14)
-      | or_dcpl_54) & or_dcpl_59 & or_dcpl_62 & and_dcpl_152 & (fsm_output[2]));
-  assign mux_95_nl = MUX_s_1_2_2((~ or_tmp_80), nand_tmp_15, COMPUTE_LOOP_acc_2_itm_32_1);
-  assign mux_97_nl = MUX_s_1_2_2(nand_tmp_15, mux_95_nl, LOAD_INNER_LOOP_asn_itm);
-  assign mux_98_nl = MUX_s_1_2_2(nand_tmp_15, mux_97_nl, exitL_exit_LOAD_INNER_LOOP_sva);
-  assign mux_99_nl = MUX_s_1_2_2(or_tmp_80, (~ mux_98_nl), and_dcpl_132);
-  assign LOAD_INNER_LOOP_data_ac_and_cse = core_wen & (~((~ (fsm_output[2])) | mux_99_nl
-      | and_dcpl_118));
-  assign CALC_SOFTMAX_LOOP_mux_rmff = MUX_v_32_2_2((CALC_SOFTMAX_LOOP_mul_cmp_z[94:63]),
-      plm_out_data_rsci_d_d_reg, or_tmp_130);
-  assign CALC_SOFTMAX_LOOP_i_mux_rmff = MUX_v_7_2_2(CALC_SOFTMAX_LOOP_i_slc_CALC_SOFTMAX_LOOP_i_7_0_6_0_itm_11,
-      plm_out_data_rsci_wadr_d_reg, or_tmp_130);
-  assign ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_temp_and_2_tmp
-      = CALC_SOFTMAX_LOOP_and_13_itm_6 & (~((~ COMPUTE_LOOP_stage_0_7) | CALC_SOFTMAX_LOOP_asn_14_itm_6));
-  assign nand_63_nl = ~(mux_tmp_48 & COMPUTE_LOOP_stage_0 & (fsm_output[3]));
-  assign LOAD_INNER_LOOP_mux_1_rmff = MUX_v_7_2_2(CALC_EXP_LOOP_i_slc_CALC_EXP_LOOP_i_7_0_6_0_1_itm_1_mx1,
-      plm_in_data_rsci_radr_d_reg, nand_63_nl);
-  assign STORE_OUTER_LOOP_and_cse = core_wen & (or_tmp_142 | (or_dcpl_20 & nor_tmp
-      & (~ CALC_SOFTMAX_LOOP_CALC_SOFTMAX_LOOP_nor_2_itm_4) & CALC_EXP_LOOP_and_svs_st_1
-      & (fsm_output[4])));
-  assign STORE_INNER_LOOP_and_cse = core_wen & (or_tmp_149 | or_tmp_150);
-  assign and_452_nl = mux_tmp_93 & or_tmp_1 & exitL_exit_STORE_INNER_LOOP_sva & CALC_EXP_LOOP_and_svs_st_5
-      & CALC_EXP_LOOP_and_svs_st_3 & (fsm_output[4]);
-  assign and_454_nl = and_dcpl_181 & (~ exitL_exit_STORE_INNER_LOOP_sva) & CALC_EXP_LOOP_and_svs_st_5
-      & CALC_EXP_LOOP_and_svs_st_3 & (fsm_output[4]);
-  assign or_365_nl = (~ (fsm_output[4])) | (~ mux_tmp_94) | or_dcpl_95;
-  assign STORE_INNER_LOOP_mux1h_3_rmff = MUX1HOT_v_7_3_2((signext_7_1(~ COMPUTE_LOOP_acc_2_itm_32_1)),
-      CALC_EXP_LOOP_i_7_0_lpi_2_6_0, plm_out_data_rsci_radr_d_reg, {and_452_nl ,
-      and_454_nl , or_365_nl});
+  assign CALC_SOFTMAX_LOOP_and_52_rgt = (~ or_dcpl_5) & (fsm_output[2]);
+  assign CALC_SOFTMAX_LOOP_and_53_cse = core_wen & (~((fsm_output[1]) | (or_dcpl_5
+      & (fsm_output[2]))));
+  assign ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_temp_and_1_tmp
+      = CALC_SOFTMAX_LOOP_and_20_itm_5 & (~((~ mux_327_cse) | nand_121_cse | CALC_SOFTMAX_LOOP_asn_17_itm_5));
+  assign operator_67_47_false_AC_TRN_AC_WRAP_mux_rmff = MUX_v_67_2_2(operator_67_47_false_AC_TRN_AC_WRAP_lshift_ncse_sva_1,
+      ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_d_d_reg,
+      or_tmp_427);
+  assign CALC_EXP_LOOP_i_mux_rmff = MUX_v_7_2_2(CALC_EXP_LOOP_i_slc_CALC_EXP_LOOP_i_7_0_6_0_1_itm_3,
+      ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_wadr_d_reg,
+      or_tmp_427);
+  assign or_506_nl = (~ (fsm_output[2])) | (~ mux_336_cse) | nand_137_cse | exit_BATCH_LOOP_lpi_2_dfm_st_3
+      | (~ lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_3_1) | lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_3_0;
+  assign CALC_SOFTMAX_LOOP_i_mux_rmff = MUX_v_7_2_2(CALC_SOFTMAX_LOOP_i_slc_CALC_SOFTMAX_LOOP_i_7_0_6_0_1_itm_3,
+      ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_radr_d_reg,
+      or_506_nl);
+  assign CALC_SOFTMAX_LOOP_and_55_cse = core_wen & (or_tmp_448 | or_tmp_449);
+  assign CALC_SOFTMAX_LOOP_and_56_cse = core_wen & or_tmp_448;
+  assign or_305_tmp = (~ mux_336_cse) | nand_137_cse | CALC_SOFTMAX_LOOP_asn_17_itm_3;
+  assign CALC_SOFTMAX_LOOP_and_57_cse = core_wen & or_tmp_453;
+  assign LOAD_LOOP_and_3_cse = core_wen & (or_tmp_441 | or_tmp_462);
   assign ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_expret_qif_and_cse = core_wen
-      & or_tmp_165;
-  assign ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_and_8_cse
-      = (operator_74_0_false_AC_TRN_AC_WRAP_lshift_itm[72:70]==3'b000) & or_tmp_165;
-  assign ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_and_9_cse
-      = (operator_74_0_false_AC_TRN_AC_WRAP_lshift_itm[72:70]==3'b001) & or_tmp_165;
-  assign ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_and_10_cse
-      = (operator_74_0_false_AC_TRN_AC_WRAP_lshift_itm[72:70]==3'b010) & or_tmp_165;
-  assign ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_and_11_cse
-      = (operator_74_0_false_AC_TRN_AC_WRAP_lshift_itm[72:70]==3'b011) & or_tmp_165;
-  assign ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_and_12_cse
-      = (operator_74_0_false_AC_TRN_AC_WRAP_lshift_itm[72:70]==3'b100) & or_tmp_165;
-  assign ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_and_13_cse
-      = (operator_74_0_false_AC_TRN_AC_WRAP_lshift_itm[72:70]==3'b101) & or_tmp_165;
-  assign ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_and_14_cse
-      = (operator_74_0_false_AC_TRN_AC_WRAP_lshift_itm[72:70]==3'b110) & or_tmp_165;
-  assign ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_and_15_cse
-      = (operator_74_0_false_AC_TRN_AC_WRAP_lshift_itm[72:70]==3'b111) & or_tmp_165;
+      & ((ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_sva_1_st_1!=74'b00000000000000000000000000000000000000000000000000000000000000000000000000))
+      & mux_336_cse & and_dcpl_89 & (~ lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_3_1)
+      & LOAD_LOOP_and_1_svs_st_3 & (fsm_output[2]);
+  assign and_827_rgt = lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_1 & (~ lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_0)
+      & (~ exitL_exit_CALC_SOFTMAX_LOOP_sva) & BATCH_LOOP_and_34_tmp & (fsm_output[2]);
+  assign and_829_rgt = (or_dcpl_42 | exitL_exit_CALC_SOFTMAX_LOOP_sva) & BATCH_LOOP_and_34_tmp
+      & (fsm_output[2]);
+  assign CALC_EXP_LOOP_i_and_2_cse = core_wen & or_tmp_441;
+  assign and_845_rgt = BATCH_LOOP_acc_itm_32_1 & CALC_SOFTMAX_LOOP_asn_itm & BATCH_LOOP_and_34_tmp
+      & (fsm_output[2]);
+  assign and_847_rgt = (~(CALC_SOFTMAX_LOOP_asn_itm & BATCH_LOOP_acc_itm_32_1)) &
+      BATCH_LOOP_and_34_tmp & (fsm_output[2]);
+  assign and_851_rgt = mux_374_cse & BATCH_LOOP_and_34_tmp & (LOAD_LOOP_acc_1_tmp[7])
+      & (CALC_EXP_LOOP_acc_1_tmp[7]) & (SUM_EXP_LOOP_acc_2_tmp[7]) & (fsm_output[2]);
+  assign and_853_rgt = (~(mux_374_cse & (LOAD_LOOP_acc_1_tmp[7]) & (CALC_EXP_LOOP_acc_1_tmp[7])
+      & (SUM_EXP_LOOP_acc_2_tmp[7]))) & BATCH_LOOP_and_34_tmp & (fsm_output[2]);
+  assign and_859_rgt = (~ CALC_SOFTMAX_LOOP_asn_itm) & BATCH_LOOP_and_34_tmp & (fsm_output[2]);
+  assign mux_374_cse = MUX_s_1_2_2((~ lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_1), or_tmp_64,
+      exitL_exit_CALC_SOFTMAX_LOOP_sva);
+  assign and_879_rmff = mux_434_cse & BATCH_LOOP_stage_0_5 & lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_4_1
+      & (~ exit_BATCH_LOOP_lpi_2_dfm_st_4) & BATCH_LOOP_stage_v_4 & (~ lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_4_0)
+      & (fsm_output[2]);
+  assign and_885_rmff = mux_336_cse & and_dcpl_89 & lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_3_1
+      & (~ lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_3_0) & (fsm_output[2]);
+  assign and_887_rmff = mux_336_cse & and_dcpl_63 & (~(exit_BATCH_LOOP_lpi_2_dfm_st_3
+      | lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_3_1)) & (fsm_output[2]);
+  assign and_903_rgt = mux_336_cse & and_dcpl_63 & (~ CALC_SOFTMAX_LOOP_CALC_SOFTMAX_LOOP_nor_2_itm_3)
+      & (fsm_output[2]);
+  assign and_921_rgt = mux_327_cse & and_dcpl_144 & (~ CALC_SOFTMAX_LOOP_and_20_itm_5)
+      & (fsm_output[2]);
+  assign mux_392_nl = MUX_s_1_2_2((~ BATCH_LOOP_stage_v), mux_tmp_295, BATCH_LOOP_and_34_tmp);
+  assign asn_CALC_SOFTMAX_LOOP_asn_itm_nand_cse = ~(mux_392_nl & BATCH_LOOP_stage_0);
+  assign LOAD_LOOP_and_cse = core_wen & BATCH_LOOP_and_31_tmp;
+  assign LOAD_LOOP_and_2_cse = core_wen & and_tmp_164;
+  assign mux_535_cse = MUX_s_1_2_2(nor_165_cse, nand_tmp, or_84_cse);
+  assign mux_548_nl = MUX_s_1_2_2(nor_165_cse, nand_tmp, or_84_cse);
+  assign mux_438_nl = MUX_s_1_2_2(nor_165_cse, mux_548_nl, BATCH_LOOP_stage_0_11);
+  assign and_485_nl = BATCH_LOOP_stage_0_10 & mux_438_nl;
+  assign mux_439_nl = MUX_s_1_2_2(mux_535_cse, and_485_nl, BATCH_LOOP_stage_v_9);
+  assign and_486_nl = BATCH_LOOP_stage_0_9 & mux_439_nl;
+  assign mux_440_nl = MUX_s_1_2_2(mux_535_cse, and_486_nl, BATCH_LOOP_stage_v_8);
+  assign and_487_nl = BATCH_LOOP_stage_0_8 & mux_440_nl;
+  assign mux_441_cse = MUX_s_1_2_2(mux_535_cse, and_487_nl, BATCH_LOOP_stage_v_7);
+  assign and_488_nl = BATCH_LOOP_stage_0_7 & mux_441_cse;
+  assign mux_442_cse = MUX_s_1_2_2(mux_535_cse, and_488_nl, BATCH_LOOP_stage_v_6);
+  assign ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_temp_and_cse
+      = core_wen & and_tmp_50;
+  assign SUM_EXP_LOOP_i_and_cse = core_wen & BATCH_LOOP_and_34_tmp;
+  assign STORE_LOOP_i_and_1_cse = CALC_SOFTMAX_LOOP_equal_tmp_2 & (~ exit_BATCH_LOOP_lpi_2_dfm_mx0w1)
+      & (~ or_dcpl_73);
+  assign STORE_LOOP_i_and_cse = core_wen & (~ or_dcpl_73);
+  assign mux_412_nl = MUX_s_1_2_2(mux_tmp_8, (~ or_tmp_10), BATCH_LOOP_stage_v_4);
+  assign mux_413_nl = MUX_s_1_2_2(mux_412_nl, mux_tmp_8, BATCH_LOOP_stage_0_11);
+  assign mux_414_nl = MUX_s_1_2_2(not_tmp_10, mux_413_nl, BATCH_LOOP_stage_0_10);
+  assign mux_415_nl = MUX_s_1_2_2(mux_tmp_8, mux_414_nl, BATCH_LOOP_stage_v_9);
+  assign mux_416_nl = MUX_s_1_2_2(not_tmp_10, mux_415_nl, BATCH_LOOP_stage_0_9);
+  assign mux_417_nl = MUX_s_1_2_2(mux_tmp_8, mux_416_nl, BATCH_LOOP_stage_v_8);
+  assign mux_418_nl = MUX_s_1_2_2(not_tmp_10, mux_417_nl, BATCH_LOOP_stage_0_8);
+  assign mux_419_nl = MUX_s_1_2_2(mux_tmp_8, mux_418_nl, BATCH_LOOP_stage_v_7);
+  assign mux_420_nl = MUX_s_1_2_2(not_tmp_10, mux_419_nl, BATCH_LOOP_stage_0_7);
+  assign mux_421_cse = MUX_s_1_2_2(mux_tmp_8, mux_420_nl, BATCH_LOOP_stage_v_6);
+  assign and_480_nl = BATCH_LOOP_stage_0_6 & mux_442_cse;
+  assign mux_434_cse = MUX_s_1_2_2(mux_535_cse, and_480_nl, BATCH_LOOP_stage_v_5);
+  assign mux_539_cse = MUX_s_1_2_2(not_tmp_193, nand_tmp_27, or_84_cse);
+  assign mux_549_nl = MUX_s_1_2_2(not_tmp_193, nand_tmp_27, or_84_cse);
+  assign mux_472_nl = MUX_s_1_2_2(not_tmp_193, mux_549_nl, BATCH_LOOP_stage_0_11);
+  assign and_518_nl = BATCH_LOOP_stage_0_10 & mux_472_nl;
+  assign mux_473_cse = MUX_s_1_2_2(mux_539_cse, and_518_nl, BATCH_LOOP_stage_v_9);
+  assign and_519_nl = BATCH_LOOP_stage_0_9 & mux_473_cse;
+  assign mux_474_cse = MUX_s_1_2_2(mux_539_cse, and_519_nl, BATCH_LOOP_stage_v_8);
+  assign and_986_cse = BATCH_LOOP_stage_v_2 & BATCH_LOOP_stage_0_3;
+  assign and_656_cse = BATCH_LOOP_BATCH_LOOP_or_6_cse & mux_434_cse;
+  assign mux_527_cse = MUX_s_1_2_2(mux_535_cse, and_656_cse, BATCH_LOOP_stage_v_4);
   assign ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_and_cse
-      = core_wen & (ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_and_8_cse
-      | ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_and_9_cse
-      | ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_and_10_cse
-      | ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_and_11_cse
-      | ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_and_12_cse
-      | ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_and_13_cse
-      | ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_and_14_cse
-      | ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_and_15_cse);
-  assign and_476_rmff = or_dcpl_59 & or_dcpl_62 & and_dcpl_152 & (fsm_output[2]);
-  assign and_483_rmff = mux_tmp_48 & COMPUTE_LOOP_stage_0 & (fsm_output[3]);
-  assign and_490_rmff = and_dcpl_200 & and_dcpl_3 & (fsm_output[4]);
-  assign CALC_SOFTMAX_LOOP_and_21_cse = core_wen & (~((~ COMPUTE_LOOP_stage_0) |
-      (fsm_output[5:4]!=2'b00)));
-  assign and_279_rgt = COMPUTE_LOOP_stage_0_7 & (~ CALC_SOFTMAX_LOOP_and_13_itm_6)
-      & (fsm_output[3]);
-  assign and_286_m1c = COMPUTE_LOOP_stage_0_4 & (~ CALC_SOFTMAX_LOOP_asn_2_itm_3);
-  assign and_285_rgt = COMPUTE_LOOP_stage_0_4 & CALC_SOFTMAX_LOOP_asn_2_itm_3 & (fsm_output[3]);
-  assign ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_and_3_rgt
-      = ((CALC_SOFTMAX_LOOP_CALC_SOFTMAX_LOOP_nor_2_itm_4 & (~ or_186_tmp) & and_286_m1c)
-      | ((~ COMPUTE_LOOP_stage_0_4) & COMPUTE_LOOP_stage_0_5 & CALC_SOFTMAX_LOOP_CALC_SOFTMAX_LOOP_nor_2_itm_4))
-      & (fsm_output[3]);
-  assign CALC_SOFTMAX_LOOP_and_19_rgt = or_186_tmp & and_286_m1c & (fsm_output[3]);
-  assign and_298_nl = CALC_EXP_LOOP_and_svs_st_2 & or_dcpl_62 & or_dcpl_60 & CALC_EXP_LOOP_and_svs_st_4;
-  assign mux_113_nl = MUX_s_1_2_2(and_298_nl, or_dcpl_63, and_dcpl_132);
-  assign or_284_tmp = (~ mux_113_nl) | and_dcpl_118;
-  assign mux_122_tmp = MUX_s_1_2_2(and_dcpl_174, and_dcpl_181, and_dcpl_3);
-  assign nand_64_cse = ~((COMPUTE_LOOP_acc_1_tmp[4]) & (z_out_1[7]));
-  assign nor_45_nl = ~(COMPUTE_LOOP_acc_2_itm_32_1 | and_dcpl_167);
-  assign mux_114_nl = MUX_s_1_2_2(or_dcpl_20, nor_45_nl, STORE_INNER_LOOP_asn_itm);
-  assign and_712_nl = exitL_exit_STORE_INNER_LOOP_sva & mux_114_nl;
-  assign mux_133_itm = MUX_s_1_2_2(and_712_nl, or_dcpl_20, and_731_cse_1);
-  assign and_342_rgt = or_dcpl_20 & (~ STORE_INNER_LOOP_asn_itm);
-  assign ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_nor_1_nl
-      = ~(CALC_SOFTMAX_LOOP_CALC_SOFTMAX_LOOP_nor_2_itm_4 | or_186_tmp);
-  assign ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_and_1_nl
-      = CALC_SOFTMAX_LOOP_CALC_SOFTMAX_LOOP_nor_2_itm_4 & (~ or_186_tmp);
+      = core_wen & mux_527_cse;
+  assign or_84_cse = CALC_SOFTMAX_LOOP_mul_cmp_bawt | (~ lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_10_1)
+      | lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_10_0 | exit_BATCH_LOOP_lpi_2_dfm_st_10;
+  assign exit_BATCH_LOOP_lpi_2_dfm_mx0w1 = (~ BATCH_LOOP_acc_itm_32_1) & exitL_exit_CALC_SOFTMAX_LOOP_sva;
+  assign or_303_nl = (~ BATCH_LOOP_stage_v_3) | CALC_SOFTMAX_LOOP_asn_17_itm_3;
   assign ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_lpi_2_mx1
-      = MUX1HOT_v_74_3_2(ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_lpi_2_dfm_1_1,
-      ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_sva_1_1,
+      = MUX_v_74_2_2(ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_lpi_2_dfm_3_mx1,
       ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_lpi_2,
-      {ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_nor_1_nl
-      , ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_and_1_nl
-      , or_186_tmp});
-  assign CALC_EXP_LOOP_and_svs_1 = (CALC_EXP_LOOP_acc_1_tmp[7]) & (SUM_EXP_LOOP_acc_2_tmp[7]);
-  assign exitL_exit_LOAD_INNER_LOOP_sva_mx0w1 = ~((COMPUTE_LOOP_acc_1_tmp[4]) | (~
-      (z_out_1[7])));
-  assign CALC_EXP_LOOP_i_slc_CALC_EXP_LOOP_i_7_0_6_0_1_itm_1_mx1 = MUX_v_7_2_2(CALC_EXP_LOOP_i_7_0_lpi_2_6_0,
-      (signext_7_1(~ COMPUTE_LOOP_acc_2_itm_32_1)), exitL_exit_CALC_SOFTMAX_LOOP_sva);
-  assign nl_COMPUTE_LOOP_acc_1_tmp = conv_u2u_4_5(COMPUTE_LOOP_b_4_0_sva_3_0) + 5'b00001;
-  assign COMPUTE_LOOP_acc_1_tmp = nl_COMPUTE_LOOP_acc_1_tmp[4:0];
-  assign COMPUTE_LOOP_if_COMPUTE_LOOP_if_and_4_mx0w0 = lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_1
-      & (~ COMPUTE_LOOP_acc_2_itm_32_1);
-  assign lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_1_1_mx0 = MUX_s_1_2_2(lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_1,
-      COMPUTE_LOOP_if_COMPUTE_LOOP_if_and_4_mx0w0, exitL_exit_CALC_SOFTMAX_LOOP_sva);
-  assign COMPUTE_LOOP_if_COMPUTE_LOOP_if_and_3_mx0w0 = lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_0
-      & (~ COMPUTE_LOOP_acc_2_itm_32_1);
-  assign lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_1_0_mx0 = MUX_s_1_2_2(lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_0,
-      COMPUTE_LOOP_if_COMPUTE_LOOP_if_and_3_mx0w0, exitL_exit_CALC_SOFTMAX_LOOP_sva);
-  assign exit_COMPUTE_LOOP_lpi_2_dfm_1 = (~ COMPUTE_LOOP_acc_2_itm_32_1) & exitL_exit_CALC_SOFTMAX_LOOP_sva;
-  assign CALC_SOFTMAX_LOOP_mux_23_nl = MUX_v_74_2_2(ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_lpi_2_mx1,
+      or_303_nl);
+  assign nl_ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_expret_qif_acc_itm_mx0w1
+      = ({1'b1 , (~ libraries_leading_sign_74_0_516239036a4348f23734e51cfda27e0bbee5_1)})
+      + 8'b00110111;
+  assign ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_expret_qif_acc_itm_mx0w1
+      = nl_ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_expret_qif_acc_itm_mx0w1[7:0];
+  assign ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_mux_1_itm_mx0w1
+      = MUX_v_10_8_2(10'b1111111101, 10'b1100011001, 10'b1001100100, 10'b0111010000,
+      10'b0101010100, 10'b0011101011, 10'b0010010001, 10'b0001000100, operator_74_0_false_AC_TRN_AC_WRAP_lshift_itm[72:70]);
+  assign ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_mux_itm_mx0w1
+      = MUX_v_8_8_2(8'b00011100, 8'b01001011, 8'b01101100, 8'b10000100, 8'b10010111,
+      8'b10100110, 8'b10110011, 8'b10111100, operator_74_0_false_AC_TRN_AC_WRAP_lshift_itm[72:70]);
+  assign nl_BATCH_LOOP_acc_nl = ({29'b10000000000000000000000000000 , BATCH_LOOP_b_4_0_sva_3_0})
+      + conv_u2u_32_33(~ conf_info_batch_sva) + 33'b000000000000000000000000000000001;
+  assign BATCH_LOOP_acc_nl = nl_BATCH_LOOP_acc_nl[32:0];
+  assign BATCH_LOOP_acc_itm_32_1 = readslicef_33_1_32(BATCH_LOOP_acc_nl);
+  assign ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_expret_ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_expret_nor_itm_mx0w1
+      = ~((ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_sva_1_mx0w0!=74'b00000000000000000000000000000000000000000000000000000000000000000000000000));
+  assign ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_lpi_2_dfm_3_mx1
+      = MUX_v_74_2_2(ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_lpi_2_dfm_1_1,
+      ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_sva_1_1,
+      CALC_SOFTMAX_LOOP_CALC_SOFTMAX_LOOP_nor_2_itm_3);
+  assign CALC_SOFTMAX_LOOP_mux_11_mx1w0 = ~(lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_5_1_1
+      | lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_5_0_1);
+  assign BATCH_LOOP_stage_0_mx1 = BATCH_LOOP_stage_0 & (mux_tmp_295 | (~ BATCH_LOOP_and_34_tmp));
+  assign CALC_SOFTMAX_LOOP_mux_80_nl = MUX_v_74_2_2(ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_lpi_2_mx1,
       ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_lpi_2_dfm_4,
-      CALC_SOFTMAX_LOOP_asn_2_itm_3);
-  assign nl_ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_sva_2
-      = CALC_SOFTMAX_LOOP_mux_23_nl + conv_u2u_67_74(operator_67_47_false_AC_TRN_AC_WRAP_lshift_ncse_sva_1);
-  assign ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_sva_2
-      = nl_ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_sva_2[73:0];
+      CALC_SOFTMAX_LOOP_asn_2_itm_2);
+  assign nl_ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_sva_1_mx0w0
+      = CALC_SOFTMAX_LOOP_mux_80_nl + conv_u2u_67_74(operator_67_47_false_AC_TRN_AC_WRAP_lshift_ncse_sva_mx0w1);
+  assign ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_sva_1_mx0w0
+      = nl_ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_sva_1_mx0w0[73:0];
   assign ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_temp_lpi_2_dfm_4
       = MUX_v_94_2_2(ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_temp_sva_1_1,
       94'b1111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111,
       ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_expret_ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_expret_nor_itm_3);
-  assign CALC_SOFTMAX_LOOP_equal_tmp_2 = lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_1_1_mx0
-      & (~ lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_1_0_mx0);
-  assign nl_ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_mul_psp_sva_1
-      = $signed(({1'b1 , ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_mux_itm}))
-      * $signed(conv_u2s_10_11(ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_normalized_fixed_slc_ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_normalized_fixed_72_60_9_0_itm));
-  assign ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_mul_psp_sva_1
-      = nl_ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_mul_psp_sva_1[18:0];
+  assign CALC_SOFTMAX_LOOP_equal_tmp_2 = lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_1_mx0
+      & (~ lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_0_mx0);
+  assign LOAD_LOOP_and_1_svs_1 = (LOAD_LOOP_acc_1_tmp[7]) & (CALC_EXP_LOOP_acc_1_tmp[7])
+      & (SUM_EXP_LOOP_acc_2_tmp[7]);
+  assign CALC_SOFTMAX_LOOP_mux_79_nl = MUX_v_7_2_2(LOAD_LOOP_i_7_0_lpi_2_6_0, (signext_7_1(~
+      BATCH_LOOP_acc_itm_32_1)), exitL_exit_CALC_SOFTMAX_LOOP_sva);
+  assign nl_LOAD_LOOP_acc_1_tmp = conv_u2u_7_8(CALC_SOFTMAX_LOOP_mux_79_nl) + 8'b00000001;
+  assign LOAD_LOOP_acc_1_tmp = nl_LOAD_LOOP_acc_1_tmp[7:0];
+  assign nl_CALC_EXP_LOOP_acc_1_tmp = conv_u2u_7_8(CALC_EXP_LOOP_i_7_0_lpi_2_dfm_1_6_0_mx0)
+      + 8'b00000001;
+  assign CALC_EXP_LOOP_acc_1_tmp = nl_CALC_EXP_LOOP_acc_1_tmp[7:0];
+  assign CALC_SOFTMAX_LOOP_mux_77_nl = MUX_v_7_2_2(SUM_EXP_LOOP_i_7_0_lpi_2_6_0,
+      (signext_7_1(~ BATCH_LOOP_acc_itm_32_1)), exitL_exit_CALC_SOFTMAX_LOOP_sva);
+  assign nl_SUM_EXP_LOOP_acc_2_tmp = conv_u2u_7_8(CALC_SOFTMAX_LOOP_mux_77_nl) +
+      8'b00000001;
+  assign SUM_EXP_LOOP_acc_2_tmp = nl_SUM_EXP_LOOP_acc_2_tmp[7:0];
+  assign CALC_EXP_LOOP_i_7_0_lpi_2_dfm_1_6_0_mx0 = MUX_v_7_2_2(CALC_EXP_LOOP_i_7_0_lpi_2_6_0,
+      (signext_7_1(~ BATCH_LOOP_acc_itm_32_1)), exitL_exit_CALC_SOFTMAX_LOOP_sva);
+  assign BATCH_LOOP_if_BATCH_LOOP_if_and_5_mx0w0 = lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_1
+      & (~ BATCH_LOOP_acc_itm_32_1);
+  assign lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_1_mx0 = MUX_s_1_2_2(lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_1,
+      BATCH_LOOP_if_BATCH_LOOP_if_and_5_mx0w0, exitL_exit_CALC_SOFTMAX_LOOP_sva);
+  assign BATCH_LOOP_if_BATCH_LOOP_if_and_4_mx0w0 = lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_0
+      & (~ BATCH_LOOP_acc_itm_32_1);
+  assign lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_0_mx0 = MUX_s_1_2_2(lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_0,
+      BATCH_LOOP_if_BATCH_LOOP_if_and_4_mx0w0, exitL_exit_CALC_SOFTMAX_LOOP_sva);
+  assign nl_BATCH_LOOP_acc_3_tmp = conv_u2u_4_5(BATCH_LOOP_b_4_0_sva_3_0) + 5'b00001;
+  assign BATCH_LOOP_acc_3_tmp = nl_BATCH_LOOP_acc_3_tmp[4:0];
+  assign CALC_SOFTMAX_LOOP_and_svs_1 = (CALC_SOFTMAX_LOOP_acc_1_tmp[7]) & (STORE_LOOP_acc_1_tmp[7]);
+  assign nl_CALC_SOFTMAX_LOOP_acc_1_tmp = conv_u2u_7_8(CALC_SOFTMAX_LOOP_i_7_0_lpi_2_6_0)
+      + 8'b00000001;
+  assign CALC_SOFTMAX_LOOP_acc_1_tmp = nl_CALC_SOFTMAX_LOOP_acc_1_tmp[7:0];
+  assign nl_STORE_LOOP_acc_1_tmp = conv_u2u_7_8(STORE_LOOP_i_7_0_lpi_2_6_0) + 8'b00000001;
+  assign STORE_LOOP_acc_1_tmp = nl_STORE_LOOP_acc_1_tmp[7:0];
+  assign BATCH_LOOP_BATCH_LOOP_or_8_cse_1 = ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_bawt
+      | (~((~(lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_4_1 | exit_BATCH_LOOP_lpi_2_dfm_st_4))
+      & BATCH_LOOP_stage_v_4));
+  assign BATCH_LOOP_BATCH_LOOP_or_1_cse_1 = CALC_SOFTMAX_LOOP_mul_cmp_bawt | (~(lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_10_1
+      & (~ lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_10_0) & (~ exit_BATCH_LOOP_lpi_2_dfm_st_10)
+      & BATCH_LOOP_stage_v_10));
+  assign BATCH_LOOP_or_cse_1 = dma_read_ctrl_rsci_bawt | (~((~ exit_BATCH_LOOP_sva_1_st_11)
+      & CALC_SOFTMAX_LOOP_asn_itm_11 & BATCH_LOOP_stage_v_11));
+  assign BATCH_LOOP_or_5_cse_1 = dma_write_ctrl_rsci_bawt | (~(LOAD_LOOP_and_1_svs_st_11
+      & CALC_SOFTMAX_LOOP_or_cse_1 & (~ exit_BATCH_LOOP_lpi_2_dfm_st_11) & BATCH_LOOP_stage_v_11));
+  assign BATCH_LOOP_or_6_cse_1 = dma_write_chnl_rsci_bawt | (~(lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_11_1
+      & (~ lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_11_0) & (~ exit_BATCH_LOOP_lpi_2_dfm_st_11)
+      & BATCH_LOOP_stage_v_11));
+  assign CALC_SOFTMAX_LOOP_or_cse_1 = (lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_11_0
+      & (~ lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_11_1)) | (~(lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_11_1
+      | lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_11_0));
   assign ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_lpi_2_dfm_4
       = MUX_v_74_2_2(74'b00000000000000000000000000000000000000000000000000000000000000000000000000,
       ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_lpi_2_mx1,
-      exit_COMPUTE_LOOP_sva_1_3);
+      exit_BATCH_LOOP_sva_1_2);
   assign ac_math_ac_pow2_pwl_AC_TRN_33_7_true_AC_TRN_AC_WRAP_67_47_AC_TRN_AC_WRAP_output_pwl_ac_math_ac_pow2_pwl_AC_TRN_33_7_true_AC_TRN_AC_WRAP_67_47_AC_TRN_AC_WRAP_output_pwl_mul_psp_sva_1
       = conv_u2u_19_19(({ac_math_ac_pow2_pwl_AC_TRN_33_7_true_AC_TRN_AC_WRAP_67_47_AC_TRN_AC_WRAP_output_pwl_mux_itm_1
       , 1'b0 , ac_math_ac_pow2_pwl_AC_TRN_33_7_true_AC_TRN_AC_WRAP_67_47_AC_TRN_AC_WRAP_output_pwl_mux_1_itm_1})
       * ac_math_ac_exp_pwl_0_AC_TRN_32_6_true_AC_TRN_AC_WRAP_67_47_AC_TRN_AC_WRAP_input_inter_slc_ac_math_ac_exp_pwl_0_AC_TRN_32_6_true_AC_TRN_AC_WRAP_67_47_AC_TRN_AC_WRAP_input_inter_32_14_11_0_1_itm_1);
-  assign CALC_SOFTMAX_LOOP_or_tmp_1 = (lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_1_0_mx0
-      & (~ lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_1_1_mx0)) | (~(lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_1_1_mx0
-      | lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_1_0_mx0));
-  assign CALC_SOFTMAX_LOOP_equal_tmp_3 = lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_1_1_mx0
-      & lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_1_0_mx0;
-  assign nl_CALC_EXP_LOOP_acc_1_tmp = conv_u2u_7_8(CALC_EXP_LOOP_i_slc_CALC_EXP_LOOP_i_7_0_6_0_1_itm_1_mx1)
-      + 8'b00000001;
-  assign CALC_EXP_LOOP_acc_1_tmp = nl_CALC_EXP_LOOP_acc_1_tmp[7:0];
-  assign CALC_SOFTMAX_LOOP_or_14_nl = ((~ (z_out_1[7])) & CALC_SOFTMAX_LOOP_equal_tmp_2)
-      | CALC_SOFTMAX_LOOP_equal_tmp_3;
-  assign CALC_SOFTMAX_LOOP_mux_28_nl = MUX_s_1_2_2((COMPUTE_LOOP_acc_1_tmp[4]), lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_1,
-      CALC_SOFTMAX_LOOP_or_14_nl);
-  assign lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_5_1_1 = (CALC_SOFTMAX_LOOP_mux_28_nl
-      & (~ CALC_SOFTMAX_LOOP_and_6_ssc_1)) | CALC_SOFTMAX_LOOP_and_7_ssc_1;
-  assign lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_5_0_1 = (lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_1_0_mx0
-      & (~(CALC_SOFTMAX_LOOP_and_7_ssc_1 | ((z_out_1[7]) & CALC_SOFTMAX_LOOP_equal_tmp_2))))
-      | CALC_SOFTMAX_LOOP_and_6_ssc_1;
-  assign CALC_SOFTMAX_LOOP_mux_29_nl = MUX_v_7_2_2(SUM_EXP_LOOP_i_7_0_lpi_2_6_0,
-      (signext_7_1(~ COMPUTE_LOOP_acc_2_itm_32_1)), exitL_exit_CALC_SOFTMAX_LOOP_sva);
-  assign nl_SUM_EXP_LOOP_acc_2_tmp = conv_u2u_7_8(CALC_SOFTMAX_LOOP_mux_29_nl) +
-      8'b00000001;
-  assign SUM_EXP_LOOP_acc_2_tmp = nl_SUM_EXP_LOOP_acc_2_tmp[7:0];
-  assign CALC_SOFTMAX_LOOP_and_6_ssc_1 = (~ CALC_EXP_LOOP_and_svs_1) & CALC_SOFTMAX_LOOP_or_tmp_1;
-  assign CALC_SOFTMAX_LOOP_and_7_ssc_1 = CALC_EXP_LOOP_and_svs_1 & CALC_SOFTMAX_LOOP_or_tmp_1;
+  assign nl_ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_mul_psp_sva_1
+      = $signed(({1'b1 , ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_mux_itm_1}))
+      * $signed(conv_u2s_10_11(ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_normalized_fixed_slc_ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_normalized_fixed_72_60_9_0_itm_1));
+  assign ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_mul_psp_sva_1
+      = nl_ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_mul_psp_sva_1[18:0];
+  assign CALC_SOFTMAX_LOOP_equal_tmp_3 = lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_1_mx0
+      & lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_0_mx0;
+  assign CALC_SOFTMAX_LOOP_or_tmp_1 = (lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_0_mx0
+      & (~ lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_1_mx0)) | (~(lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_1_mx0
+      | lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_0_mx0));
+  assign CALC_SOFTMAX_LOOP_mux_81_nl = MUX_s_1_2_2(lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_1_mx0,
+      (BATCH_LOOP_acc_3_tmp[4]), CALC_SOFTMAX_LOOP_and_11_ssc_1);
+  assign lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_5_1_1 = CALC_SOFTMAX_LOOP_mux_81_nl
+      | CALC_SOFTMAX_LOOP_and_9_ssc_1;
+  assign lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_5_0_1 = (lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_0_mx0
+      & (~(CALC_SOFTMAX_LOOP_and_9_ssc_1 | CALC_SOFTMAX_LOOP_and_11_ssc_1))) | ((~
+      LOAD_LOOP_and_1_svs_1) & CALC_SOFTMAX_LOOP_or_tmp_1);
+  assign CALC_SOFTMAX_LOOP_and_11_ssc_1 = CALC_SOFTMAX_LOOP_and_svs_1 & CALC_SOFTMAX_LOOP_equal_tmp_2;
+  assign CALC_SOFTMAX_LOOP_and_9_ssc_1 = LOAD_LOOP_and_1_svs_1 & CALC_SOFTMAX_LOOP_or_tmp_1;
   assign nl_ac_math_ac_exp_pwl_0_AC_TRN_32_6_true_AC_TRN_AC_WRAP_67_47_AC_TRN_AC_WRAP_mul_nl
-      = $signed(ac_math_ac_exp_pwl_0_AC_TRN_32_6_true_AC_TRN_AC_WRAP_67_47_AC_TRN_AC_WRAP_asn_itm_1)
-      * $signed(16'b0101110001010101);
+      = $signed((dma_read_chnl_rsci_idat_mxwt)) * $signed(16'b0101110001010101);
   assign ac_math_ac_exp_pwl_0_AC_TRN_32_6_true_AC_TRN_AC_WRAP_67_47_AC_TRN_AC_WRAP_mul_nl
       = nl_ac_math_ac_exp_pwl_0_AC_TRN_32_6_true_AC_TRN_AC_WRAP_67_47_AC_TRN_AC_WRAP_mul_nl[46:0];
   assign ac_math_ac_exp_pwl_0_AC_TRN_32_6_true_AC_TRN_AC_WRAP_67_47_AC_TRN_AC_WRAP_mul_itm_46_28
       = readslicef_47_19_28(ac_math_ac_exp_pwl_0_AC_TRN_32_6_true_AC_TRN_AC_WRAP_67_47_AC_TRN_AC_WRAP_mul_nl);
-  assign nl_COMPUTE_LOOP_acc_2_nl = ({29'b10000000000000000000000000000 , COMPUTE_LOOP_b_4_0_sva_3_0})
-      + conv_u2u_32_33(~ conf_info_batch_sva) + 33'b000000000000000000000000000000001;
-  assign COMPUTE_LOOP_acc_2_nl = nl_COMPUTE_LOOP_acc_2_nl[32:0];
-  assign COMPUTE_LOOP_acc_2_itm_32_1 = readslicef_33_1_32(COMPUTE_LOOP_acc_2_nl);
-  assign COMPUTE_LOOP_nor_tmp = ~(COMPUTE_LOOP_stage_0 | COMPUTE_LOOP_stage_0_2 |
-      COMPUTE_LOOP_stage_0_3 | COMPUTE_LOOP_stage_0_4 | COMPUTE_LOOP_stage_0_5 |
-      COMPUTE_LOOP_stage_0_6 | COMPUTE_LOOP_stage_0_7 | COMPUTE_LOOP_stage_0_8 |
-      COMPUTE_LOOP_stage_0_9 | COMPUTE_LOOP_stage_0_10 | COMPUTE_LOOP_stage_0_11
-      | COMPUTE_LOOP_stage_0_12);
-  assign or_tmp_1 = (~ CALC_EXP_LOOP_and_svs_st_6) | CALC_EXP_LOOP_and_svs_st_4;
-  assign nor_tmp = CALC_EXP_LOOP_and_svs_st_6 & CALC_EXP_LOOP_and_svs_st_4;
-  assign or_tmp_10 = exit_STORE_OUTER_LOOP_lpi_2_dfm_st_2 | dma_write_chnl_rsci_bawt;
-  assign or_dcpl_14 = plm_in_data_rsci_bawt | exit_LOAD_OUTER_LOOP_lpi_2_dfm_st_2;
-  assign and_dcpl_3 = CALC_EXP_LOOP_and_svs_st_5 & CALC_EXP_LOOP_and_svs_st_3;
-  assign and_dcpl_6 = or_27_cse & or_tmp_10;
-  assign or_dcpl_20 = and_dcpl_6 | (~ CALC_SOFTMAX_LOOP_CALC_SOFTMAX_LOOP_nor_2_itm_1);
-  assign and_dcpl_24 = COMPUTE_LOOP_stage_0_5 & (~ exit_COMPUTE_LOOP_lpi_2_dfm_st_4);
-  assign or_dcpl_32 = (~ exitL_exit_CALC_SOFTMAX_LOOP_sva) | COMPUTE_LOOP_acc_2_itm_32_1;
-  assign or_69_cse = (~ lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_1) | exitL_exit_CALC_SOFTMAX_LOOP_sva;
-  assign nor_68_nl = ~(lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_1 | exitL_exit_CALC_SOFTMAX_LOOP_sva);
-  assign mux_tmp_48 = MUX_s_1_2_2(nor_68_nl, or_69_cse, COMPUTE_LOOP_acc_2_itm_32_1);
-  assign and_dcpl_115 = and_dcpl_6 & CALC_SOFTMAX_LOOP_CALC_SOFTMAX_LOOP_nor_2_itm_1
-      & (~ CALC_EXP_LOOP_and_svs_st_4) & (~ CALC_EXP_LOOP_and_svs_st_2) & (~ CALC_EXP_LOOP_and_svs_st_3);
-  assign or_dcpl_54 = ~(LOAD_OUTER_LOOP_stage_0_1 & CALC_EXP_LOOP_and_svs_st_3);
-  assign and_dcpl_118 = (~(plm_in_data_rsci_bawt | exit_LOAD_OUTER_LOOP_lpi_2_dfm_st_2))
-      & CALC_EXP_LOOP_and_svs_st_5;
-  assign and_dcpl_119 = ~(exit_LOAD_OUTER_LOOP_lpi_2_dfm_st_1 | dma_read_chnl_rsci_bawt);
-  assign or_dcpl_56 = and_dcpl_119 | (~ CALC_EXP_LOOP_and_svs_st_2);
-  assign and_dcpl_121 = (~ dma_read_ctrl_rsci_bawt) & LOAD_INNER_LOOP_asn_itm_1 &
-      (~ exit_LOAD_OUTER_LOOP_sva_1_st_1);
-  assign and_dcpl_122 = (and_dcpl_121 | or_dcpl_56) & CALC_EXP_LOOP_and_svs_st_4;
-  assign or_dcpl_59 = or_dcpl_14 | (~ CALC_EXP_LOOP_and_svs_st_5);
-  assign or_dcpl_60 = exit_LOAD_OUTER_LOOP_lpi_2_dfm_st_1 | dma_read_chnl_rsci_bawt;
-  assign or_dcpl_62 = dma_read_ctrl_rsci_bawt | (~ LOAD_INNER_LOOP_asn_itm_1) | exit_LOAD_OUTER_LOOP_sva_1_st_1;
-  assign and_dcpl_125 = or_dcpl_62 & or_dcpl_60;
-  assign or_dcpl_63 = ~((~(and_dcpl_125 & CALC_EXP_LOOP_and_svs_st_2)) & CALC_EXP_LOOP_and_svs_st_4);
-  assign and_dcpl_127 = or_dcpl_63 & or_dcpl_59;
-  assign and_dcpl_132 = LOAD_OUTER_LOOP_stage_0_1 & CALC_EXP_LOOP_and_svs_st_3;
-  assign and_dcpl_133 = and_dcpl_127 & and_dcpl_132;
-  assign and_dcpl_134 = CALC_EXP_LOOP_and_svs_st_4 & CALC_EXP_LOOP_and_svs_st_2;
-  assign and_dcpl_135 = or_dcpl_59 & or_dcpl_60;
-  assign and_dcpl_136 = and_dcpl_135 & or_dcpl_62;
-  assign and_dcpl_137 = and_dcpl_136 & and_dcpl_134;
-  assign and_dcpl_144 = CALC_EXP_LOOP_and_svs_st_4 & dma_read_ctrl_rsci_bawt & LOAD_INNER_LOOP_asn_itm_1
-      & (~ exit_LOAD_OUTER_LOOP_sva_1_st_1) & CALC_EXP_LOOP_and_svs_st_2;
-  assign nand_tmp_14 = ~(exitL_exit_LOAD_INNER_LOOP_sva & (~ COMPUTE_LOOP_acc_2_itm_32_1));
-  assign not_tmp_118 = ~(CALC_EXP_LOOP_and_svs_st_4 | (~ nand_tmp_14));
-  assign and_dcpl_152 = CALC_EXP_LOOP_and_svs_st_4 & (~ exit_LOAD_OUTER_LOOP_lpi_2_dfm_st_1)
-      & dma_read_chnl_rsci_bawt & CALC_EXP_LOOP_and_svs_st_2;
-  assign nor_tmp_27 = or_dcpl_62 & CALC_EXP_LOOP_and_svs_st_2;
-  assign nand_tmp_15 = ~(CALC_EXP_LOOP_and_svs_st_4 & (~(or_dcpl_60 & nor_tmp_27)));
-  assign or_tmp_80 = (~ CALC_EXP_LOOP_and_svs_st_4) | exit_LOAD_OUTER_LOOP_lpi_2_dfm_st_1
-      | (~(dma_read_chnl_rsci_bawt & nor_tmp_27));
-  assign and_dcpl_157 = (~ exit_STORE_OUTER_LOOP_sva_1_st_2) & STORE_INNER_LOOP_asn_itm_2;
-  assign or_dcpl_86 = ~(CALC_EXP_LOOP_and_svs_st_6 & CALC_EXP_LOOP_and_svs_st_4);
-  assign or_dcpl_87 = or_dcpl_86 | CALC_SOFTMAX_LOOP_CALC_SOFTMAX_LOOP_nor_2_itm_4
-      | (~ CALC_EXP_LOOP_and_svs_st_1);
-  assign or_dcpl_89 = (and_dcpl_157 & (~ dma_write_ctrl_rsci_bawt)) | (~(dma_write_chnl_rsci_bawt
-      | exit_STORE_OUTER_LOOP_lpi_2_dfm_st_2));
-  assign and_dcpl_167 = or_dcpl_89 & CALC_SOFTMAX_LOOP_CALC_SOFTMAX_LOOP_nor_2_itm_1;
-  assign or_dcpl_91 = or_dcpl_86 | CALC_SOFTMAX_LOOP_CALC_SOFTMAX_LOOP_nor_2_itm_2;
-  assign and_dcpl_174 = or_dcpl_20 & nor_tmp;
-  assign and_246_nl = COMPUTE_LOOP_acc_2_itm_32_1 & or_dcpl_20;
-  assign mux_tmp_93 = MUX_s_1_2_2((~ and_dcpl_167), and_246_nl, STORE_INNER_LOOP_asn_itm);
-  assign and_dcpl_181 = or_dcpl_20 & or_tmp_1;
-  assign or_dcpl_94 = ~(CALC_EXP_LOOP_and_svs_st_5 & CALC_EXP_LOOP_and_svs_st_3);
-  assign or_dcpl_95 = (CALC_EXP_LOOP_and_svs_st_6 & (~ CALC_EXP_LOOP_and_svs_st_4))
-      | or_dcpl_94;
-  assign mux_tmp_94 = MUX_s_1_2_2(or_dcpl_20, mux_tmp_93, exitL_exit_STORE_INNER_LOOP_sva);
-  assign and_dcpl_200 = mux_tmp_94 & or_tmp_1;
-  assign and_dcpl_207 = or_dcpl_32 & COMPUTE_LOOP_stage_0;
-  assign nand_40_nl = ~((~(or_dcpl_62 & CALC_EXP_LOOP_and_svs_st_2)) & CALC_EXP_LOOP_and_svs_st_4);
-  assign mux_107_cse = MUX_s_1_2_2((~ CALC_EXP_LOOP_and_svs_st_4), nand_40_nl, or_dcpl_60);
-  assign or_dcpl_176 = and_dcpl_125 | (~ CALC_EXP_LOOP_and_svs_st_4);
-  assign and_dcpl_218 = or_dcpl_176 & or_dcpl_59;
-  assign or_dcpl_183 = and_dcpl_167 | (~ (z_out_1[7])) | (~ CALC_EXP_LOOP_and_svs_st_5);
-  assign mux_92_nl = MUX_s_1_2_2(not_tmp_118, nand_tmp_14, or_dcpl_60);
-  assign mux_93_nl = MUX_s_1_2_2(not_tmp_118, mux_92_nl, or_dcpl_62);
-  assign mux_94_nl = MUX_s_1_2_2(not_tmp_118, mux_93_nl, CALC_EXP_LOOP_and_svs_st_2);
-  assign and_dcpl_223 = mux_94_nl & or_dcpl_59 & nand_64_cse;
-  assign or_tmp_104 = CALC_EXP_LOOP_and_svs_st_1 | (~ mux_107_cse);
-  assign or_dcpl_197 = and_dcpl_167 | (~ CALC_EXP_LOOP_and_svs_st_5);
-  assign or_tmp_112 = and_dcpl_133 & (fsm_output[2]);
-  assign or_tmp_116 = ((~ COMPUTE_LOOP_acc_2_itm_32_1) | (~ LOAD_INNER_LOOP_asn_itm)
-      | or_dcpl_54) & or_dcpl_60 & or_dcpl_59 & and_dcpl_144 & (fsm_output[2]);
-  assign or_tmp_122 = (~ (fsm_output[2])) | and_dcpl_118 | (~ CALC_EXP_LOOP_and_svs_st_4)
-      | exit_LOAD_OUTER_LOOP_lpi_2_dfm_st_1 | and_dcpl_121 | (~(dma_read_chnl_rsci_bawt
-      & CALC_EXP_LOOP_and_svs_st_2));
-  assign or_tmp_130 = (~ COMPUTE_LOOP_stage_0_12) | exit_COMPUTE_LOOP_lpi_2_dfm_st_11
-      | (~ lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_11_1) | lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_11_0
-      | (~ (fsm_output[3]));
-  assign or_tmp_133 = (fsm_output[2:1]!=2'b00);
-  assign or_tmp_142 = or_dcpl_87 & or_tmp_10 & and_dcpl_157 & dma_write_ctrl_rsci_bawt
-      & CALC_SOFTMAX_LOOP_CALC_SOFTMAX_LOOP_nor_2_itm_1 & (fsm_output[4]);
-  assign or_tmp_149 = or_27_cse & dma_write_chnl_rsci_bawt & (~ exit_STORE_OUTER_LOOP_lpi_2_dfm_st_2)
-      & or_dcpl_91 & CALC_SOFTMAX_LOOP_CALC_SOFTMAX_LOOP_nor_2_itm_1 & (fsm_output[4]);
-  assign or_tmp_150 = or_dcpl_20 & nor_tmp & (~ CALC_SOFTMAX_LOOP_CALC_SOFTMAX_LOOP_nor_2_itm_2)
-      & (fsm_output[4]);
-  assign or_tmp_156 = and_dcpl_174 & (fsm_output[4]);
-  assign or_tmp_165 = ((ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_sva_1_1!=74'b00000000000000000000000000000000000000000000000000000000000000000000000000))
-      & and_dcpl_24 & CALC_EXP_LOOP_and_svs_st_4 & (~ lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_4_1)
-      & (fsm_output[3]);
-  assign nor_42_nl = ~(COMPUTE_LOOP_acc_2_itm_32_1 | (~ mux_107_cse));
-  assign mux_111_nl = MUX_s_1_2_2(mux_107_cse, nor_42_nl, LOAD_INNER_LOOP_asn_itm);
-  assign and_708_nl = exitL_exit_LOAD_INNER_LOOP_sva & mux_111_nl;
-  assign mux_112_nl = MUX_s_1_2_2(and_708_nl, mux_107_cse, and_731_cse_1);
-  assign or_tmp_203 = mux_112_nl & or_dcpl_59 & and_dcpl_132 & (fsm_output[2]);
-  assign or_tmp_209 = and_dcpl_218 & CALC_EXP_LOOP_and_svs_st_3 & (fsm_output[2]);
-  assign CALC_EXP_LOOP_and_svs_st_1_mx0c1 = CALC_EXP_LOOP_and_svs_st_1 & (fsm_output[1]);
-  assign LOAD_INNER_LOOP_asn_itm_mx0c2 = (~ CALC_EXP_LOOP_and_svs_st_3) & (fsm_output[2]);
-  assign LOAD_OUTER_LOOP_stage_0_1_mx0c2 = and_dcpl_223 & and_dcpl_132 & (fsm_output[2]);
-  assign CALC_EXP_LOOP_and_svs_st_6_mx0c0 = LOAD_INNER_LOOP_asn_itm & CALC_EXP_LOOP_and_svs_st_3
+  assign BATCH_LOOP_nor_12_tmp = ~((~(BATCH_LOOP_stage_v_11 & BATCH_LOOP_or_cse_1
+      & (dma_write_ctrl_rsci_bawt | (~(LOAD_LOOP_and_1_svs_st_11 & CALC_SOFTMAX_LOOP_or_cse_1
+      & (~ exit_BATCH_LOOP_lpi_2_dfm_st_11)))) & (dma_write_chnl_rsci_bawt | (~(lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_11_1
+      & (~ lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_11_0) & (~ exit_BATCH_LOOP_lpi_2_dfm_st_11))))))
+      | BATCH_LOOP_stage_0_mx1 | BATCH_LOOP_stage_0_1 | BATCH_LOOP_stage_0_2 | BATCH_LOOP_stage_0_3
+      | BATCH_LOOP_stage_0_4 | BATCH_LOOP_stage_0_5 | BATCH_LOOP_stage_0_6 | BATCH_LOOP_stage_0_7
+      | BATCH_LOOP_stage_0_8 | BATCH_LOOP_stage_0_9 | BATCH_LOOP_stage_0_10 | BATCH_LOOP_stage_0_11);
+  assign BATCH_LOOP_and_34_tmp = BATCH_LOOP_stage_v & (~(BATCH_LOOP_stage_v_1 & (~
+      BATCH_LOOP_and_31_tmp))) & BATCH_LOOP_stage_0_1 & BATCH_LOOP_BATCH_LOOP_or_8_cse_1
+      & BATCH_LOOP_BATCH_LOOP_or_1_cse_1 & BATCH_LOOP_or_cse_1 & BATCH_LOOP_or_5_cse_1
+      & BATCH_LOOP_or_6_cse_1;
+  assign BATCH_LOOP_and_31_tmp = BATCH_LOOP_stage_v_1 & (~(BATCH_LOOP_stage_v_2 &
+      or_dcpl_65)) & BATCH_LOOP_stage_0_2 & (dma_read_chnl_rsci_bawt | lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_1_1
+      | exit_BATCH_LOOP_lpi_2_dfm_st_1) & BATCH_LOOP_BATCH_LOOP_or_8_cse_1 & BATCH_LOOP_BATCH_LOOP_or_1_cse_1
+      & BATCH_LOOP_or_cse_1 & BATCH_LOOP_or_5_cse_1 & BATCH_LOOP_or_6_cse_1;
+  assign BATCH_LOOP_BATCH_LOOP_or_6_cse = ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_bawt
+      | lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_4_1 | exit_BATCH_LOOP_lpi_2_dfm_st_4;
+  assign or_tmp_7 = dma_write_chnl_rsci_bawt | lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_11_0;
+  assign or_9_cse = (~ CALC_SOFTMAX_LOOP_asn_itm_11) | exit_BATCH_LOOP_sva_1_st_11
+      | dma_read_ctrl_rsci_bawt;
+  assign or_11_cse = dma_write_ctrl_rsci_bawt | (~ LOAD_LOOP_and_1_svs_st_11);
+  assign mux_17_nl = MUX_s_1_2_2(or_11_cse, or_tmp_7, lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_11_1);
+  assign or_12_cse = exit_BATCH_LOOP_lpi_2_dfm_st_11 | mux_17_nl;
+  assign nand_tmp = ~(BATCH_LOOP_stage_v_11 & (~(or_9_cse & or_12_cse)));
+  assign or_tmp_10 = BATCH_LOOP_stage_v_10 | (~ nand_tmp);
+  assign mux_tmp_8 = MUX_s_1_2_2((~ or_tmp_10), nand_tmp, or_84_cse);
+  assign not_tmp_10 = ~(BATCH_LOOP_stage_v_4 | (~ mux_tmp_8));
+  assign mux_tmp_20 = MUX_s_1_2_2(not_tmp_10, mux_tmp_8, BATCH_LOOP_BATCH_LOOP_or_6_cse);
+  assign nand_137_cse = ~(BATCH_LOOP_stage_v_3 & BATCH_LOOP_stage_0_4);
+  assign nor_165_cse = ~(BATCH_LOOP_stage_v_10 | (~ nand_tmp));
+  assign and_50_cse = or_tmp_7 & or_9_cse;
+  assign and_51_nl = or_11_cse & or_9_cse;
+  assign mux_100_nl = MUX_s_1_2_2(and_51_nl, and_50_cse, lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_11_1);
+  assign mux_101_nl = MUX_s_1_2_2(mux_100_nl, or_9_cse, exit_BATCH_LOOP_lpi_2_dfm_st_11);
+  assign nand_tmp_15 = ~(BATCH_LOOP_stage_v_11 & (~ mux_101_nl));
+  assign and_tmp_47 = or_84_cse & nand_tmp_15;
+  assign and_tmp_50 = ((~ BATCH_LOOP_stage_v_10) | CALC_SOFTMAX_LOOP_mul_cmp_bawt
+      | (~ lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_10_1) | lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_10_0
+      | exit_BATCH_LOOP_lpi_2_dfm_st_10) & nand_tmp_15;
+  assign nor_164_nl = ~(BATCH_LOOP_stage_v_10 | (~ nand_tmp_15));
+  assign mux_tmp_99 = MUX_s_1_2_2(nor_164_nl, and_tmp_50, BATCH_LOOP_stage_0_11);
+  assign and_59_nl = BATCH_LOOP_stage_0_10 & mux_tmp_99;
+  assign mux_tmp_100 = MUX_s_1_2_2(and_tmp_50, and_59_nl, BATCH_LOOP_stage_v_9);
+  assign and_60_nl = BATCH_LOOP_stage_0_9 & mux_tmp_100;
+  assign mux_tmp_101 = MUX_s_1_2_2(and_tmp_50, and_60_nl, BATCH_LOOP_stage_v_8);
+  assign and_988_cse = BATCH_LOOP_stage_v_9 & BATCH_LOOP_stage_0_10;
+  assign nor_163_nl = ~(LOAD_LOOP_and_1_svs_st_11 | (~ or_9_cse));
+  assign mux_127_nl = MUX_s_1_2_2(nor_163_nl, or_9_cse, dma_write_ctrl_rsci_bawt);
+  assign mux_128_nl = MUX_s_1_2_2(mux_127_nl, and_50_cse, lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_11_1);
+  assign mux_129_nl = MUX_s_1_2_2(mux_128_nl, or_9_cse, exit_BATCH_LOOP_lpi_2_dfm_st_11);
+  assign nand_tmp_27 = ~(BATCH_LOOP_stage_v_11 & (~ mux_129_nl));
+  assign or_tmp_64 = BATCH_LOOP_acc_itm_32_1 | (~ CALC_SOFTMAX_LOOP_asn_itm);
+  assign and_1002_cse = BATCH_LOOP_stage_v_8 & BATCH_LOOP_stage_0_9;
+  assign and_1000_cse = BATCH_LOOP_stage_v_7 & BATCH_LOOP_stage_0_8;
+  assign and_998_cse = BATCH_LOOP_stage_v_6 & BATCH_LOOP_stage_0_7;
+  assign nand_121_cse = ~(BATCH_LOOP_stage_v_5 & BATCH_LOOP_stage_0_6);
+  assign or_226_nl = (~ (BATCH_LOOP_acc_3_tmp[4])) | lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_0
+      | (~(lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_1 & (STORE_LOOP_acc_1_tmp[7]) & (CALC_SOFTMAX_LOOP_acc_1_tmp[7])));
+  assign mux_tmp_295 = MUX_s_1_2_2(or_226_nl, or_tmp_64, exitL_exit_CALC_SOFTMAX_LOOP_sva);
+  assign or_dcpl_5 = ~(mux_tmp_295 & BATCH_LOOP_and_34_tmp);
+  assign and_dcpl_34 = BATCH_LOOP_stage_v_10 & BATCH_LOOP_stage_0_11;
+  assign or_tmp_230 = or_84_cse | (~ or_12_cse);
+  assign and_dcpl_46 = (~ exit_BATCH_LOOP_lpi_2_dfm_st_11) & BATCH_LOOP_stage_v_11;
+  assign or_dcpl_14 = lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_10_1 | exit_BATCH_LOOP_lpi_2_dfm_st_10
+      | (~ BATCH_LOOP_stage_v_10) | (~(BATCH_LOOP_stage_0_11 & LOAD_LOOP_and_1_svs_st_10));
+  assign or_dcpl_20 = (~ CALC_SOFTMAX_LOOP_mul_cmp_bawt) | lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_10_0
+      | (~ lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_10_1) | exit_BATCH_LOOP_lpi_2_dfm_st_10
+      | (~ BATCH_LOOP_stage_v_10) | (~ BATCH_LOOP_stage_0_11);
+  assign not_tmp_193 = ~(BATCH_LOOP_stage_v_10 | (~ nand_tmp_27));
+  assign and_327_nl = BATCH_LOOP_stage_0_8 & mux_474_cse;
+  assign mux_326_cse = MUX_s_1_2_2(mux_539_cse, and_327_nl, BATCH_LOOP_stage_v_7);
+  assign and_328_nl = BATCH_LOOP_stage_0_7 & mux_326_cse;
+  assign mux_327_cse = MUX_s_1_2_2(mux_539_cse, and_328_nl, BATCH_LOOP_stage_v_6);
+  assign and_335_nl = BATCH_LOOP_BATCH_LOOP_or_6_cse & BATCH_LOOP_stage_0_5 & mux_434_cse;
+  assign mux_336_cse = MUX_s_1_2_2(mux_535_cse, and_335_nl, BATCH_LOOP_stage_v_4);
+  assign and_dcpl_63 = BATCH_LOOP_stage_v_3 & BATCH_LOOP_stage_0_4;
+  assign and_dcpl_73 = BATCH_LOOP_and_31_tmp & (~ exit_BATCH_LOOP_lpi_2_dfm_st_1)
+      & (~ lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_1_1);
+  assign nor_147_nl = ~((~((~ BATCH_LOOP_stage_v_3) | BATCH_LOOP_stage_0_4)) | BATCH_LOOP_stage_v_4
+      | (~ mux_tmp_8));
+  assign nor_148_nl = ~((~ BATCH_LOOP_stage_0_4) | BATCH_LOOP_stage_v_4 | (~ mux_tmp_8));
+  assign mux_360_nl = MUX_s_1_2_2(not_tmp_10, mux_421_cse, BATCH_LOOP_stage_0_6);
+  assign mux_361_nl = MUX_s_1_2_2(mux_tmp_8, mux_360_nl, BATCH_LOOP_stage_v_5);
+  assign and_367_nl = BATCH_LOOP_stage_0_4 & mux_361_nl;
+  assign mux_362_nl = MUX_s_1_2_2(nor_148_nl, and_367_nl, BATCH_LOOP_stage_0_5);
+  assign mux_363_nl = MUX_s_1_2_2(mux_tmp_8, mux_362_nl, BATCH_LOOP_stage_v_3);
+  assign mux_tmp_354 = MUX_s_1_2_2(nor_147_nl, mux_363_nl, BATCH_LOOP_BATCH_LOOP_or_6_cse);
+  assign and_dcpl_89 = and_dcpl_63 & (~ exit_BATCH_LOOP_lpi_2_dfm_st_3);
+  assign or_dcpl_42 = (~ lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_1) | lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_0;
+  assign and_dcpl_144 = BATCH_LOOP_stage_0_6 & BATCH_LOOP_stage_v_5;
+  assign or_dcpl_64 = ~(BATCH_LOOP_stage_0_3 & BATCH_LOOP_stage_v_2);
+  assign or_dcpl_65 = (~ mux_tmp_354) | or_dcpl_64;
+  assign and_tmp_164 = ((~ BATCH_LOOP_stage_v_4) | exit_BATCH_LOOP_lpi_2_dfm_st_4
+      | lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_4_1 | ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_bawt)
+      & and_tmp_50;
+  assign and_dcpl_163 = BATCH_LOOP_stage_0_5 & BATCH_LOOP_stage_v_4;
+  assign and_tmp_206 = and_988_cse & mux_tmp_99;
+  assign or_dcpl_73 = ~((~((CALC_SOFTMAX_LOOP_acc_1_tmp[7]) & (STORE_LOOP_acc_1_tmp[7])
+      & lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_1 & (~ exitL_exit_CALC_SOFTMAX_LOOP_sva)))
+      & BATCH_LOOP_and_34_tmp);
+  assign and_dcpl_271 = mux_527_cse & (ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_sva_1_st_1==74'b00000000000000000000000000000000000000000000000000000000000000000000000000);
+  assign and_1008_nl = CALC_SOFTMAX_LOOP_asn_itm_10 & BATCH_LOOP_stage_0_11 & BATCH_LOOP_stage_v_10;
+  assign mux_309_nl = MUX_s_1_2_2(or_12_cse, (~ or_tmp_230), and_1008_nl);
+  assign mux_310_nl = MUX_s_1_2_2(mux_309_nl, or_12_cse, exit_BATCH_LOOP_sva_1_st_10);
+  assign or_tmp_404 = mux_310_nl & (~ exit_BATCH_LOOP_sva_1_st_11) & CALC_SOFTMAX_LOOP_asn_itm_11
+      & dma_read_ctrl_rsci_bawt & BATCH_LOOP_stage_v_11 & (fsm_output[2]);
+  assign or_tmp_411 = or_dcpl_14 & or_9_cse & dma_write_ctrl_rsci_bawt & LOAD_LOOP_and_1_svs_st_11
+      & (~ lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_11_1) & and_dcpl_46 & (fsm_output[2]);
+  assign or_tmp_417 = nand_tmp_15 & CALC_SOFTMAX_LOOP_mul_cmp_bawt & (~ lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_10_0)
+      & lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_10_1 & (~ exit_BATCH_LOOP_lpi_2_dfm_st_10)
+      & BATCH_LOOP_stage_v_10 & BATCH_LOOP_stage_0_11 & (fsm_output[2]);
+  assign or_tmp_418 = or_dcpl_20 & or_9_cse & dma_write_chnl_rsci_bawt & (~ lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_11_0)
+      & lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_11_1 & and_dcpl_46 & (fsm_output[2]);
+  assign or_tmp_427 = (~ (fsm_output[2])) | (~ mux_336_cse) | nand_137_cse | exit_BATCH_LOOP_lpi_2_dfm_st_3
+      | lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_3_1;
+  assign or_tmp_430 = mux_336_cse & and_dcpl_63 & (fsm_output[2]);
+  assign or_tmp_432 = mux_tmp_99 & and_988_cse & (fsm_output[2]);
+  assign or_tmp_435 = and_tmp_47 & and_dcpl_34 & (fsm_output[2]);
+  assign or_tmp_441 = mux_374_cse & BATCH_LOOP_and_34_tmp & (fsm_output[2]);
+  assign or_tmp_442 = (~(mux_374_cse & BATCH_LOOP_and_34_tmp)) & and_dcpl_73 & (fsm_output[2]);
+  assign or_tmp_448 = (or_tmp_64 | (~ exitL_exit_CALC_SOFTMAX_LOOP_sva)) & BATCH_LOOP_and_34_tmp
       & (fsm_output[2]);
-  assign CALC_EXP_LOOP_i_slc_CALC_EXP_LOOP_i_7_0_6_0_1_itm_1_mx0c0 = or_dcpl_176
-      & or_dcpl_59 & exitL_exit_LOAD_INNER_LOOP_sva & (fsm_output[2]);
-  assign CALC_EXP_LOOP_i_slc_CALC_EXP_LOOP_i_7_0_6_0_1_itm_1_mx0c1 = or_dcpl_176
-      & or_dcpl_59 & (~ exitL_exit_LOAD_INNER_LOOP_sva) & (fsm_output[2]);
-  assign COMPUTE_LOOP_b_4_0_sva_3_0_mx0c0 = (fsm_output[1]) | ((~ LOAD_OUTER_LOOP_stage_0_1)
-      & (fsm_output[2]));
-  assign or_303_tmp = ((~ exitL_exit_CALC_SOFTMAX_LOOP_sva) & lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_1)
-      | CALC_EXP_LOOP_and_svs_1;
-  assign CALC_SOFTMAX_LOOP_and_10_tmp = CALC_SOFTMAX_LOOP_equal_tmp_2 & (~ exit_COMPUTE_LOOP_lpi_2_dfm_1);
-  assign or_186_tmp = (~ COMPUTE_LOOP_stage_0_5) | CALC_SOFTMAX_LOOP_asn_14_itm_4;
-  assign plm_in_data_rsci_d_d = LOAD_INNER_LOOP_data_ac_mux_rmff;
-  assign plm_in_data_rsci_radr_d = LOAD_INNER_LOOP_mux_1_rmff;
-  assign plm_in_data_rsci_wadr_d = CALC_EXP_LOOP_i_mux_rmff;
-  assign plm_in_data_rsci_we_d_pff = plm_in_data_rsci_we_d_iff;
-  assign plm_in_data_rsci_readA_r_ram_ir_internal_RMASK_B_d = plm_in_data_rsci_readA_r_ram_ir_internal_RMASK_B_d_reg;
-  assign plm_out_data_rsci_d_d = CALC_SOFTMAX_LOOP_mux_rmff;
-  assign plm_out_data_rsci_radr_d = STORE_INNER_LOOP_mux1h_3_rmff;
-  assign plm_out_data_rsci_wadr_d = CALC_SOFTMAX_LOOP_i_mux_rmff;
-  assign plm_out_data_rsci_we_d_pff = plm_out_data_rsci_we_d_iff;
-  assign plm_out_data_rsci_readA_r_ram_ir_internal_RMASK_B_d = plm_out_data_rsci_readA_r_ram_ir_internal_RMASK_B_d_reg;
+  assign or_tmp_449 = (~ or_tmp_64) & exitL_exit_CALC_SOFTMAX_LOOP_sva & BATCH_LOOP_and_34_tmp
+      & (fsm_output[2]);
+  assign or_tmp_453 = BATCH_LOOP_and_34_tmp & (fsm_output[2]);
+  assign or_tmp_462 = (~ mux_374_cse) & BATCH_LOOP_and_34_tmp & (fsm_output[2]);
   assign ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_d_d
-      = operator_67_47_false_AC_TRN_AC_WRAP_lshift_ncse_sva_1_1;
-  assign ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_radr_d_pff
-      = CALC_EXP_LOOP_i_slc_CALC_EXP_LOOP_i_7_0_6_0_1_itm_4;
+      = operator_67_47_false_AC_TRN_AC_WRAP_mux_rmff;
+  assign ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_radr_d
+      = CALC_SOFTMAX_LOOP_i_mux_rmff;
+  assign ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_wadr_d
+      = CALC_EXP_LOOP_i_mux_rmff;
   assign ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_we_d_pff
-      = and_dcpl_24 & (~ lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_4_1) & (fsm_output[3]);
+      = ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_we_d_iff;
   assign ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_readA_r_ram_ir_internal_RMASK_B_d
-      = and_dcpl_24 & lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_4_1 & (~ lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_4_0)
-      & (fsm_output[3]);
+      = ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_readA_r_ram_ir_internal_RMASK_B_d_reg;
   always @(posedge clk) begin
-    if ( core_wen ) begin
-      conf_info_batch_sva <= MUX_v_32_2_2(conf_info_batch_rsci_idat, conf_info_batch_sva,
-          nor_43_nl);
-      plm_in_data_rsci_d_d_reg <= LOAD_INNER_LOOP_data_ac_mux_rmff;
-      plm_in_data_rsci_wadr_d_reg <= CALC_EXP_LOOP_i_mux_rmff;
-      plm_out_data_rsci_d_d_reg <= CALC_SOFTMAX_LOOP_mux_rmff;
-      plm_out_data_rsci_wadr_d_reg <= CALC_SOFTMAX_LOOP_i_mux_rmff;
+    if ( ~ rst ) begin
+      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_1 <= 1'b0;
+      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_0 <= 1'b0;
+    end
+    else if ( CALC_SOFTMAX_LOOP_and_53_cse ) begin
+      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_1 <= MUX_s_1_2_2(lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_6_1,
+          lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_5_1_1, CALC_SOFTMAX_LOOP_and_52_rgt);
+      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_0 <= MUX_s_1_2_2(lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_6_0,
+          lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_5_0_1, CALC_SOFTMAX_LOOP_and_52_rgt);
+    end
+  end
+  always @(posedge clk) begin
+    if ( ~ rst ) begin
+      conf_info_batch_sva <= 32'b00000000000000000000000000000000;
+    end
+    else if ( core_wen & (fsm_output[2:1]==2'b00) ) begin
+      conf_info_batch_sva <= conf_info_batch_rsci_idat;
+    end
+  end
+  always @(posedge clk) begin
+    if ( ~ rst ) begin
+      reg_dma_read_ctrl_rsci_iswt0_cse <= 1'b0;
+    end
+    else if ( core_wen & ((and_tmp_47 & and_dcpl_34 & CALC_SOFTMAX_LOOP_asn_itm_10
+        & (~ exit_BATCH_LOOP_sva_1_st_10) & (fsm_output[2])) | or_tmp_404) ) begin
+      reg_dma_read_ctrl_rsci_iswt0_cse <= ~ or_tmp_404;
+    end
+  end
+  always @(posedge clk) begin
+    if ( ~ rst ) begin
+      dma_read_ctrl_rsci_idat_10_7 <= 4'b0000;
+    end
+    else if ( core_wen & (fsm_output[2]) & and_tmp_47 & BATCH_LOOP_stage_v_10 & BATCH_LOOP_stage_0_11
+        & CALC_SOFTMAX_LOOP_asn_itm_10 & (~ exit_BATCH_LOOP_sva_1_st_10) ) begin
+      dma_read_ctrl_rsci_idat_10_7 <= BATCH_LOOP_asn_itm_10;
+    end
+  end
+  always @(posedge clk) begin
+    if ( ~ rst ) begin
+      reg_dma_write_ctrl_rsci_iswt0_cse <= 1'b0;
+    end
+    else if ( core_wen & ((nand_tmp_15 & (~ lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_10_1)
+        & (~ exit_BATCH_LOOP_lpi_2_dfm_st_10) & BATCH_LOOP_stage_v_10 & BATCH_LOOP_stage_0_11
+        & LOAD_LOOP_and_1_svs_st_10 & (fsm_output[2])) | or_tmp_411) ) begin
+      reg_dma_write_ctrl_rsci_iswt0_cse <= ~ or_tmp_411;
+    end
+  end
+  always @(posedge clk) begin
+    if ( ~ rst ) begin
+      dma_write_ctrl_rsci_idat_10_7 <= 4'b0000;
+    end
+    else if ( core_wen & (~((~ (fsm_output[2])) | (~ nand_tmp_15) | or_dcpl_14))
+        ) begin
+      dma_write_ctrl_rsci_idat_10_7 <= BATCH_LOOP_asn_2_itm_10;
+    end
+  end
+  always @(posedge clk) begin
+    if ( ~ rst ) begin
+      reg_dma_write_chnl_rsci_iswt0_cse <= 1'b0;
+    end
+    else if ( core_wen & (or_tmp_417 | or_tmp_418) ) begin
+      reg_dma_write_chnl_rsci_iswt0_cse <= ~ or_tmp_418;
+    end
+  end
+  always @(posedge clk) begin
+    if ( ~ rst ) begin
+      dma_write_chnl_rsci_idat_31_0 <= 32'b00000000000000000000000000000000;
+    end
+    else if ( core_wen & (~((~ (fsm_output[2])) | (~ nand_tmp_15) | or_dcpl_20))
+        ) begin
+      dma_write_chnl_rsci_idat_31_0 <= CALC_SOFTMAX_LOOP_mul_cmp_z_mxwt;
+    end
+  end
+  always @(posedge clk) begin
+    if ( ~ rst ) begin
+      ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_temp_lpi_2
+          <= 94'b0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000;
+      ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_d_d_reg
+          <= 67'b0000000000000000000000000000000000000000000000000000000000000000000;
+      ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_wadr_d_reg
+          <= 7'b0000000;
+      ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_radr_d_reg
+          <= 7'b0000000;
+      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_4_1 <= 1'b0;
+      exit_BATCH_LOOP_lpi_2_dfm_st_4 <= 1'b0;
+      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_10_1 <= 1'b0;
+      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_10_0 <= 1'b0;
+      exit_BATCH_LOOP_lpi_2_dfm_st_10 <= 1'b0;
+      exit_BATCH_LOOP_sva_1_st_11 <= 1'b0;
+      LOAD_LOOP_and_1_svs_st_11 <= 1'b0;
+      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_11_1 <= 1'b0;
+      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_11_0 <= 1'b0;
+      exit_BATCH_LOOP_lpi_2_dfm_st_11 <= 1'b0;
+      CALC_SOFTMAX_LOOP_asn_itm_11 <= 1'b0;
+      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_1_1 <= 1'b0;
+      exit_BATCH_LOOP_lpi_2_dfm_st_1 <= 1'b0;
+      dma_write_data_index_10_7_sva <= 4'b0000;
+      dma_read_data_index_10_7_sva <= 4'b0000;
+      reg_CALC_SOFTMAX_LOOP_mul_cmp_iswt5_cse <= 1'b0;
+      reg_conf_done_rsc_triosy_obj_ld_core_psct_cse <= 1'b0;
+      reg_ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_readA_r_ram_ir_internal_RMASK_B_d_core_psct_cse
+          <= 1'b0;
+      reg_ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_writeA_w_ram_ir_internal_WMASK_B_d_core_psct_cse
+          <= 1'b0;
+      BATCH_LOOP_b_4_0_sva_3_0 <= 4'b0000;
+      CALC_SOFTMAX_LOOP_asn_itm <= 1'b0;
+      BATCH_LOOP_stage_v <= 1'b0;
+      exitL_exit_CALC_SOFTMAX_LOOP_sva <= 1'b0;
+      BATCH_LOOP_stage_v_2 <= 1'b0;
+      BATCH_LOOP_stage_v_3 <= 1'b0;
+      BATCH_LOOP_stage_v_4 <= 1'b0;
+      BATCH_LOOP_stage_v_5 <= 1'b0;
+      ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_expret_ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_expret_nor_itm_3
+          <= 1'b0;
+      CALC_SOFTMAX_LOOP_asn_17_itm_5 <= 1'b0;
+      CALC_SOFTMAX_LOOP_and_20_itm_5 <= 1'b0;
+      BATCH_LOOP_stage_v_6 <= 1'b0;
+      BATCH_LOOP_stage_v_7 <= 1'b0;
+      BATCH_LOOP_stage_v_8 <= 1'b0;
+      BATCH_LOOP_stage_v_9 <= 1'b0;
+      BATCH_LOOP_stage_v_10 <= 1'b0;
+      BATCH_LOOP_stage_v_11 <= 1'b0;
+      BATCH_LOOP_stage_v_1 <= 1'b0;
+      BATCH_LOOP_stage_0 <= 1'b0;
+      BATCH_LOOP_stage_0_1 <= 1'b0;
+      BATCH_LOOP_stage_0_2 <= 1'b0;
+      BATCH_LOOP_stage_0_3 <= 1'b0;
+      BATCH_LOOP_stage_0_4 <= 1'b0;
+      BATCH_LOOP_stage_0_5 <= 1'b0;
+      BATCH_LOOP_stage_0_6 <= 1'b0;
+      BATCH_LOOP_stage_0_7 <= 1'b0;
+      BATCH_LOOP_stage_0_8 <= 1'b0;
+      BATCH_LOOP_stage_0_9 <= 1'b0;
+      BATCH_LOOP_stage_0_10 <= 1'b0;
+      BATCH_LOOP_stage_0_11 <= 1'b0;
+    end
+    else if ( core_wen ) begin
       ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_temp_lpi_2
           <= MUX1HOT_v_94_3_2(ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_temp_lpi_2_dfm_3,
           ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_temp_lpi_2,
           ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_temp_lpi_2_dfm_4,
           {(fsm_output[0]) , ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_temp_or_nl
           , ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_temp_and_4_nl});
-      plm_in_data_rsci_radr_d_reg <= LOAD_INNER_LOOP_mux_1_rmff;
-      plm_out_data_rsci_radr_d_reg <= STORE_INNER_LOOP_mux1h_3_rmff;
+      ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_d_d_reg
+          <= operator_67_47_false_AC_TRN_AC_WRAP_mux_rmff;
+      ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_wadr_d_reg
+          <= CALC_EXP_LOOP_i_mux_rmff;
+      ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_radr_d_reg
+          <= CALC_SOFTMAX_LOOP_i_mux_rmff;
+      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_4_1 <= MUX_s_1_2_2(lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_4_1,
+          lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_3_1, or_tmp_430);
+      exit_BATCH_LOOP_lpi_2_dfm_st_4 <= MUX_s_1_2_2(exit_BATCH_LOOP_lpi_2_dfm_st_4,
+          exit_BATCH_LOOP_lpi_2_dfm_st_3, or_tmp_430);
+      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_10_1 <= MUX_s_1_2_2(lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_10_1,
+          lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_9_1, or_tmp_432);
+      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_10_0 <= MUX_s_1_2_2(lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_10_0,
+          lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_9_0, or_tmp_432);
+      exit_BATCH_LOOP_lpi_2_dfm_st_10 <= MUX_s_1_2_2(exit_BATCH_LOOP_lpi_2_dfm_st_10,
+          exit_BATCH_LOOP_lpi_2_dfm_st_9, or_tmp_432);
+      exit_BATCH_LOOP_sva_1_st_11 <= MUX_s_1_2_2(exit_BATCH_LOOP_sva_1_st_11, exit_BATCH_LOOP_sva_1_st_10,
+          or_tmp_435);
+      LOAD_LOOP_and_1_svs_st_11 <= MUX_s_1_2_2(LOAD_LOOP_and_1_svs_st_11, LOAD_LOOP_and_1_svs_st_10,
+          or_tmp_435);
+      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_11_1 <= MUX_s_1_2_2(lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_11_1,
+          lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_10_1, or_tmp_435);
+      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_11_0 <= MUX_s_1_2_2(lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_11_0,
+          lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_10_0, or_tmp_435);
+      exit_BATCH_LOOP_lpi_2_dfm_st_11 <= MUX_s_1_2_2(exit_BATCH_LOOP_lpi_2_dfm_st_11,
+          exit_BATCH_LOOP_lpi_2_dfm_st_10, or_tmp_435);
+      CALC_SOFTMAX_LOOP_asn_itm_11 <= MUX_s_1_2_2(CALC_SOFTMAX_LOOP_asn_itm_11, CALC_SOFTMAX_LOOP_asn_itm_10,
+          or_tmp_435);
+      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_1_1 <= MUX1HOT_s_1_3_2(lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_1_1,
+          lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_1_mx0, lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_1,
+          {nand_159_nl , or_tmp_448 , or_tmp_449});
+      exit_BATCH_LOOP_lpi_2_dfm_st_1 <= MUX_s_1_2_2(exit_BATCH_LOOP_lpi_2_dfm_st_1,
+          exit_BATCH_LOOP_lpi_2_dfm_mx0w1, or_tmp_453);
       dma_write_data_index_10_7_sva <= MUX_v_4_2_2(4'b0000, dma_write_data_index_mux_nl,
-          not_494_nl);
-      CALC_EXP_LOOP_i_slc_CALC_EXP_LOOP_i_7_0_6_0_1_itm_2 <= MUX_v_7_2_2(({3'b000
-          , dma_read_data_index_and_nl}), CALC_EXP_LOOP_i_slc_CALC_EXP_LOOP_i_7_0_6_0_1_itm_1,
-          fsm_output[3]);
-      CALC_SOFTMAX_LOOP_i_slc_CALC_SOFTMAX_LOOP_i_7_0_6_0_itm_11 <= CALC_SOFTMAX_LOOP_i_slc_CALC_SOFTMAX_LOOP_i_7_0_6_0_itm_10;
-      ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_temp_sva_1_1
-          <= operator_94_21_false_AC_TRN_AC_WRAP_rshift_itm;
-      operator_67_47_false_AC_TRN_AC_WRAP_lshift_ncse_sva_1_1 <= operator_67_47_false_AC_TRN_AC_WRAP_lshift_ncse_sva_1;
-      CALC_EXP_LOOP_i_slc_CALC_EXP_LOOP_i_7_0_6_0_1_itm_4 <= CALC_EXP_LOOP_i_slc_CALC_EXP_LOOP_i_7_0_6_0_1_itm_3;
+          (fsm_output[2]));
+      dma_read_data_index_10_7_sva <= MUX_v_4_2_2(4'b0000, dma_write_data_index_mux_4_nl,
+          (fsm_output[2]));
+      reg_CALC_SOFTMAX_LOOP_mul_cmp_iswt5_cse <= and_879_rmff;
+      reg_conf_done_rsc_triosy_obj_ld_core_psct_cse <= BATCH_LOOP_nor_12_tmp & (fsm_output[2]);
+      reg_ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_readA_r_ram_ir_internal_RMASK_B_d_core_psct_cse
+          <= and_885_rmff;
+      reg_ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_writeA_w_ram_ir_internal_WMASK_B_d_core_psct_cse
+          <= and_887_rmff;
+      BATCH_LOOP_b_4_0_sva_3_0 <= MUX_v_4_2_2(4'b0000, dma_write_data_index_mux_3_nl,
+          (fsm_output[2]));
+      CALC_SOFTMAX_LOOP_asn_itm <= CALC_SOFTMAX_LOOP_mux1h_nl | (~ (fsm_output[2]));
+      BATCH_LOOP_stage_v <= ~((~(BATCH_LOOP_stage_v & (~((~(mux_tmp_295 & BATCH_LOOP_stage_0))
+          & BATCH_LOOP_and_34_tmp)))) & asn_CALC_SOFTMAX_LOOP_asn_itm_nand_cse &
+          (fsm_output[2]));
+      exitL_exit_CALC_SOFTMAX_LOOP_sva <= CALC_SOFTMAX_LOOP_mux_87_nl | (~ (fsm_output[2]));
+      BATCH_LOOP_stage_v_2 <= ((BATCH_LOOP_stage_v_2 & (~(mux_tmp_354 & and_986_cse)))
+          | BATCH_LOOP_and_31_tmp) & (fsm_output[2]);
+      BATCH_LOOP_stage_v_3 <= ((BATCH_LOOP_stage_v_3 & (~(mux_336_cse & and_dcpl_63
+          & or_dcpl_64))) | (mux_tmp_354 & and_986_cse)) & (fsm_output[2]);
+      BATCH_LOOP_stage_v_4 <= ((BATCH_LOOP_stage_v_4 & (~(and_656_cse & and_dcpl_163
+          & nand_137_cse))) | (mux_336_cse & and_dcpl_63)) & (fsm_output[2]);
+      BATCH_LOOP_stage_v_5 <= ((BATCH_LOOP_stage_v_5 & (~((~(BATCH_LOOP_BATCH_LOOP_or_6_cse
+          & BATCH_LOOP_stage_v_4 & BATCH_LOOP_stage_0_5)) & mux_442_cse & and_dcpl_144)))
+          | (and_656_cse & and_dcpl_163)) & (fsm_output[2]);
+      ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_expret_ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_expret_nor_itm_3
+          <= MUX_s_1_2_2(ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_expret_ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_expret_nor_itm_3,
+          ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_expret_ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_expret_nor_itm_2,
+          and_tmp_50);
+      CALC_SOFTMAX_LOOP_asn_17_itm_5 <= MUX_s_1_2_2(CALC_SOFTMAX_LOOP_asn_17_itm_5,
+          CALC_SOFTMAX_LOOP_asn_17_itm_4, and_tmp_50);
+      CALC_SOFTMAX_LOOP_and_20_itm_5 <= MUX_s_1_2_2(CALC_SOFTMAX_LOOP_and_20_itm_5,
+          CALC_SOFTMAX_LOOP_and_20_itm_4, and_tmp_50);
+      BATCH_LOOP_stage_v_6 <= ((BATCH_LOOP_stage_v_6 & (~(mux_326_cse & and_998_cse
+          & nand_121_cse))) | (mux_327_cse & and_dcpl_144)) & (fsm_output[2]);
+      BATCH_LOOP_stage_v_7 <= ((BATCH_LOOP_stage_v_7 & (~(mux_tmp_101 & and_1000_cse
+          & (~(BATCH_LOOP_stage_0_7 & BATCH_LOOP_stage_v_6))))) | (mux_326_cse &
+          and_998_cse)) & (fsm_output[2]);
+      BATCH_LOOP_stage_v_8 <= ((BATCH_LOOP_stage_v_8 & (~(mux_tmp_100 & and_1002_cse
+          & (~(BATCH_LOOP_stage_0_8 & BATCH_LOOP_stage_v_7))))) | (mux_tmp_101 &
+          and_1000_cse)) & (fsm_output[2]);
+      BATCH_LOOP_stage_v_9 <= ((BATCH_LOOP_stage_v_9 & (~(mux_tmp_99 & and_988_cse
+          & (~(BATCH_LOOP_stage_0_9 & BATCH_LOOP_stage_v_8))))) | (mux_tmp_100 &
+          and_1002_cse)) & (fsm_output[2]);
+      BATCH_LOOP_stage_v_10 <= ((BATCH_LOOP_stage_v_10 & (~(and_tmp_47 & and_dcpl_34
+          & (~(BATCH_LOOP_stage_0_10 & BATCH_LOOP_stage_v_9))))) | and_tmp_206) &
+          (fsm_output[2]);
+      BATCH_LOOP_stage_v_11 <= ((BATCH_LOOP_stage_v_11 & (~(mux_488_nl & or_9_cse)))
+          | (and_tmp_47 & and_dcpl_34)) & (fsm_output[2]);
+      BATCH_LOOP_stage_v_1 <= ((BATCH_LOOP_stage_v_1 & (~ BATCH_LOOP_and_31_tmp))
+          | BATCH_LOOP_and_34_tmp) & (fsm_output[2]);
+      BATCH_LOOP_stage_0 <= BATCH_LOOP_stage_0_mx1 | (~ (fsm_output[2]));
+      BATCH_LOOP_stage_0_1 <= ~((~(operator_74_54_false_AC_TRN_AC_WRAP_1_mux_nl &
+          (~((~ mux_tmp_295) & BATCH_LOOP_and_34_tmp)))) & (fsm_output[2]));
+      BATCH_LOOP_stage_0_2 <= BATCH_LOOP_mux_85_nl & (fsm_output[2]);
+      BATCH_LOOP_stage_0_3 <= BATCH_LOOP_mux_84_nl & (fsm_output[2]);
+      BATCH_LOOP_stage_0_4 <= BATCH_LOOP_mux_83_nl & (fsm_output[2]);
+      BATCH_LOOP_stage_0_5 <= BATCH_LOOP_mux_82_nl & (fsm_output[2]);
+      BATCH_LOOP_stage_0_6 <= BATCH_LOOP_mux_81_nl & (fsm_output[2]);
+      BATCH_LOOP_stage_0_7 <= BATCH_LOOP_mux_80_nl & (fsm_output[2]);
+      BATCH_LOOP_stage_0_8 <= BATCH_LOOP_mux_79_nl & (fsm_output[2]);
+      BATCH_LOOP_stage_0_9 <= BATCH_LOOP_mux_78_nl & (fsm_output[2]);
+      BATCH_LOOP_stage_0_10 <= BATCH_LOOP_mux_77_nl & (fsm_output[2]);
+      BATCH_LOOP_stage_0_11 <= BATCH_LOOP_mux_nl & (fsm_output[2]);
+    end
+  end
+  always @(posedge clk) begin
+    if ( ~ rst ) begin
+      reg_dma_read_chnl_rsci_iswt0_cse <= 1'b0;
+    end
+    else if ( core_wen & (or_tmp_441 | or_tmp_442) ) begin
+      reg_dma_read_chnl_rsci_iswt0_cse <= ~ or_tmp_442;
+    end
+  end
+  always @(posedge clk) begin
+    if ( ~ rst ) begin
+      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_1_0 <= 1'b0;
+      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_6_1 <= 1'b0;
+      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_6_0 <= 1'b0;
+    end
+    else if ( CALC_SOFTMAX_LOOP_and_55_cse ) begin
+      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_1_0 <= MUX_s_1_2_2(lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_0_mx0,
+          lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_0, or_tmp_449);
+      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_6_1 <= MUX_s_1_2_2(BATCH_LOOP_if_BATCH_LOOP_if_and_5_mx0w0,
+          lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_5_1_1, or_tmp_448);
+      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_6_0 <= MUX_s_1_2_2(BATCH_LOOP_if_BATCH_LOOP_if_and_4_mx0w0,
+          lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_5_0_1, or_tmp_448);
+    end
+  end
+  always @(posedge clk) begin
+    if ( ~ rst ) begin
+      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_1 <= 1'b0;
+      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_0 <= 1'b0;
+    end
+    else if ( CALC_SOFTMAX_LOOP_and_56_cse ) begin
+      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_1 <= lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_1_mx0;
+      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_0 <= lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_0_mx0;
+    end
+  end
+  always @(posedge clk) begin
+    if ( ~ rst ) begin
+      ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_lpi_2
+          <= 74'b00000000000000000000000000000000000000000000000000000000000000000000000000;
+    end
+    else if ( core_wen & (~((fsm_output[1]) | (or_305_tmp & (fsm_output[2])))) )
+        begin
+      ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_lpi_2
+          <= MUX_v_74_2_2(ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_lpi_2_dfm_3,
+          ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_lpi_2_dfm_3_mx1,
+          ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_and_1_nl);
+    end
+  end
+  always @(posedge clk) begin
+    if ( ~ rst ) begin
+      CALC_SOFTMAX_LOOP_asn_itm_1 <= 1'b0;
+      exit_BATCH_LOOP_sva_1_1 <= 1'b0;
+      CALC_SOFTMAX_LOOP_asn_2_itm_1 <= 1'b0;
+      CALC_SOFTMAX_LOOP_asn_17_itm_1 <= 1'b0;
+      CALC_SOFTMAX_LOOP_CALC_SOFTMAX_LOOP_nor_2_itm_1 <= 1'b0;
+      CALC_SOFTMAX_LOOP_and_20_itm_1 <= 1'b0;
+    end
+    else if ( CALC_SOFTMAX_LOOP_and_57_cse ) begin
+      CALC_SOFTMAX_LOOP_asn_itm_1 <= CALC_SOFTMAX_LOOP_asn_itm;
+      exit_BATCH_LOOP_sva_1_1 <= ~ BATCH_LOOP_acc_itm_32_1;
+      CALC_SOFTMAX_LOOP_asn_2_itm_1 <= exitL_exit_CALC_SOFTMAX_LOOP_sva;
+      CALC_SOFTMAX_LOOP_asn_17_itm_1 <= ((BATCH_LOOP_acc_3_tmp[4]) & CALC_SOFTMAX_LOOP_and_svs_1
+          & CALC_SOFTMAX_LOOP_equal_tmp_2) | exit_BATCH_LOOP_lpi_2_dfm_mx0w1;
+      CALC_SOFTMAX_LOOP_CALC_SOFTMAX_LOOP_nor_2_itm_1 <= ~(CALC_SOFTMAX_LOOP_equal_tmp_2
+          | CALC_SOFTMAX_LOOP_equal_tmp_3 | exit_BATCH_LOOP_lpi_2_dfm_mx0w1);
+      CALC_SOFTMAX_LOOP_and_20_itm_1 <= LOAD_LOOP_and_1_svs_1 & (~(CALC_SOFTMAX_LOOP_equal_tmp_2
+          | CALC_SOFTMAX_LOOP_equal_tmp_3)) & (~ exit_BATCH_LOOP_lpi_2_dfm_mx0w1);
+    end
+  end
+  always @(posedge clk) begin
+    if ( ~ rst ) begin
+      LOAD_LOOP_and_1_svs_st_1 <= 1'b0;
+      CALC_EXP_LOOP_i_slc_CALC_EXP_LOOP_i_7_0_6_0_1_itm_1 <= 7'b0000000;
+    end
+    else if ( LOAD_LOOP_and_3_cse ) begin
+      LOAD_LOOP_and_1_svs_st_1 <= MUX_s_1_2_2(LOAD_LOOP_and_1_svs_1, LOAD_LOOP_and_1_svs_st,
+          or_tmp_462);
+      CALC_EXP_LOOP_i_slc_CALC_EXP_LOOP_i_7_0_6_0_1_itm_1 <= MUX_v_7_2_2(CALC_EXP_LOOP_i_7_0_lpi_2_dfm_1_6_0_mx0,
+          CALC_EXP_LOOP_i_slc_CALC_EXP_LOOP_i_7_0_6_0_1_itm, or_tmp_462);
+    end
+  end
+  always @(posedge clk) begin
+    if ( ~ rst ) begin
+      ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_expret_qif_acc_itm <= 8'b00000000;
+      ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_mux_1_itm
+          <= 10'b0000000000;
+      ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_normalized_fixed_slc_ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_normalized_fixed_72_60_9_0_itm
+          <= 10'b0000000000;
+      ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_mux_itm
+          <= 8'b00000000;
+    end
+    else if ( ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_expret_qif_and_cse
+        ) begin
+      ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_expret_qif_acc_itm <= ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_expret_qif_acc_itm_mx0w1;
+      ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_mux_1_itm
+          <= ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_mux_1_itm_mx0w1;
+      ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_normalized_fixed_slc_ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_normalized_fixed_72_60_9_0_itm
+          <= operator_74_0_false_AC_TRN_AC_WRAP_lshift_itm[69:60];
+      ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_mux_itm
+          <= ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_mux_itm_mx0w1;
+    end
+  end
+  always @(posedge clk) begin
+    if ( ~ rst ) begin
+      CALC_SOFTMAX_LOOP_i_slc_CALC_SOFTMAX_LOOP_i_7_0_6_0_1_itm_1 <= 7'b0000000;
+    end
+    else if ( core_wen & (and_827_rgt | and_829_rgt) ) begin
+      CALC_SOFTMAX_LOOP_i_slc_CALC_SOFTMAX_LOOP_i_7_0_6_0_1_itm_1 <= MUX_v_7_2_2(CALC_SOFTMAX_LOOP_i_7_0_lpi_2_6_0,
+          CALC_SOFTMAX_LOOP_i_slc_CALC_SOFTMAX_LOOP_i_7_0_6_0_1_itm, and_829_rgt);
+    end
+  end
+  always @(posedge clk) begin
+    if ( ~ rst ) begin
+      CALC_EXP_LOOP_i_slc_CALC_EXP_LOOP_i_7_0_6_0_1_itm <= 7'b0000000;
+      LOAD_LOOP_and_1_svs_st <= 1'b0;
+    end
+    else if ( CALC_EXP_LOOP_i_and_2_cse ) begin
+      CALC_EXP_LOOP_i_slc_CALC_EXP_LOOP_i_7_0_6_0_1_itm <= CALC_EXP_LOOP_i_7_0_lpi_2_dfm_1_6_0_mx0;
+      LOAD_LOOP_and_1_svs_st <= LOAD_LOOP_and_1_svs_1;
+    end
+  end
+  always @(posedge clk) begin
+    if ( ~ rst ) begin
+      ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_expret_ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_expret_nor_itm
+          <= 1'b0;
+    end
+    else if ( core_wen & mux_tmp_354 & and_986_cse & (~ exit_BATCH_LOOP_lpi_2_dfm_st_2)
+        & (~ lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_2_1) & LOAD_LOOP_and_1_svs_st_2
+        & (fsm_output[2]) ) begin
+      ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_expret_ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_expret_nor_itm
+          <= ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_expret_ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_expret_nor_itm_mx0w1;
+    end
+  end
+  always @(posedge clk) begin
+    if ( ~ rst ) begin
+      CALC_SOFTMAX_LOOP_i_slc_CALC_SOFTMAX_LOOP_i_7_0_6_0_1_itm <= 7'b0000000;
+    end
+    else if ( core_wen & and_827_rgt ) begin
+      CALC_SOFTMAX_LOOP_i_slc_CALC_SOFTMAX_LOOP_i_7_0_6_0_1_itm <= CALC_SOFTMAX_LOOP_i_7_0_lpi_2_6_0;
+    end
+  end
+  always @(posedge clk) begin
+    if ( ~ rst ) begin
+      BATCH_LOOP_asn_itm_1 <= 4'b0000;
+    end
+    else if ( core_wen & (and_845_rgt | and_847_rgt) ) begin
+      BATCH_LOOP_asn_itm_1 <= MUX_v_4_2_2(dma_read_data_index_10_7_sva, BATCH_LOOP_asn_itm,
+          and_847_rgt);
+    end
+  end
+  always @(posedge clk) begin
+    if ( ~ rst ) begin
+      BATCH_LOOP_asn_2_itm_1 <= 4'b0000;
+    end
+    else if ( core_wen & (and_851_rgt | and_853_rgt) ) begin
+      BATCH_LOOP_asn_2_itm_1 <= MUX_v_4_2_2(dma_write_data_index_10_7_sva, BATCH_LOOP_asn_2_itm,
+          and_853_rgt);
+    end
+  end
+  always @(posedge clk) begin
+    if ( ~ rst ) begin
+      exit_BATCH_LOOP_sva_1_st_1 <= 1'b0;
+    end
+    else if ( core_wen & ((CALC_SOFTMAX_LOOP_asn_itm & BATCH_LOOP_and_34_tmp & (fsm_output[2]))
+        | and_859_rgt) ) begin
+      exit_BATCH_LOOP_sva_1_st_1 <= MUX_s_1_2_2((~ BATCH_LOOP_acc_itm_32_1), exit_BATCH_LOOP_sva_1_st,
+          and_859_rgt);
+    end
+  end
+  always @(posedge clk) begin
+    if ( ~ rst ) begin
+      BATCH_LOOP_asn_itm <= 4'b0000;
+    end
+    else if ( core_wen & and_845_rgt ) begin
+      BATCH_LOOP_asn_itm <= dma_read_data_index_10_7_sva;
+    end
+  end
+  always @(posedge clk) begin
+    if ( ~ rst ) begin
+      BATCH_LOOP_asn_2_itm <= 4'b0000;
+    end
+    else if ( core_wen & and_851_rgt ) begin
+      BATCH_LOOP_asn_2_itm <= dma_write_data_index_10_7_sva;
+    end
+  end
+  always @(posedge clk) begin
+    if ( ~ rst ) begin
+      conf_done_sva <= 1'b0;
+    end
+    else if ( core_wen & (~ (fsm_output[1])) ) begin
+      conf_done_sva <= conf_done_rsci_idat;
+    end
+  end
+  always @(posedge clk) begin
+    if ( ~ rst ) begin
+      ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_lpi_2_dfm_3
+          <= 74'b00000000000000000000000000000000000000000000000000000000000000000000000000;
+    end
+    else if ( core_wen & ((mux_336_cse & and_dcpl_63 & CALC_SOFTMAX_LOOP_CALC_SOFTMAX_LOOP_nor_2_itm_3
+        & (fsm_output[2])) | and_903_rgt) ) begin
+      ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_lpi_2_dfm_3
+          <= MUX_v_74_2_2(ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_sva_1_1,
+          ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_lpi_2_dfm_1_1,
+          and_903_rgt);
+    end
+  end
+  always @(posedge clk) begin
+    if ( ~ rst ) begin
+      ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_temp_lpi_2_dfm_3
+          <= 94'b0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000;
+    end
+    else if ( core_wen & ((mux_327_cse & and_dcpl_144 & CALC_SOFTMAX_LOOP_and_20_itm_5
+        & (fsm_output[2])) | and_921_rgt) ) begin
+      ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_temp_lpi_2_dfm_3
+          <= MUX_v_94_2_2(ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_temp_lpi_2_dfm_4,
+          ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_temp_lpi_2,
+          and_921_rgt);
+    end
+  end
+  always @(posedge clk) begin
+    if ( ~ rst ) begin
+      LOAD_LOOP_and_1_svs_st_2 <= 1'b0;
+      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_2_1 <= 1'b0;
+      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_2_0 <= 1'b0;
+      exit_BATCH_LOOP_lpi_2_dfm_st_2 <= 1'b0;
+      CALC_SOFTMAX_LOOP_asn_itm_2 <= 1'b0;
+      CALC_EXP_LOOP_i_slc_CALC_EXP_LOOP_i_7_0_6_0_1_itm_2 <= 7'b0000000;
+      CALC_SOFTMAX_LOOP_i_slc_CALC_SOFTMAX_LOOP_i_7_0_6_0_1_itm_2 <= 7'b0000000;
+      CALC_SOFTMAX_LOOP_asn_17_itm_2 <= 1'b0;
+      exit_BATCH_LOOP_sva_1_2 <= 1'b0;
+      ac_math_ac_pow2_pwl_AC_TRN_33_7_true_AC_TRN_AC_WRAP_67_47_AC_TRN_AC_WRAP_output_pwl_mux_2_itm_1
+          <= 3'b000;
+      ac_math_ac_pow2_pwl_AC_TRN_33_7_true_AC_TRN_AC_WRAP_67_47_AC_TRN_AC_WRAP_output_pwl_mux_3_itm_1
+          <= 7'b0000000;
+      ac_math_ac_exp_pwl_0_AC_TRN_32_6_true_AC_TRN_AC_WRAP_67_47_AC_TRN_AC_WRAP_input_inter_slc_ac_math_ac_exp_pwl_0_AC_TRN_32_6_true_AC_TRN_AC_WRAP_67_47_AC_TRN_AC_WRAP_input_inter_32_14_18_12_itm_1
+          <= 7'b0000000;
+      ac_math_ac_pow2_pwl_AC_TRN_33_7_true_AC_TRN_AC_WRAP_67_47_AC_TRN_AC_WRAP_output_pwl_mux_itm_1
+          <= 5'b00000;
+      ac_math_ac_pow2_pwl_AC_TRN_33_7_true_AC_TRN_AC_WRAP_67_47_AC_TRN_AC_WRAP_output_pwl_mux_1_itm_1
+          <= 3'b000;
+      ac_math_ac_exp_pwl_0_AC_TRN_32_6_true_AC_TRN_AC_WRAP_67_47_AC_TRN_AC_WRAP_input_inter_slc_ac_math_ac_exp_pwl_0_AC_TRN_32_6_true_AC_TRN_AC_WRAP_67_47_AC_TRN_AC_WRAP_input_inter_32_14_11_0_1_itm_1
+          <= 10'b0000000000;
+      CALC_SOFTMAX_LOOP_asn_2_itm_2 <= 1'b0;
+      CALC_SOFTMAX_LOOP_CALC_SOFTMAX_LOOP_nor_2_itm_2 <= 1'b0;
+      CALC_SOFTMAX_LOOP_and_20_itm_2 <= 1'b0;
+      BATCH_LOOP_asn_itm_2 <= 4'b0000;
+      BATCH_LOOP_asn_2_itm_2 <= 4'b0000;
+      exit_BATCH_LOOP_sva_1_st_2 <= 1'b0;
+    end
+    else if ( LOAD_LOOP_and_cse ) begin
+      LOAD_LOOP_and_1_svs_st_2 <= LOAD_LOOP_and_1_svs_st_1;
+      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_2_1 <= lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_1_1;
+      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_2_0 <= lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_1_0;
+      exit_BATCH_LOOP_lpi_2_dfm_st_2 <= exit_BATCH_LOOP_lpi_2_dfm_st_1;
+      CALC_SOFTMAX_LOOP_asn_itm_2 <= CALC_SOFTMAX_LOOP_asn_itm_1;
+      CALC_EXP_LOOP_i_slc_CALC_EXP_LOOP_i_7_0_6_0_1_itm_2 <= CALC_EXP_LOOP_i_slc_CALC_EXP_LOOP_i_7_0_6_0_1_itm_1;
+      CALC_SOFTMAX_LOOP_i_slc_CALC_SOFTMAX_LOOP_i_7_0_6_0_1_itm_2 <= CALC_SOFTMAX_LOOP_i_slc_CALC_SOFTMAX_LOOP_i_7_0_6_0_1_itm_1;
+      CALC_SOFTMAX_LOOP_asn_17_itm_2 <= CALC_SOFTMAX_LOOP_asn_17_itm_1;
+      exit_BATCH_LOOP_sva_1_2 <= exit_BATCH_LOOP_sva_1_1;
       ac_math_ac_pow2_pwl_AC_TRN_33_7_true_AC_TRN_AC_WRAP_67_47_AC_TRN_AC_WRAP_output_pwl_mux_2_itm_1
           <= MUX_v_3_4_2(3'b011, 3'b100, 3'b101, 3'b110, ac_math_ac_exp_pwl_0_AC_TRN_32_6_true_AC_TRN_AC_WRAP_67_47_AC_TRN_AC_WRAP_mul_itm_46_28[11:10]);
       ac_math_ac_pow2_pwl_AC_TRN_33_7_true_AC_TRN_AC_WRAP_67_47_AC_TRN_AC_WRAP_output_pwl_mux_3_itm_1
@@ -3888,620 +4128,360 @@ module esp_acc_softmax_cxx_softmax_cxx_core (
           <= MUX_v_3_4_2(3'b010, 3'b110, 3'b001, 3'b101, ac_math_ac_exp_pwl_0_AC_TRN_32_6_true_AC_TRN_AC_WRAP_67_47_AC_TRN_AC_WRAP_mul_itm_46_28[11:10]);
       ac_math_ac_exp_pwl_0_AC_TRN_32_6_true_AC_TRN_AC_WRAP_67_47_AC_TRN_AC_WRAP_input_inter_slc_ac_math_ac_exp_pwl_0_AC_TRN_32_6_true_AC_TRN_AC_WRAP_67_47_AC_TRN_AC_WRAP_input_inter_32_14_11_0_1_itm_1
           <= ac_math_ac_exp_pwl_0_AC_TRN_32_6_true_AC_TRN_AC_WRAP_67_47_AC_TRN_AC_WRAP_mul_itm_46_28[9:0];
-      SUM_EXP_LOOP_i_7_0_lpi_2_6_0 <= SUM_EXP_LOOP_acc_2_tmp[6:0];
-      CALC_SOFTMAX_LOOP_i_slc_CALC_SOFTMAX_LOOP_i_7_0_6_0_itm_10 <= CALC_SOFTMAX_LOOP_i_slc_CALC_SOFTMAX_LOOP_i_7_0_6_0_itm_9;
-      CALC_EXP_LOOP_i_slc_CALC_EXP_LOOP_i_7_0_6_0_1_itm_3 <= CALC_EXP_LOOP_i_slc_CALC_EXP_LOOP_i_7_0_6_0_1_itm_2;
-      ac_math_ac_exp_pwl_0_AC_TRN_32_6_true_AC_TRN_AC_WRAP_67_47_AC_TRN_AC_WRAP_asn_itm_1
-          <= plm_in_data_rsci_q_d_mxwt;
-      CALC_SOFTMAX_LOOP_i_slc_CALC_SOFTMAX_LOOP_i_7_0_6_0_itm_9 <= CALC_SOFTMAX_LOOP_i_slc_CALC_SOFTMAX_LOOP_i_7_0_6_0_itm_8;
-      CALC_SOFTMAX_LOOP_i_slc_CALC_SOFTMAX_LOOP_i_7_0_6_0_itm_8 <= CALC_SOFTMAX_LOOP_i_slc_CALC_SOFTMAX_LOOP_i_7_0_6_0_itm_7;
-      CALC_SOFTMAX_LOOP_i_slc_CALC_SOFTMAX_LOOP_i_7_0_6_0_itm_7 <= CALC_SOFTMAX_LOOP_i_slc_CALC_SOFTMAX_LOOP_i_7_0_6_0_itm_6;
-      CALC_SOFTMAX_LOOP_i_slc_CALC_SOFTMAX_LOOP_i_7_0_6_0_itm_6 <= CALC_SOFTMAX_LOOP_i_slc_CALC_SOFTMAX_LOOP_i_7_0_6_0_itm_5;
-      CALC_SOFTMAX_LOOP_i_slc_CALC_SOFTMAX_LOOP_i_7_0_6_0_itm_5 <= CALC_EXP_LOOP_i_slc_CALC_EXP_LOOP_i_7_0_6_0_1_itm_4;
+      CALC_SOFTMAX_LOOP_asn_2_itm_2 <= CALC_SOFTMAX_LOOP_asn_2_itm_1;
+      CALC_SOFTMAX_LOOP_CALC_SOFTMAX_LOOP_nor_2_itm_2 <= CALC_SOFTMAX_LOOP_CALC_SOFTMAX_LOOP_nor_2_itm_1;
+      CALC_SOFTMAX_LOOP_and_20_itm_2 <= CALC_SOFTMAX_LOOP_and_20_itm_1;
+      BATCH_LOOP_asn_itm_2 <= BATCH_LOOP_asn_itm_1;
+      BATCH_LOOP_asn_2_itm_2 <= BATCH_LOOP_asn_2_itm_1;
+      exit_BATCH_LOOP_sva_1_st_2 <= exit_BATCH_LOOP_sva_1_st_1;
     end
   end
   always @(posedge clk) begin
     if ( ~ rst ) begin
-      exit_LOAD_OUTER_LOOP_sva_1_st_1 <= 1'b0;
-      exit_LOAD_OUTER_LOOP_lpi_2_dfm_st_1 <= 1'b0;
-      LOAD_INNER_LOOP_asn_itm_1 <= 1'b0;
-      exit_LOAD_OUTER_LOOP_lpi_2_dfm_st_2 <= 1'b0;
-      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_1 <= 1'b0;
-      exit_STORE_OUTER_LOOP_sva_1_st_2 <= 1'b0;
-      exit_STORE_OUTER_LOOP_lpi_2_dfm_st_2 <= 1'b0;
-      STORE_INNER_LOOP_asn_itm_2 <= 1'b0;
-      reg_dma_read_chnl_rsci_oswt_cse <= 1'b0;
-      reg_plm_in_data_rsci_iswt0_1_cse <= 1'b0;
-      reg_plm_out_data_rsci_iswt0_1_cse <= 1'b0;
-      reg_acc_done_synci_iswt0_cse <= 1'b0;
-      CALC_EXP_LOOP_and_svs_st_2 <= 1'b0;
-      CALC_EXP_LOOP_and_svs_st_4 <= 1'b0;
-      CALC_EXP_LOOP_and_svs_st_5 <= 1'b0;
-      COMPUTE_LOOP_stage_0 <= 1'b0;
-      exitL_exit_CALC_SOFTMAX_LOOP_sva <= 1'b0;
-      COMPUTE_LOOP_stage_0_2 <= 1'b0;
-      COMPUTE_LOOP_stage_0_3 <= 1'b0;
-      COMPUTE_LOOP_stage_0_4 <= 1'b0;
-      COMPUTE_LOOP_stage_0_5 <= 1'b0;
-      COMPUTE_LOOP_stage_0_6 <= 1'b0;
-      COMPUTE_LOOP_stage_0_7 <= 1'b0;
-      COMPUTE_LOOP_stage_0_8 <= 1'b0;
-      COMPUTE_LOOP_stage_0_9 <= 1'b0;
-      COMPUTE_LOOP_stage_0_10 <= 1'b0;
-      COMPUTE_LOOP_stage_0_11 <= 1'b0;
-      COMPUTE_LOOP_stage_0_12 <= 1'b0;
-      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_11_1 <= 1'b0;
-      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_11_0 <= 1'b0;
-      exit_COMPUTE_LOOP_lpi_2_dfm_st_11 <= 1'b0;
-      ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_expret_ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_expret_nor_itm_3
-          <= 1'b0;
-      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_6_1 <= 1'b0;
-      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_6_0 <= 1'b0;
-      CALC_SOFTMAX_LOOP_asn_14_itm_6 <= 1'b0;
-      CALC_SOFTMAX_LOOP_and_13_itm_6 <= 1'b0;
-      exit_COMPUTE_LOOP_lpi_2_dfm_st_6 <= 1'b0;
-      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_5_1 <= 1'b0;
-      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_5_0 <= 1'b0;
-      exit_COMPUTE_LOOP_lpi_2_dfm_st_5 <= 1'b0;
-      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_4_1 <= 1'b0;
-      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_4_0 <= 1'b0;
-      CALC_SOFTMAX_LOOP_asn_14_itm_4 <= 1'b0;
-      exit_COMPUTE_LOOP_lpi_2_dfm_st_4 <= 1'b0;
+      ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_sva_1_st_1
+          <= 74'b00000000000000000000000000000000000000000000000000000000000000000000000000;
+    end
+    else if ( core_wen & mux_tmp_354 ) begin
+      ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_sva_1_st_1
+          <= ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_sva_1_mx0w0;
+    end
+  end
+  always @(posedge clk) begin
+    if ( ~ rst ) begin
+      LOAD_LOOP_and_1_svs_st_3 <= 1'b0;
+      operator_67_47_false_AC_TRN_AC_WRAP_lshift_ncse_sva_1 <= 67'b0000000000000000000000000000000000000000000000000000000000000000000;
+      CALC_EXP_LOOP_i_slc_CALC_EXP_LOOP_i_7_0_6_0_1_itm_3 <= 7'b0000000;
+      CALC_SOFTMAX_LOOP_i_slc_CALC_SOFTMAX_LOOP_i_7_0_6_0_1_itm_3 <= 7'b0000000;
       lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_3_1 <= 1'b0;
       lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_3_0 <= 1'b0;
-      exit_COMPUTE_LOOP_lpi_2_dfm_st_3 <= 1'b0;
-      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_2_1 <= 1'b0;
-      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_2_0 <= 1'b0;
-      exit_COMPUTE_LOOP_lpi_2_dfm_st_2 <= 1'b0;
-      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_1_1 <= 1'b0;
-      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_1_0 <= 1'b0;
-      exit_COMPUTE_LOOP_lpi_2_dfm_st_1 <= 1'b0;
-      ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_sva_1_1
-          <= 74'b00000000000000000000000000000000000000000000000000000000000000000000000000;
-      exit_COMPUTE_LOOP_sva_1_3 <= 1'b0;
-      CALC_SOFTMAX_LOOP_asn_2_itm_3 <= 1'b0;
-      CALC_SOFTMAX_LOOP_asn_14_itm_3 <= 1'b0;
-      CALC_SOFTMAX_LOOP_asn_14_itm_5 <= 1'b0;
-      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_10_1 <= 1'b0;
-      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_10_0 <= 1'b0;
-      exit_COMPUTE_LOOP_lpi_2_dfm_st_10 <= 1'b0;
-      CALC_SOFTMAX_LOOP_asn_itm_2 <= 1'b0;
-      CALC_SOFTMAX_LOOP_and_13_itm_5 <= 1'b0;
+      CALC_SOFTMAX_LOOP_asn_17_itm_3 <= 1'b0;
+      exit_BATCH_LOOP_lpi_2_dfm_st_3 <= 1'b0;
+      LOAD_LOOP_and_1_svs_st_4 <= 1'b0;
+      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_4_0 <= 1'b0;
       ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_expret_ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_expret_nor_itm_2
           <= 1'b0;
-      CALC_SOFTMAX_LOOP_asn_14_itm_2 <= 1'b0;
-      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_9_1 <= 1'b0;
-      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_9_0 <= 1'b0;
-      exit_COMPUTE_LOOP_lpi_2_dfm_st_9 <= 1'b0;
-      CALC_SOFTMAX_LOOP_asn_itm_1 <= 1'b0;
-      CALC_SOFTMAX_LOOP_and_13_itm_4 <= 1'b0;
+      CALC_SOFTMAX_LOOP_and_20_itm_4 <= 1'b0;
+      ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_lpi_2_dfm_1_1
+          <= 74'b00000000000000000000000000000000000000000000000000000000000000000000000000;
+      CALC_SOFTMAX_LOOP_CALC_SOFTMAX_LOOP_nor_2_itm_3 <= 1'b0;
+      CALC_SOFTMAX_LOOP_asn_17_itm_4 <= 1'b0;
       ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_expret_ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_expret_nor_itm_1
           <= 1'b0;
-      exit_COMPUTE_LOOP_sva_1_2 <= 1'b0;
-      CALC_SOFTMAX_LOOP_asn_14_itm_1 <= 1'b0;
-      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_8_1 <= 1'b0;
-      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_8_0 <= 1'b0;
-      exit_COMPUTE_LOOP_lpi_2_dfm_st_8 <= 1'b0;
-      CALC_SOFTMAX_LOOP_and_13_itm_3 <= 1'b0;
-      exit_COMPUTE_LOOP_sva_1_1 <= 1'b0;
-      CALC_SOFTMAX_LOOP_CALC_SOFTMAX_LOOP_nor_2_itm_1 <= 1'b0;
-      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_7_1 <= 1'b0;
-      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_7_0 <= 1'b0;
-      exit_COMPUTE_LOOP_lpi_2_dfm_st_7 <= 1'b0;
-      CALC_SOFTMAX_LOOP_and_13_itm_2 <= 1'b0;
-      CALC_SOFTMAX_LOOP_and_13_itm_1 <= 1'b0;
-      STORE_INNER_LOOP_asn_itm <= 1'b0;
-      exitL_exit_STORE_INNER_LOOP_sva <= 1'b0;
+      CALC_SOFTMAX_LOOP_and_20_itm_3 <= 1'b0;
+      BATCH_LOOP_asn_itm_4 <= 4'b0000;
+      BATCH_LOOP_asn_2_itm_4 <= 4'b0000;
+      exit_BATCH_LOOP_sva_1_st_4 <= 1'b0;
+      CALC_SOFTMAX_LOOP_asn_itm_4 <= 1'b0;
+      BATCH_LOOP_asn_itm_3 <= 4'b0000;
+      BATCH_LOOP_asn_2_itm_3 <= 4'b0000;
+      exit_BATCH_LOOP_sva_1_st_3 <= 1'b0;
+      CALC_SOFTMAX_LOOP_asn_itm_3 <= 1'b0;
     end
-    else if ( core_wen ) begin
-      exit_LOAD_OUTER_LOOP_sva_1_st_1 <= MUX1HOT_s_1_3_2(exit_LOAD_OUTER_LOOP_sva_1_st_1,
-          (~ COMPUTE_LOOP_acc_2_itm_32_1), CALC_EXP_LOOP_and_svs_st_6, {or_313_nl
-          , and_354_nl , and_356_nl});
-      exit_LOAD_OUTER_LOOP_lpi_2_dfm_st_1 <= MUX_s_1_2_2(exit_LOAD_OUTER_LOOP_lpi_2_dfm_st_1,
-          LOAD_INNER_LOOP_LOAD_INNER_LOOP_and_nl, or_tmp_112);
-      LOAD_INNER_LOOP_asn_itm_1 <= MUX_s_1_2_2(LOAD_INNER_LOOP_asn_itm_1, LOAD_INNER_LOOP_asn_itm,
-          or_tmp_112);
-      exit_LOAD_OUTER_LOOP_lpi_2_dfm_st_2 <= MUX_s_1_2_2(exit_LOAD_OUTER_LOOP_lpi_2_dfm_st_2,
-          exit_LOAD_OUTER_LOOP_lpi_2_dfm_st_1, and_362_nl);
-      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_1 <= MUX1HOT_s_1_3_2(lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_6_1,
-          lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_1, lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_5_1_1,
-          {(fsm_output[0]) , or_tmp_133 , (fsm_output[3])});
-      exit_STORE_OUTER_LOOP_sva_1_st_2 <= MUX_s_1_2_2(exit_STORE_OUTER_LOOP_sva_1_st_2,
-          CALC_SOFTMAX_LOOP_CALC_SOFTMAX_LOOP_nor_2_itm_4, or_tmp_156);
-      exit_STORE_OUTER_LOOP_lpi_2_dfm_st_2 <= MUX_s_1_2_2(exit_STORE_OUTER_LOOP_lpi_2_dfm_st_2,
-          CALC_SOFTMAX_LOOP_CALC_SOFTMAX_LOOP_nor_2_itm_2, or_tmp_156);
-      STORE_INNER_LOOP_asn_itm_2 <= MUX_s_1_2_2(STORE_INNER_LOOP_asn_itm_2, CALC_EXP_LOOP_and_svs_st_1,
-          or_tmp_156);
-      reg_dma_read_chnl_rsci_oswt_cse <= and_476_rmff;
-      reg_plm_in_data_rsci_iswt0_1_cse <= and_483_rmff;
-      reg_plm_out_data_rsci_iswt0_1_cse <= and_490_rmff;
-      reg_acc_done_synci_iswt0_cse <= and_dcpl_115 & (fsm_output[4]);
-      CALC_EXP_LOOP_and_svs_st_2 <= CALC_EXP_LOOP_mux1h_6_nl & (~ (fsm_output[1]));
-      CALC_EXP_LOOP_and_svs_st_4 <= CALC_EXP_LOOP_mux1h_12_nl & (~ (fsm_output[1]));
-      CALC_EXP_LOOP_and_svs_st_5 <= ~(CALC_EXP_LOOP_mux1h_16_nl | (fsm_output[1]));
-      COMPUTE_LOOP_stage_0 <= ~((~(COMPUTE_LOOP_stage_0 & mux_129_nl)) & (fsm_output[3]));
-      exitL_exit_CALC_SOFTMAX_LOOP_sva <= ~((lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_5_1_1
-          | lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_5_0_1) & (fsm_output[3]));
-      COMPUTE_LOOP_stage_0_2 <= COMPUTE_LOOP_stage_0 & (fsm_output[3]);
-      COMPUTE_LOOP_stage_0_3 <= COMPUTE_LOOP_stage_0_2 & (fsm_output[3]);
-      COMPUTE_LOOP_stage_0_4 <= COMPUTE_LOOP_stage_0_3 & (fsm_output[3]);
-      COMPUTE_LOOP_stage_0_5 <= COMPUTE_LOOP_stage_0_4 & (fsm_output[3]);
-      COMPUTE_LOOP_stage_0_6 <= COMPUTE_LOOP_stage_0_5 & (fsm_output[3]);
-      COMPUTE_LOOP_stage_0_7 <= COMPUTE_LOOP_stage_0_6 & (fsm_output[3]);
-      COMPUTE_LOOP_stage_0_8 <= (fsm_output[3]) & COMPUTE_LOOP_stage_0_7;
-      COMPUTE_LOOP_stage_0_9 <= COMPUTE_LOOP_stage_0_8 & (fsm_output[3]);
-      COMPUTE_LOOP_stage_0_10 <= COMPUTE_LOOP_stage_0_9 & (fsm_output[3]);
-      COMPUTE_LOOP_stage_0_11 <= COMPUTE_LOOP_stage_0_10 & (fsm_output[3]);
-      COMPUTE_LOOP_stage_0_12 <= COMPUTE_LOOP_stage_0_11 & (fsm_output[3]);
-      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_11_1 <= lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_10_1;
-      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_11_0 <= lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_10_0;
-      exit_COMPUTE_LOOP_lpi_2_dfm_st_11 <= exit_COMPUTE_LOOP_lpi_2_dfm_st_10;
-      ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_expret_ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_expret_nor_itm_3
-          <= ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_expret_ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_expret_nor_itm_2;
-      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_6_1 <= lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_5_1;
-      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_6_0 <= lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_5_0;
-      CALC_SOFTMAX_LOOP_asn_14_itm_6 <= CALC_SOFTMAX_LOOP_asn_14_itm_5;
-      CALC_SOFTMAX_LOOP_and_13_itm_6 <= CALC_SOFTMAX_LOOP_and_13_itm_5;
-      exit_COMPUTE_LOOP_lpi_2_dfm_st_6 <= exit_COMPUTE_LOOP_lpi_2_dfm_st_5;
-      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_5_1 <= lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_4_1;
-      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_5_0 <= lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_4_0;
-      exit_COMPUTE_LOOP_lpi_2_dfm_st_5 <= exit_COMPUTE_LOOP_lpi_2_dfm_st_4;
-      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_4_1 <= lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_3_1;
-      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_4_0 <= lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_3_0;
-      CALC_SOFTMAX_LOOP_asn_14_itm_4 <= CALC_SOFTMAX_LOOP_asn_14_itm_3;
-      exit_COMPUTE_LOOP_lpi_2_dfm_st_4 <= exit_COMPUTE_LOOP_lpi_2_dfm_st_3;
+    else if ( LOAD_LOOP_and_2_cse ) begin
+      LOAD_LOOP_and_1_svs_st_3 <= LOAD_LOOP_and_1_svs_st_2;
+      operator_67_47_false_AC_TRN_AC_WRAP_lshift_ncse_sva_1 <= operator_67_47_false_AC_TRN_AC_WRAP_lshift_ncse_sva_mx0w1;
+      CALC_EXP_LOOP_i_slc_CALC_EXP_LOOP_i_7_0_6_0_1_itm_3 <= CALC_EXP_LOOP_i_slc_CALC_EXP_LOOP_i_7_0_6_0_1_itm_2;
+      CALC_SOFTMAX_LOOP_i_slc_CALC_SOFTMAX_LOOP_i_7_0_6_0_1_itm_3 <= CALC_SOFTMAX_LOOP_i_slc_CALC_SOFTMAX_LOOP_i_7_0_6_0_1_itm_2;
       lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_3_1 <= lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_2_1;
       lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_3_0 <= lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_2_0;
-      exit_COMPUTE_LOOP_lpi_2_dfm_st_3 <= exit_COMPUTE_LOOP_lpi_2_dfm_st_2;
-      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_2_1 <= lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_1_1;
-      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_2_0 <= lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_1_0;
-      exit_COMPUTE_LOOP_lpi_2_dfm_st_2 <= exit_COMPUTE_LOOP_lpi_2_dfm_st_1;
-      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_1_1 <= lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_1_1_mx0;
-      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_1_0 <= lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_1_0_mx0;
-      exit_COMPUTE_LOOP_lpi_2_dfm_st_1 <= exit_COMPUTE_LOOP_lpi_2_dfm_1;
-      ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_sva_1_1
-          <= ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_sva_2;
-      exit_COMPUTE_LOOP_sva_1_3 <= exit_COMPUTE_LOOP_sva_1_2;
-      CALC_SOFTMAX_LOOP_asn_2_itm_3 <= CALC_SOFTMAX_LOOP_asn_itm_2;
-      CALC_SOFTMAX_LOOP_asn_14_itm_3 <= CALC_SOFTMAX_LOOP_asn_14_itm_2;
-      CALC_SOFTMAX_LOOP_asn_14_itm_5 <= CALC_SOFTMAX_LOOP_asn_14_itm_4;
-      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_10_1 <= lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_9_1;
-      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_10_0 <= lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_9_0;
-      exit_COMPUTE_LOOP_lpi_2_dfm_st_10 <= exit_COMPUTE_LOOP_lpi_2_dfm_st_9;
-      CALC_SOFTMAX_LOOP_asn_itm_2 <= CALC_SOFTMAX_LOOP_asn_itm_1;
-      CALC_SOFTMAX_LOOP_and_13_itm_5 <= CALC_SOFTMAX_LOOP_and_13_itm_4;
+      CALC_SOFTMAX_LOOP_asn_17_itm_3 <= CALC_SOFTMAX_LOOP_asn_17_itm_2;
+      exit_BATCH_LOOP_lpi_2_dfm_st_3 <= exit_BATCH_LOOP_lpi_2_dfm_st_2;
+      LOAD_LOOP_and_1_svs_st_4 <= LOAD_LOOP_and_1_svs_st_3;
+      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_4_0 <= lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_3_0;
       ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_expret_ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_expret_nor_itm_2
           <= ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_expret_ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_expret_nor_itm_1;
-      CALC_SOFTMAX_LOOP_asn_14_itm_2 <= CALC_SOFTMAX_LOOP_asn_14_itm_1;
+      CALC_SOFTMAX_LOOP_and_20_itm_4 <= CALC_SOFTMAX_LOOP_and_20_itm_3;
+      ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_lpi_2_dfm_1_1
+          <= MUX_v_74_2_2(ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_lpi_2_dfm_4,
+          ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_lpi_2_mx1,
+          and_552_nl);
+      CALC_SOFTMAX_LOOP_CALC_SOFTMAX_LOOP_nor_2_itm_3 <= CALC_SOFTMAX_LOOP_CALC_SOFTMAX_LOOP_nor_2_itm_2;
+      CALC_SOFTMAX_LOOP_asn_17_itm_4 <= CALC_SOFTMAX_LOOP_asn_17_itm_3;
+      ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_expret_ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_expret_nor_itm_1
+          <= MUX_s_1_2_2(ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_expret_ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_expret_nor_itm_mx0w1,
+          ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_expret_ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_expret_nor_itm,
+          and_659_nl);
+      CALC_SOFTMAX_LOOP_and_20_itm_3 <= CALC_SOFTMAX_LOOP_and_20_itm_2;
+      BATCH_LOOP_asn_itm_4 <= BATCH_LOOP_asn_itm_3;
+      BATCH_LOOP_asn_2_itm_4 <= BATCH_LOOP_asn_2_itm_3;
+      exit_BATCH_LOOP_sva_1_st_4 <= exit_BATCH_LOOP_sva_1_st_3;
+      CALC_SOFTMAX_LOOP_asn_itm_4 <= CALC_SOFTMAX_LOOP_asn_itm_3;
+      BATCH_LOOP_asn_itm_3 <= BATCH_LOOP_asn_itm_2;
+      BATCH_LOOP_asn_2_itm_3 <= BATCH_LOOP_asn_2_itm_2;
+      exit_BATCH_LOOP_sva_1_st_3 <= exit_BATCH_LOOP_sva_1_st_2;
+      CALC_SOFTMAX_LOOP_asn_itm_3 <= CALC_SOFTMAX_LOOP_asn_itm_2;
+    end
+  end
+  always @(posedge clk) begin
+    if ( ~ rst ) begin
+      ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_temp_sva_1_1
+          <= 94'b0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000;
+      LOAD_LOOP_and_1_svs_st_5 <= 1'b0;
+      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_5_1 <= 1'b0;
+      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_5_0 <= 1'b0;
+      exit_BATCH_LOOP_lpi_2_dfm_st_5 <= 1'b0;
+      BATCH_LOOP_asn_itm_10 <= 4'b0000;
+      exit_BATCH_LOOP_sva_1_st_10 <= 1'b0;
+      LOAD_LOOP_and_1_svs_st_10 <= 1'b0;
+      CALC_SOFTMAX_LOOP_asn_itm_10 <= 1'b0;
+      BATCH_LOOP_asn_itm_9 <= 4'b0000;
+      BATCH_LOOP_asn_2_itm_9 <= 4'b0000;
+      exit_BATCH_LOOP_sva_1_st_9 <= 1'b0;
+      CALC_SOFTMAX_LOOP_asn_itm_9 <= 1'b0;
+      LOAD_LOOP_and_1_svs_st_9 <= 1'b0;
+      exit_BATCH_LOOP_lpi_2_dfm_st_9 <= 1'b0;
+      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_9_1 <= 1'b0;
+      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_9_0 <= 1'b0;
+      BATCH_LOOP_asn_itm_8 <= 4'b0000;
+      BATCH_LOOP_asn_2_itm_8 <= 4'b0000;
+      exit_BATCH_LOOP_sva_1_st_8 <= 1'b0;
+      CALC_SOFTMAX_LOOP_asn_itm_8 <= 1'b0;
+      LOAD_LOOP_and_1_svs_st_8 <= 1'b0;
+      exit_BATCH_LOOP_lpi_2_dfm_st_8 <= 1'b0;
+      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_8_1 <= 1'b0;
+      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_8_0 <= 1'b0;
+      BATCH_LOOP_asn_itm_7 <= 4'b0000;
+      BATCH_LOOP_asn_2_itm_7 <= 4'b0000;
+      exit_BATCH_LOOP_sva_1_st_7 <= 1'b0;
+      CALC_SOFTMAX_LOOP_asn_itm_7 <= 1'b0;
+      LOAD_LOOP_and_1_svs_st_7 <= 1'b0;
+      exit_BATCH_LOOP_lpi_2_dfm_st_7 <= 1'b0;
+      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_7_1 <= 1'b0;
+      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_7_0 <= 1'b0;
+      BATCH_LOOP_asn_itm_6 <= 4'b0000;
+      BATCH_LOOP_asn_2_itm_6 <= 4'b0000;
+      exit_BATCH_LOOP_sva_1_st_6 <= 1'b0;
+      CALC_SOFTMAX_LOOP_asn_itm_6 <= 1'b0;
+      LOAD_LOOP_and_1_svs_st_6 <= 1'b0;
+      exit_BATCH_LOOP_lpi_2_dfm_st_6 <= 1'b0;
+      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_6_1 <= 1'b0;
+      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_6_0 <= 1'b0;
+      BATCH_LOOP_asn_itm_5 <= 4'b0000;
+      BATCH_LOOP_asn_2_itm_5 <= 4'b0000;
+      exit_BATCH_LOOP_sva_1_st_5 <= 1'b0;
+      CALC_SOFTMAX_LOOP_asn_itm_5 <= 1'b0;
+    end
+    else if ( ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_temp_and_cse
+        ) begin
+      ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_temp_sva_1_1
+          <= operator_94_21_false_AC_TRN_AC_WRAP_rshift_itm;
+      LOAD_LOOP_and_1_svs_st_5 <= LOAD_LOOP_and_1_svs_st_4;
+      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_5_1 <= lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_4_1;
+      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_5_0 <= lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_4_0;
+      exit_BATCH_LOOP_lpi_2_dfm_st_5 <= exit_BATCH_LOOP_lpi_2_dfm_st_4;
+      BATCH_LOOP_asn_itm_10 <= BATCH_LOOP_asn_itm_9;
+      exit_BATCH_LOOP_sva_1_st_10 <= exit_BATCH_LOOP_sva_1_st_9;
+      LOAD_LOOP_and_1_svs_st_10 <= LOAD_LOOP_and_1_svs_st_9;
+      CALC_SOFTMAX_LOOP_asn_itm_10 <= CALC_SOFTMAX_LOOP_asn_itm_9;
+      BATCH_LOOP_asn_itm_9 <= BATCH_LOOP_asn_itm_8;
+      BATCH_LOOP_asn_2_itm_9 <= BATCH_LOOP_asn_2_itm_8;
+      exit_BATCH_LOOP_sva_1_st_9 <= exit_BATCH_LOOP_sva_1_st_8;
+      CALC_SOFTMAX_LOOP_asn_itm_9 <= CALC_SOFTMAX_LOOP_asn_itm_8;
+      LOAD_LOOP_and_1_svs_st_9 <= LOAD_LOOP_and_1_svs_st_8;
+      exit_BATCH_LOOP_lpi_2_dfm_st_9 <= exit_BATCH_LOOP_lpi_2_dfm_st_8;
       lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_9_1 <= lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_8_1;
       lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_9_0 <= lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_8_0;
-      exit_COMPUTE_LOOP_lpi_2_dfm_st_9 <= exit_COMPUTE_LOOP_lpi_2_dfm_st_8;
-      CALC_SOFTMAX_LOOP_asn_itm_1 <= exitL_exit_CALC_SOFTMAX_LOOP_sva;
-      CALC_SOFTMAX_LOOP_and_13_itm_4 <= CALC_SOFTMAX_LOOP_and_13_itm_3;
-      ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_expret_ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_expret_nor_itm_1
-          <= ~((ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_sva_2!=74'b00000000000000000000000000000000000000000000000000000000000000000000000000));
-      exit_COMPUTE_LOOP_sva_1_2 <= exit_COMPUTE_LOOP_sva_1_1;
-      CALC_SOFTMAX_LOOP_asn_14_itm_1 <= ((COMPUTE_LOOP_acc_1_tmp[4]) & (z_out_1[7])
-          & CALC_SOFTMAX_LOOP_equal_tmp_2) | exit_COMPUTE_LOOP_lpi_2_dfm_1;
+      BATCH_LOOP_asn_itm_8 <= BATCH_LOOP_asn_itm_7;
+      BATCH_LOOP_asn_2_itm_8 <= BATCH_LOOP_asn_2_itm_7;
+      exit_BATCH_LOOP_sva_1_st_8 <= exit_BATCH_LOOP_sva_1_st_7;
+      CALC_SOFTMAX_LOOP_asn_itm_8 <= CALC_SOFTMAX_LOOP_asn_itm_7;
+      LOAD_LOOP_and_1_svs_st_8 <= LOAD_LOOP_and_1_svs_st_7;
+      exit_BATCH_LOOP_lpi_2_dfm_st_8 <= exit_BATCH_LOOP_lpi_2_dfm_st_7;
       lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_8_1 <= lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_7_1;
       lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_8_0 <= lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_7_0;
-      exit_COMPUTE_LOOP_lpi_2_dfm_st_8 <= exit_COMPUTE_LOOP_lpi_2_dfm_st_7;
-      CALC_SOFTMAX_LOOP_and_13_itm_3 <= CALC_SOFTMAX_LOOP_and_13_itm_2;
-      exit_COMPUTE_LOOP_sva_1_1 <= ~ COMPUTE_LOOP_acc_2_itm_32_1;
-      CALC_SOFTMAX_LOOP_CALC_SOFTMAX_LOOP_nor_2_itm_1 <= MUX_s_1_2_2(CALC_SOFTMAX_LOOP_CALC_SOFTMAX_LOOP_CALC_SOFTMAX_LOOP_nor_nl,
-          ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_leading_1_ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_leading_1_or_4_nl,
-          fsm_output[4]);
+      BATCH_LOOP_asn_itm_7 <= BATCH_LOOP_asn_itm_6;
+      BATCH_LOOP_asn_2_itm_7 <= BATCH_LOOP_asn_2_itm_6;
+      exit_BATCH_LOOP_sva_1_st_7 <= exit_BATCH_LOOP_sva_1_st_6;
+      CALC_SOFTMAX_LOOP_asn_itm_7 <= CALC_SOFTMAX_LOOP_asn_itm_6;
+      LOAD_LOOP_and_1_svs_st_7 <= LOAD_LOOP_and_1_svs_st_6;
+      exit_BATCH_LOOP_lpi_2_dfm_st_7 <= exit_BATCH_LOOP_lpi_2_dfm_st_6;
       lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_7_1 <= lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_6_1;
       lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_7_0 <= lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_6_0;
-      exit_COMPUTE_LOOP_lpi_2_dfm_st_7 <= exit_COMPUTE_LOOP_lpi_2_dfm_st_6;
-      CALC_SOFTMAX_LOOP_and_13_itm_2 <= CALC_SOFTMAX_LOOP_and_13_itm_1;
-      CALC_SOFTMAX_LOOP_and_13_itm_1 <= CALC_EXP_LOOP_and_svs_1 & (~(CALC_SOFTMAX_LOOP_equal_tmp_2
-          | CALC_SOFTMAX_LOOP_equal_tmp_3)) & (~ exit_COMPUTE_LOOP_lpi_2_dfm_1);
-      STORE_INNER_LOOP_asn_itm <= LOAD_INNER_LOOP_mux1h_nl | (~ (fsm_output[4]));
-      exitL_exit_STORE_INNER_LOOP_sva <= LOAD_INNER_LOOP_mux_10_nl | (~ (fsm_output[4]));
-    end
-  end
-  always @(posedge clk) begin
-    if ( LOAD_OUTER_LOOP_and_cse ) begin
-      dma_read_ctrl_rsci_ivld_core_psct <= ~ or_tmp_116;
+      BATCH_LOOP_asn_itm_6 <= BATCH_LOOP_asn_itm_5;
+      BATCH_LOOP_asn_2_itm_6 <= BATCH_LOOP_asn_2_itm_5;
+      exit_BATCH_LOOP_sva_1_st_6 <= exit_BATCH_LOOP_sva_1_st_5;
+      CALC_SOFTMAX_LOOP_asn_itm_6 <= CALC_SOFTMAX_LOOP_asn_itm_5;
+      LOAD_LOOP_and_1_svs_st_6 <= LOAD_LOOP_and_1_svs_st_5;
+      exit_BATCH_LOOP_lpi_2_dfm_st_6 <= exit_BATCH_LOOP_lpi_2_dfm_st_5;
+      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_6_1 <= lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_5_1;
+      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_6_0 <= lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_5_0;
+      BATCH_LOOP_asn_itm_5 <= BATCH_LOOP_asn_itm_4;
+      BATCH_LOOP_asn_2_itm_5 <= BATCH_LOOP_asn_2_itm_4;
+      exit_BATCH_LOOP_sva_1_st_5 <= exit_BATCH_LOOP_sva_1_st_4;
+      CALC_SOFTMAX_LOOP_asn_itm_5 <= CALC_SOFTMAX_LOOP_asn_itm_4;
     end
   end
   always @(posedge clk) begin
     if ( ~ rst ) begin
-      dma_read_ctrl_rsci_iswt0 <= 1'b0;
+      BATCH_LOOP_asn_2_itm_10 <= 4'b0000;
     end
-    else if ( LOAD_OUTER_LOOP_and_cse ) begin
-      dma_read_ctrl_rsci_iswt0 <= ~ or_tmp_116;
+    else if ( core_wen & nand_tmp_15 ) begin
+      BATCH_LOOP_asn_2_itm_10 <= BATCH_LOOP_asn_2_itm_9;
     end
   end
   always @(posedge clk) begin
-    if ( core_wen & (fsm_output[2]) & (~ and_dcpl_122) & (~ and_dcpl_118) & COMPUTE_LOOP_acc_2_itm_32_1
-        & LOAD_INNER_LOOP_asn_itm & LOAD_OUTER_LOOP_stage_0_1 & CALC_EXP_LOOP_and_svs_st_3
+    if ( ~ rst ) begin
+      SUM_EXP_LOOP_i_7_0_lpi_2_6_0 <= 7'b0000000;
+      CALC_EXP_LOOP_i_7_0_lpi_2_6_0 <= 7'b0000000;
+      LOAD_LOOP_i_7_0_lpi_2_6_0 <= 7'b0000000;
+    end
+    else if ( SUM_EXP_LOOP_i_and_cse ) begin
+      SUM_EXP_LOOP_i_7_0_lpi_2_6_0 <= SUM_EXP_LOOP_acc_2_tmp[6:0];
+      CALC_EXP_LOOP_i_7_0_lpi_2_6_0 <= CALC_EXP_LOOP_acc_1_tmp[6:0];
+      LOAD_LOOP_i_7_0_lpi_2_6_0 <= LOAD_LOOP_acc_1_tmp[6:0];
+    end
+  end
+  always @(posedge clk) begin
+    if ( ~ rst ) begin
+      STORE_LOOP_i_7_0_lpi_2_6_0 <= 7'b0000000;
+      CALC_SOFTMAX_LOOP_i_7_0_lpi_2_6_0 <= 7'b0000000;
+    end
+    else if ( STORE_LOOP_i_and_cse ) begin
+      STORE_LOOP_i_7_0_lpi_2_6_0 <= MUX_v_7_2_2((signext_7_1(~ LOAD_LOOP_and_1_svs_1)),
+          (STORE_LOOP_acc_1_tmp[6:0]), STORE_LOOP_i_and_1_cse);
+      CALC_SOFTMAX_LOOP_i_7_0_lpi_2_6_0 <= MUX_v_7_2_2((signext_7_1(~ LOAD_LOOP_and_1_svs_1)),
+          (CALC_SOFTMAX_LOOP_acc_1_tmp[6:0]), STORE_LOOP_i_and_1_cse);
+    end
+  end
+  always @(posedge clk) begin
+    if ( ~ rst ) begin
+      ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_sva_1_1
+          <= 74'b00000000000000000000000000000000000000000000000000000000000000000000000000;
+    end
+    else if ( core_wen & mux_500_nl ) begin
+      ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_sva_1_1
+          <= ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_sva_1_mx0w0;
+    end
+  end
+  always @(posedge clk) begin
+    if ( ~ rst ) begin
+      ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_mux_1_itm_1
+          <= 10'b0000000000;
+      ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_expret_qif_acc_itm_1 <= 8'b00000000;
+      ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_mux_itm_1
+          <= 8'b00000000;
+      ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_normalized_fixed_slc_ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_normalized_fixed_72_60_9_0_itm_1
+          <= 10'b0000000000;
+    end
+    else if ( ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_and_cse
         ) begin
-      dma_read_ctrl_rsci_idat_10_7 <= CALC_EXP_LOOP_i_slc_CALC_EXP_LOOP_i_7_0_6_0_1_itm_2[3:0];
-    end
-  end
-  always @(posedge clk) begin
-    if ( LOAD_INNER_LOOP_data_ac_and_cse ) begin
-      dma_read_chnl_rsci_irdy_core_psct <= LOAD_INNER_LOOP_data_ac_LOAD_INNER_LOOP_data_ac_or_cse;
-    end
-  end
-  always @(posedge clk) begin
-    if ( ~ rst ) begin
-      dma_read_chnl_rsci_iswt0 <= 1'b0;
-    end
-    else if ( LOAD_INNER_LOOP_data_ac_and_cse ) begin
-      dma_read_chnl_rsci_iswt0 <= LOAD_INNER_LOOP_data_ac_LOAD_INNER_LOOP_data_ac_or_cse;
-    end
-  end
-  always @(posedge clk) begin
-    if ( ~ rst ) begin
-      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_0 <= 1'b0;
-    end
-    else if ( core_wen & (~ or_tmp_133) ) begin
-      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_0 <= MUX_s_1_2_2(lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_6_0,
-          lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_5_0_1, fsm_output[3]);
-    end
-  end
-  always @(posedge clk) begin
-    if ( STORE_OUTER_LOOP_and_cse ) begin
-      dma_write_ctrl_rsci_ivld_core_psct <= ~ or_tmp_142;
+      ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_mux_1_itm_1
+          <= MUX_v_10_2_2(ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_mux_1_itm_mx0w1,
+          ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_mux_1_itm,
+          and_dcpl_271);
+      ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_expret_qif_acc_itm_1 <= MUX_v_8_2_2(ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_expret_qif_acc_itm_mx0w1,
+          ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_expret_qif_acc_itm, and_dcpl_271);
+      ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_mux_itm_1
+          <= MUX_v_8_2_2(ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_mux_itm_mx0w1,
+          ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_mux_itm,
+          and_dcpl_271);
+      ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_normalized_fixed_slc_ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_normalized_fixed_72_60_9_0_itm_1
+          <= MUX_v_10_2_2((operator_74_0_false_AC_TRN_AC_WRAP_lshift_itm[69:60]),
+          ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_normalized_fixed_slc_ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_normalized_fixed_72_60_9_0_itm,
+          and_dcpl_271);
     end
   end
   always @(posedge clk) begin
     if ( ~ rst ) begin
-      dma_write_ctrl_rsci_iswt0 <= 1'b0;
+      exit_BATCH_LOOP_sva_1_st <= 1'b0;
     end
-    else if ( STORE_OUTER_LOOP_and_cse ) begin
-      dma_write_ctrl_rsci_iswt0 <= ~ or_tmp_142;
-    end
-  end
-  always @(posedge clk) begin
-    if ( core_wen & (~((~ (fsm_output[4])) | and_dcpl_167 | or_dcpl_87)) ) begin
-      dma_write_ctrl_rsci_idat_10_7 <= CALC_EXP_LOOP_i_slc_CALC_EXP_LOOP_i_7_0_6_0_1_itm_2[3:0];
+    else if ( core_wen & CALC_SOFTMAX_LOOP_asn_itm & BATCH_LOOP_and_34_tmp ) begin
+      exit_BATCH_LOOP_sva_1_st <= ~ BATCH_LOOP_acc_itm_32_1;
     end
   end
-  always @(posedge clk) begin
-    if ( STORE_INNER_LOOP_and_cse ) begin
-      dma_write_chnl_rsci_ivld_core_psct <= ~ or_tmp_149;
-    end
-  end
-  always @(posedge clk) begin
-    if ( ~ rst ) begin
-      dma_write_chnl_rsci_iswt0 <= 1'b0;
-    end
-    else if ( STORE_INNER_LOOP_and_cse ) begin
-      dma_write_chnl_rsci_iswt0 <= ~ or_tmp_149;
-    end
-  end
-  always @(posedge clk) begin
-    if ( core_wen & (~((~ (fsm_output[4])) | and_dcpl_167 | or_dcpl_91)) ) begin
-      dma_write_chnl_rsci_idat_31_0 <= plm_out_data_rsci_q_d_mxwt;
-    end
-  end
-  always @(posedge clk) begin
-    if ( core_wen & (~(or_tmp_133 | (or_186_tmp & (fsm_output[3])))) ) begin
-      ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_lpi_2
-          <= MUX_v_74_2_2(ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_lpi_2_dfm_1_1,
-          ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_sva_1_1,
-          ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_and_4_nl);
-    end
-  end
-  always @(posedge clk) begin
-    if ( ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_expret_qif_and_cse ) begin
-      ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_expret_qif_acc_itm <= nl_ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_expret_qif_acc_itm[7:0];
-      ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_normalized_fixed_slc_ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_normalized_fixed_72_60_9_0_itm
-          <= operator_74_0_false_AC_TRN_AC_WRAP_lshift_itm[69:60];
-    end
-  end
-  always @(posedge clk) begin
-    if ( ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_and_cse
-        ) begin
-      ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_mux_1_itm
-          <= MUX1HOT_v_10_8_2(10'b1111111101, 10'b1100011001, 10'b1001100100, 10'b0111010000,
-          10'b0101010100, 10'b0011101011, 10'b0010010001, 10'b0001000100, {ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_and_8_cse
-          , ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_and_9_cse
-          , ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_and_10_cse
-          , ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_and_11_cse
-          , ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_and_12_cse
-          , ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_and_13_cse
-          , ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_and_14_cse
-          , ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_and_15_cse});
-      ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_mux_itm
-          <= MUX1HOT_v_8_8_2(8'b00011100, 8'b01001011, 8'b01101100, 8'b10000100,
-          8'b10010111, 8'b10100110, 8'b10110011, 8'b10111100, {ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_and_8_cse
-          , ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_and_9_cse
-          , ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_and_10_cse
-          , ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_and_11_cse
-          , ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_and_12_cse
-          , ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_and_13_cse
-          , ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_and_14_cse
-          , ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_pwl_and_15_cse});
-    end
-  end
-  always @(posedge clk) begin
-    if ( ~ rst ) begin
-      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_6_1 <= 1'b0;
-      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_6_0 <= 1'b0;
-    end
-    else if ( CALC_SOFTMAX_LOOP_and_21_cse ) begin
-      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_6_1 <= MUX_s_1_2_2(COMPUTE_LOOP_if_COMPUTE_LOOP_if_and_4_mx0w0,
-          lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_5_1_1, and_dcpl_207);
-      lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_6_0 <= MUX_s_1_2_2(COMPUTE_LOOP_if_COMPUTE_LOOP_if_and_3_mx0w0,
-          lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_5_0_1, and_dcpl_207);
-    end
-  end
-  always @(posedge clk) begin
-    if ( core_wen & ((COMPUTE_LOOP_stage_0_7 & CALC_SOFTMAX_LOOP_and_13_itm_6 & (fsm_output[3]))
-        | and_279_rgt) ) begin
-      ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_temp_lpi_2_dfm_3
-          <= MUX_v_94_2_2(ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_temp_lpi_2_dfm_4,
-          ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_temp_lpi_2,
-          and_279_rgt);
-    end
-  end
-  always @(posedge clk) begin
-    if ( ~ rst ) begin
-      CALC_EXP_LOOP_and_svs_st_1 <= 1'b0;
-    end
-    else if ( core_wen & ((fsm_output[0]) | CALC_EXP_LOOP_and_svs_st_1_mx0c1 | or_tmp_203
-        | (fsm_output[4:3]!=2'b00)) ) begin
-      CALC_EXP_LOOP_and_svs_st_1 <= (conf_done_mux1h_nl & (~ or_tmp_203)) | CALC_EXP_LOOP_and_svs_st_1_mx0c1;
-    end
-  end
-  always @(posedge clk) begin
-    if ( core_wen & (and_285_rgt | ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_and_3_rgt
-        | CALC_SOFTMAX_LOOP_and_19_rgt) ) begin
-      ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_lpi_2_dfm_1_1
-          <= MUX1HOT_v_74_3_2(ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_lpi_2_dfm_4,
-          ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_sva_1_1,
-          ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_lpi_2,
-          {and_285_rgt , ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_and_3_rgt
-          , CALC_SOFTMAX_LOOP_and_19_rgt});
-    end
-  end
-  always @(posedge clk) begin
-    if ( ~ rst ) begin
-      LOAD_INNER_LOOP_asn_itm <= 1'b0;
-    end
-    else if ( core_wen & ((fsm_output[1]) | or_tmp_209 | LOAD_INNER_LOOP_asn_itm_mx0c2)
-        ) begin
-      LOAD_INNER_LOOP_asn_itm <= LOAD_INNER_LOOP_mux_12_nl | (fsm_output[1]);
-    end
-  end
-  always @(posedge clk) begin
-    if ( ~ rst ) begin
-      exitL_exit_LOAD_INNER_LOOP_sva <= 1'b0;
-    end
-    else if ( core_wen & ((fsm_output[1]) | or_tmp_209) ) begin
-      exitL_exit_LOAD_INNER_LOOP_sva <= exitL_exit_LOAD_INNER_LOOP_sva_mx0w1 | (~
-          or_tmp_209);
-    end
-  end
-  always @(posedge clk) begin
-    if ( ~ rst ) begin
-      LOAD_OUTER_LOOP_stage_0_1 <= 1'b0;
-    end
-    else if ( core_wen & ((fsm_output[1]) | or_tmp_203 | LOAD_OUTER_LOOP_stage_0_1_mx0c2)
-        ) begin
-      LOAD_OUTER_LOOP_stage_0_1 <= ~((~(CALC_EXP_LOOP_and_svs_st_1 | (~ LOAD_OUTER_LOOP_stage_0_1_mx0c2)))
-          | or_tmp_203);
-    end
-  end
-  always @(posedge clk) begin
-    if ( ~ rst ) begin
-      CALC_EXP_LOOP_and_svs_st_3 <= 1'b0;
-    end
-    else if ( core_wen & (~((fsm_output[0]) | (fsm_output[5]) | ((~ mux_121_nl) &
-        (fsm_output[2])))) ) begin
-      CALC_EXP_LOOP_and_svs_st_3 <= (LOAD_INNER_LOOP_mux_11_nl | (fsm_output[1])
-          | ((~((~(and_dcpl_223 & LOAD_OUTER_LOOP_stage_0_1)) & CALC_EXP_LOOP_and_svs_st_3))
-          & CALC_EXP_LOOP_and_svs_st_1 & (fsm_output[2]))) & (~(mux_120_nl & or_dcpl_59
-          & and_dcpl_132 & (fsm_output[2])));
-    end
-  end
-  always @(posedge clk) begin
-    if ( ~ rst ) begin
-      CALC_EXP_LOOP_and_svs_st_6 <= 1'b0;
-    end
-    else if ( core_wen & (CALC_EXP_LOOP_and_svs_st_6_mx0c0 | (fsm_output[4:3]!=2'b00))
-        ) begin
-      CALC_EXP_LOOP_and_svs_st_6 <= MUX1HOT_s_1_3_2((~ COMPUTE_LOOP_acc_2_itm_32_1),
-          CALC_EXP_LOOP_CALC_EXP_LOOP_and_1_nl, ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_leading_1_ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_leading_1_or_3_nl,
-          {CALC_EXP_LOOP_and_svs_st_6_mx0c0 , (fsm_output[3]) , (fsm_output[4])});
-    end
-  end
-  always @(posedge clk) begin
-    if ( core_wen & (or_tmp_209 | (fsm_output[4:3]!=2'b00)) ) begin
-      CALC_EXP_LOOP_i_7_0_lpi_2_6_0 <= MUX1HOT_v_7_4_2((z_out_1[6:0]), (CALC_EXP_LOOP_acc_1_tmp[6:0]),
-          (signext_7_1(~ CALC_EXP_LOOP_and_svs_1)), CALC_EXP_LOOP_i_7_0_lpi_2_6_0,
-          {LOAD_INNER_LOOP_i_or_nl , LOAD_INNER_LOOP_i_and_2_nl , CALC_SOFTMAX_LOOP_and_16_nl
-          , LOAD_INNER_LOOP_i_and_3_nl});
-    end
-  end
-  always @(posedge clk) begin
-    if ( core_wen & (CALC_EXP_LOOP_i_slc_CALC_EXP_LOOP_i_7_0_6_0_1_itm_1_mx0c0 |
-        CALC_EXP_LOOP_i_slc_CALC_EXP_LOOP_i_7_0_6_0_1_itm_1_mx0c1 | (fsm_output[3]))
-        ) begin
-      CALC_EXP_LOOP_i_slc_CALC_EXP_LOOP_i_7_0_6_0_1_itm_1 <= MUX1HOT_v_7_3_2((signext_7_1(~
-          COMPUTE_LOOP_acc_2_itm_32_1)), CALC_EXP_LOOP_i_7_0_lpi_2_6_0, (signext_7_1(~
-          COMPUTE_LOOP_acc_2_itm_32_1)), {CALC_EXP_LOOP_i_slc_CALC_EXP_LOOP_i_7_0_6_0_1_itm_1_mx0c0
-          , LOAD_INNER_LOOP_or_3_nl , LOAD_INNER_LOOP_and_4_nl});
-    end
-  end
-  always @(posedge clk) begin
-    if ( core_wen & (COMPUTE_LOOP_b_4_0_sva_3_0_mx0c0 | (and_dcpl_218 & (z_out_1[7])
-        & LOAD_OUTER_LOOP_stage_0_1 & CALC_EXP_LOOP_and_svs_st_3 & (fsm_output[2]))
-        | (fsm_output[4:3]!=2'b00)) ) begin
-      COMPUTE_LOOP_b_4_0_sva_3_0 <= MUX_v_4_2_2(4'b0000, mux_nl, nor_74_nl);
-    end
-  end
-  always @(posedge clk) begin
-    if ( ~ rst ) begin
-      CALC_SOFTMAX_LOOP_CALC_SOFTMAX_LOOP_nor_2_itm_4 <= 1'b0;
-    end
-    else if ( core_wen & ((or_dcpl_20 & STORE_INNER_LOOP_asn_itm) | and_342_rgt |
-        (~ (fsm_output[4]))) ) begin
-      CALC_SOFTMAX_LOOP_CALC_SOFTMAX_LOOP_nor_2_itm_4 <= MUX_s_1_2_2(CALC_SOFTMAX_LOOP_CALC_SOFTMAX_LOOP_nor_2_itm_3,
-          LOAD_OUTER_LOOP_LOAD_OUTER_LOOP_mux_nl, fsm_output[4]);
-    end
-  end
-  always @(posedge clk) begin
-    if ( ~ rst ) begin
-      CALC_SOFTMAX_LOOP_CALC_SOFTMAX_LOOP_nor_2_itm_3 <= 1'b0;
-    end
-    else if ( core_wen & (~((~(STORE_INNER_LOOP_asn_itm & CALC_EXP_LOOP_and_svs_st_5))
-        & (fsm_output[4]))) ) begin
-      CALC_SOFTMAX_LOOP_CALC_SOFTMAX_LOOP_nor_2_itm_3 <= MUX_s_1_2_2(CALC_SOFTMAX_LOOP_CALC_SOFTMAX_LOOP_nor_2_itm_2,
-          (~ COMPUTE_LOOP_acc_2_itm_32_1), fsm_output[4]);
-    end
-  end
-  always @(posedge clk) begin
-    if ( ~ rst ) begin
-      CALC_SOFTMAX_LOOP_CALC_SOFTMAX_LOOP_nor_2_itm_2 <= 1'b0;
-    end
-    else if ( core_wen & (~(and_dcpl_167 & (fsm_output[4]))) ) begin
-      CALC_SOFTMAX_LOOP_CALC_SOFTMAX_LOOP_nor_2_itm_2 <= MUX_s_1_2_2(CALC_SOFTMAX_LOOP_CALC_SOFTMAX_LOOP_nor_2_itm_1,
-          STORE_INNER_LOOP_STORE_INNER_LOOP_and_nl, fsm_output[4]);
-    end
-  end
-  assign nor_43_nl = ~((fsm_output[0]) | (fsm_output[5]));
-  assign or_313_nl = (~ (fsm_output[2])) | and_dcpl_122 | and_dcpl_118 | or_dcpl_54;
-  assign and_354_nl = and_dcpl_127 & LOAD_INNER_LOOP_asn_itm & LOAD_OUTER_LOOP_stage_0_1
-      & CALC_EXP_LOOP_and_svs_st_3 & (fsm_output[2]);
-  assign and_356_nl = and_dcpl_127 & (~ LOAD_INNER_LOOP_asn_itm) & LOAD_OUTER_LOOP_stage_0_1
-      & CALC_EXP_LOOP_and_svs_st_3 & (fsm_output[2]);
-  assign LOAD_INNER_LOOP_LOAD_INNER_LOOP_and_nl = (~ COMPUTE_LOOP_acc_2_itm_32_1)
-      & exitL_exit_LOAD_INNER_LOOP_sva;
-  assign and_362_nl = and_dcpl_137 & (fsm_output[2]);
   assign ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_temp_or_nl
-      = or_tmp_133 | ((~ ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_temp_and_2_tmp)
-      & (fsm_output[3]));
+      = (fsm_output[1]) | ((~ ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_temp_and_1_tmp)
+      & (fsm_output[2]));
   assign ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_temp_and_4_nl
-      = ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_temp_and_2_tmp
-      & (fsm_output[3]);
-  assign dma_write_data_index_and_3_nl = (~ or_dcpl_183) & (fsm_output[4]);
-  assign dma_write_data_index_mux_nl = MUX_v_4_2_2(dma_write_data_index_10_7_sva,
-      z_out, dma_write_data_index_and_3_nl);
-  assign not_494_nl = ~ (fsm_output[1]);
-  assign CALC_EXP_LOOP_CALC_EXP_LOOP_or_nl = CALC_EXP_LOOP_and_svs_st_1 | COMPUTE_LOOP_nor_tmp;
-  assign operator_74_54_false_AC_TRN_AC_WRAP_1_operator_74_54_false_AC_TRN_AC_WRAP_1_and_nl
-      = CALC_EXP_LOOP_and_svs_st_2 & ((~ mux_133_itm) | or_dcpl_95);
-  assign CALC_EXP_LOOP_and_8_nl = (~ or_284_tmp) & (fsm_output[2]);
-  assign CALC_EXP_LOOP_and_9_nl = or_284_tmp & (fsm_output[2]);
-  assign CALC_EXP_LOOP_mux1h_6_nl = MUX1HOT_s_1_4_2(LOAD_OUTER_LOOP_stage_0_1, CALC_EXP_LOOP_and_svs_st_2,
-      CALC_EXP_LOOP_CALC_EXP_LOOP_or_nl, operator_74_54_false_AC_TRN_AC_WRAP_1_operator_74_54_false_AC_TRN_AC_WRAP_1_and_nl,
-      {CALC_EXP_LOOP_and_8_nl , CALC_EXP_LOOP_and_9_nl , (fsm_output[3]) , (fsm_output[4])});
-  assign ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_leading_1_ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_leading_1_or_nl
-      = (CALC_EXP_LOOP_and_svs_st_4 & (~(and_dcpl_136 & and_dcpl_134 & or_dcpl_54)))
-      | and_dcpl_133;
-  assign CALC_EXP_LOOP_CALC_EXP_LOOP_and_nl = CALC_EXP_LOOP_and_svs_st_3 & (~ COMPUTE_LOOP_nor_tmp);
-  assign CALC_EXP_LOOP_and_5_nl = (~ mux_122_tmp) & (fsm_output[4]);
-  assign CALC_EXP_LOOP_and_6_nl = mux_122_tmp & (fsm_output[4]);
-  assign CALC_EXP_LOOP_mux1h_12_nl = MUX1HOT_s_1_4_2(ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_leading_1_ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_leading_1_or_nl,
-      CALC_EXP_LOOP_CALC_EXP_LOOP_and_nl, CALC_EXP_LOOP_and_svs_st_4, CALC_EXP_LOOP_and_svs_st_3,
-      {(fsm_output[2]) , (fsm_output[3]) , CALC_EXP_LOOP_and_5_nl , CALC_EXP_LOOP_and_6_nl});
-  assign CALC_EXP_LOOP_nor_3_nl = ~((CALC_EXP_LOOP_and_svs_st_5 & (~((and_dcpl_121
-      | (~ CALC_EXP_LOOP_and_svs_st_4) | or_dcpl_56) & or_dcpl_14))) | and_dcpl_137);
-  assign CALC_EXP_LOOP_nor_4_nl = ~(CALC_EXP_LOOP_and_svs_st_4 | COMPUTE_LOOP_nor_tmp);
-  assign mux_126_nl = MUX_s_1_2_2(or_dcpl_20, mux_133_itm, CALC_EXP_LOOP_and_svs_st_2);
-  assign CALC_EXP_LOOP_nor_5_nl = ~((CALC_EXP_LOOP_and_svs_st_5 & (~(mux_126_nl &
-      or_tmp_1 & and_dcpl_3))) | ((~((~(and_dcpl_200 & nand_64_cse & CALC_EXP_LOOP_and_svs_st_3))
-      & CALC_EXP_LOOP_and_svs_st_5)) & CALC_EXP_LOOP_and_svs_st_2));
-  assign CALC_EXP_LOOP_mux1h_16_nl = MUX1HOT_s_1_3_2(CALC_EXP_LOOP_nor_3_nl, CALC_EXP_LOOP_nor_4_nl,
-      CALC_EXP_LOOP_nor_5_nl, {(fsm_output[2]) , (fsm_output[3]) , (fsm_output[4])});
-  assign and_660_nl = and_dcpl_218 & (z_out_1[7]) & CALC_EXP_LOOP_and_svs_st_3 &
-      (fsm_output[2]);
-  assign or_462_nl = ((((and_dcpl_121 | and_dcpl_119) & CALC_EXP_LOOP_and_svs_st_4)
-      | and_dcpl_118 | (~ (z_out_1[7])) | (~ CALC_EXP_LOOP_and_svs_st_3)) & (fsm_output[2]))
-      | (or_dcpl_89 & CALC_SOFTMAX_LOOP_CALC_SOFTMAX_LOOP_nor_2_itm_1 & CALC_EXP_LOOP_and_svs_st_4
-      & (fsm_output[4]));
-  assign and_665_nl = or_dcpl_20 & (fsm_output[4]);
-  assign dma_read_data_index_mux1h_nl = MUX1HOT_v_4_3_2(z_out, (CALC_EXP_LOOP_i_slc_CALC_EXP_LOOP_i_7_0_6_0_1_itm_2[3:0]),
-      dma_write_data_index_10_7_sva, {and_660_nl , or_462_nl , and_665_nl});
-  assign STORE_OUTER_LOOP_not_4_nl = ~ (fsm_output[1]);
-  assign dma_read_data_index_and_nl = MUX_v_4_2_2(4'b0000, dma_read_data_index_mux1h_nl,
-      STORE_OUTER_LOOP_not_4_nl);
-  assign or_309_nl = (~ (z_out_1[7])) | (~ (COMPUTE_LOOP_acc_1_tmp[4])) | lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_0;
-  assign mux_129_nl = MUX_s_1_2_2(mux_tmp_48, or_dcpl_32, or_309_nl);
-  assign CALC_SOFTMAX_LOOP_CALC_SOFTMAX_LOOP_CALC_SOFTMAX_LOOP_nor_nl = ~(CALC_SOFTMAX_LOOP_equal_tmp_2
-      | CALC_SOFTMAX_LOOP_equal_tmp_3 | exit_COMPUTE_LOOP_lpi_2_dfm_1 | COMPUTE_LOOP_nor_tmp);
-  assign ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_leading_1_ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_leading_1_or_4_nl
-      = (CALC_SOFTMAX_LOOP_CALC_SOFTMAX_LOOP_nor_2_itm_1 & (~(and_dcpl_6 & or_dcpl_86)))
-      | and_dcpl_174;
-  assign and_346_nl = or_dcpl_20 & CALC_EXP_LOOP_and_svs_st_5;
-  assign and_348_nl = or_dcpl_89 & CALC_SOFTMAX_LOOP_CALC_SOFTMAX_LOOP_nor_2_itm_1
-      & CALC_EXP_LOOP_and_svs_st_5;
-  assign LOAD_INNER_LOOP_mux1h_nl = MUX1HOT_s_1_3_2(exitL_exit_LOAD_INNER_LOOP_sva_mx0w1,
-      exitL_exit_STORE_INNER_LOOP_sva, STORE_INNER_LOOP_asn_itm, {and_346_nl , (~
-      CALC_EXP_LOOP_and_svs_st_5) , and_348_nl});
-  assign LOAD_INNER_LOOP_mux_10_nl = MUX_s_1_2_2(exitL_exit_LOAD_INNER_LOOP_sva_mx0w1,
-      exitL_exit_STORE_INNER_LOOP_sva, or_dcpl_197);
-  assign ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_and_4_nl
-      = CALC_SOFTMAX_LOOP_CALC_SOFTMAX_LOOP_nor_2_itm_4 & (~ or_186_tmp) & (fsm_output[3]);
-  assign nl_ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_expret_qif_acc_itm  =
-      ({1'b1 , (~ libraries_leading_sign_74_0_d122f99e9ffc18d7edc913ace0494619bed7_1)})
-      + 8'b00110111;
-  assign conf_done_and_1_nl = (~ and_dcpl_167) & (fsm_output[4]);
-  assign conf_done_and_2_nl = and_dcpl_167 & (fsm_output[4]);
-  assign conf_done_mux1h_nl = MUX1HOT_s_1_4_2(conf_done_rsci_idat, CALC_EXP_LOOP_and_svs_1,
-      STORE_INNER_LOOP_asn_itm, CALC_EXP_LOOP_and_svs_st_1, {(fsm_output[0]) , (fsm_output[3])
-      , conf_done_and_1_nl , conf_done_and_2_nl});
-  assign LOAD_INNER_LOOP_mux_12_nl = MUX_s_1_2_2(exitL_exit_LOAD_INNER_LOOP_sva_mx0w1,
-      exitL_exit_LOAD_INNER_LOOP_sva, LOAD_INNER_LOOP_asn_itm_mx0c2);
-  assign CALC_EXP_LOOP_CALC_EXP_LOOP_or_1_nl = CALC_EXP_LOOP_and_svs_st_2 | COMPUTE_LOOP_nor_tmp;
-  assign or_295_nl = and_dcpl_167 | or_dcpl_95;
-  assign operator_74_54_false_AC_TRN_AC_WRAP_1_mux_nl = MUX_s_1_2_2(CALC_EXP_LOOP_and_svs_st_2,
-      CALC_EXP_LOOP_and_svs_st_3, or_295_nl);
-  assign operator_74_54_false_AC_TRN_AC_WRAP_1_operator_74_54_false_AC_TRN_AC_WRAP_1_and_1_nl
-      = operator_74_54_false_AC_TRN_AC_WRAP_1_mux_nl & (~(mux_133_itm & or_tmp_1
-      & and_dcpl_3));
-  assign LOAD_INNER_LOOP_mux_11_nl = MUX_s_1_2_2(CALC_EXP_LOOP_CALC_EXP_LOOP_or_1_nl,
-      operator_74_54_false_AC_TRN_AC_WRAP_1_operator_74_54_false_AC_TRN_AC_WRAP_1_and_1_nl,
-      fsm_output[4]);
-  assign nand_57_nl = ~((~(COMPUTE_LOOP_acc_2_itm_32_1 & CALC_EXP_LOOP_and_svs_st_1))
-      & mux_107_cse);
-  assign mux_118_nl = MUX_s_1_2_2(or_tmp_104, nand_57_nl, LOAD_INNER_LOOP_asn_itm);
-  assign mux_119_nl = MUX_s_1_2_2(or_tmp_104, mux_118_nl, exitL_exit_LOAD_INNER_LOOP_sva);
-  assign mux_120_nl = MUX_s_1_2_2((~ mux_119_nl), mux_107_cse, and_731_cse_1);
-  assign nand_20_nl = ~(CALC_EXP_LOOP_and_svs_st_3 & (~(LOAD_OUTER_LOOP_stage_0_1
-      & and_dcpl_127)));
-  assign mux_121_nl = MUX_s_1_2_2(and_dcpl_133, nand_20_nl, CALC_EXP_LOOP_and_svs_st_1);
-  assign CALC_EXP_LOOP_CALC_EXP_LOOP_and_1_nl = CALC_EXP_LOOP_and_svs_st_5 & (~ COMPUTE_LOOP_nor_tmp);
-  assign ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_leading_1_ac_math_ac_normalize_74_54_false_AC_TRN_AC_WRAP_leading_1_or_3_nl
-      = (CALC_EXP_LOOP_and_svs_st_6 & (~(or_dcpl_20 & nor_tmp & or_dcpl_94))) | (and_dcpl_181
-      & and_dcpl_3);
-  assign LOAD_INNER_LOOP_i_or_nl = or_tmp_209 | (CALC_SOFTMAX_LOOP_and_10_tmp & (fsm_output[3]))
-      | ((~ or_dcpl_197) & (fsm_output[4]));
-  assign LOAD_INNER_LOOP_i_and_2_nl = (~ or_303_tmp) & (fsm_output[3]);
-  assign CALC_SOFTMAX_LOOP_and_16_nl = (~ CALC_SOFTMAX_LOOP_and_10_tmp) & or_303_tmp
-      & (fsm_output[3]);
-  assign LOAD_INNER_LOOP_i_and_3_nl = or_dcpl_197 & (fsm_output[4]);
-  assign LOAD_INNER_LOOP_or_3_nl = CALC_EXP_LOOP_i_slc_CALC_EXP_LOOP_i_7_0_6_0_1_itm_1_mx0c1
-      | ((~ exitL_exit_CALC_SOFTMAX_LOOP_sva) & (fsm_output[3]));
-  assign LOAD_INNER_LOOP_and_4_nl = exitL_exit_CALC_SOFTMAX_LOOP_sva & (fsm_output[3]);
-  assign or_497_nl = ((~ COMPUTE_LOOP_nor_tmp) & ((~ (z_out_1[7])) | or_69_cse) &
-      (fsm_output[3])) | (or_dcpl_183 & (fsm_output[4]));
-  assign mux_nl = MUX_v_4_2_2((COMPUTE_LOOP_acc_1_tmp[3:0]), COMPUTE_LOOP_b_4_0_sva_3_0,
-      or_497_nl);
-  assign nor_74_nl = ~((COMPUTE_LOOP_nor_tmp & (fsm_output[3])) | COMPUTE_LOOP_b_4_0_sva_3_0_mx0c0);
-  assign LOAD_OUTER_LOOP_LOAD_OUTER_LOOP_mux_nl = MUX_s_1_2_2((~ COMPUTE_LOOP_acc_2_itm_32_1),
-      CALC_SOFTMAX_LOOP_CALC_SOFTMAX_LOOP_nor_2_itm_3, and_342_rgt);
-  assign STORE_INNER_LOOP_STORE_INNER_LOOP_and_nl = (~ COMPUTE_LOOP_acc_2_itm_32_1)
-      & exitL_exit_STORE_INNER_LOOP_sva;
-  assign STORE_OUTER_LOOP_mux_6_nl = MUX_v_4_2_2(dma_write_data_index_10_7_sva, (CALC_EXP_LOOP_i_slc_CALC_EXP_LOOP_i_7_0_6_0_1_itm_2[3:0]),
-      fsm_output[2]);
-  assign nl_z_out = STORE_OUTER_LOOP_mux_6_nl + 4'b0001;
-  assign z_out = nl_z_out[3:0];
-  assign LOAD_INNER_LOOP_or_5_nl = ((~ exitL_exit_LOAD_INNER_LOOP_sva) & (fsm_output[2]))
-      | (fsm_output[3]) | ((~ exitL_exit_STORE_INNER_LOOP_sva) & (fsm_output[4]));
-  assign LOAD_INNER_LOOP_and_11_nl = exitL_exit_LOAD_INNER_LOOP_sva & (fsm_output[2]);
-  assign LOAD_INNER_LOOP_and_12_nl = exitL_exit_STORE_INNER_LOOP_sva & (fsm_output[4]);
-  assign LOAD_INNER_LOOP_mux1h_11_nl = MUX1HOT_v_7_3_2(CALC_EXP_LOOP_i_7_0_lpi_2_6_0,
-      (signext_7_1(~ COMPUTE_LOOP_acc_2_itm_32_1)), (signext_7_1(~ COMPUTE_LOOP_acc_2_itm_32_1)),
-      {LOAD_INNER_LOOP_or_5_nl , LOAD_INNER_LOOP_and_11_nl , LOAD_INNER_LOOP_and_12_nl});
-  assign nl_z_out_1 = conv_u2u_7_8(LOAD_INNER_LOOP_mux1h_11_nl) + 8'b00000001;
-  assign z_out_1 = nl_z_out_1[7:0];
+      = ac_math_ac_reciprocal_pwl_AC_TRN_74_54_false_AC_TRN_AC_WRAP_94_21_false_AC_TRN_AC_WRAP_output_temp_and_1_tmp
+      & (fsm_output[2]);
+  assign nand_159_nl = ~((fsm_output[2]) & BATCH_LOOP_and_34_tmp);
+  assign nl_BATCH_LOOP_acc_5_nl = dma_write_data_index_10_7_sva + 4'b0001;
+  assign BATCH_LOOP_acc_5_nl = nl_BATCH_LOOP_acc_5_nl[3:0];
+  assign dma_write_data_index_and_2_nl = (~(mux_374_cse & BATCH_LOOP_and_34_tmp &
+      (LOAD_LOOP_acc_1_tmp[7]) & (CALC_EXP_LOOP_acc_1_tmp[7]) & (SUM_EXP_LOOP_acc_2_tmp[7])))
+      & (fsm_output[2]);
+  assign dma_write_data_index_mux_nl = MUX_v_4_2_2(BATCH_LOOP_acc_5_nl, dma_write_data_index_10_7_sva,
+      dma_write_data_index_and_2_nl);
+  assign nl_BATCH_LOOP_acc_4_nl = dma_read_data_index_10_7_sva + 4'b0001;
+  assign BATCH_LOOP_acc_4_nl = nl_BATCH_LOOP_acc_4_nl[3:0];
+  assign dma_write_data_index_and_1_nl = (~((~(CALC_SOFTMAX_LOOP_asn_itm & (~ BATCH_LOOP_acc_itm_32_1)))
+      & exitL_exit_CALC_SOFTMAX_LOOP_sva & BATCH_LOOP_and_34_tmp)) & (fsm_output[2]);
+  assign dma_write_data_index_mux_4_nl = MUX_v_4_2_2(BATCH_LOOP_acc_4_nl, dma_read_data_index_10_7_sva,
+      dma_write_data_index_and_1_nl);
+  assign dma_write_data_index_and_nl = ((~((CALC_SOFTMAX_LOOP_acc_1_tmp[7]) & (STORE_LOOP_acc_1_tmp[7])))
+      | or_dcpl_42 | (BATCH_LOOP_acc_3_tmp[4]) | exitL_exit_CALC_SOFTMAX_LOOP_sva
+      | (~ BATCH_LOOP_and_34_tmp)) & (fsm_output[2]);
+  assign dma_write_data_index_mux_3_nl = MUX_v_4_2_2((BATCH_LOOP_acc_3_tmp[3:0]),
+      BATCH_LOOP_b_4_0_sva_3_0, dma_write_data_index_and_nl);
+  assign and_452_nl = mux_tmp_295 & BATCH_LOOP_and_34_tmp & BATCH_LOOP_stage_0;
+  assign and_454_nl = (~ BATCH_LOOP_stage_v) & BATCH_LOOP_stage_0;
+  assign CALC_SOFTMAX_LOOP_mux1h_nl = MUX1HOT_s_1_3_2(CALC_SOFTMAX_LOOP_mux_11_mx1w0,
+      exitL_exit_CALC_SOFTMAX_LOOP_sva, CALC_SOFTMAX_LOOP_asn_itm, {and_452_nl ,
+      and_454_nl , asn_CALC_SOFTMAX_LOOP_asn_itm_nand_cse});
+  assign CALC_SOFTMAX_LOOP_mux_87_nl = MUX_s_1_2_2(CALC_SOFTMAX_LOOP_mux_11_mx1w0,
+      exitL_exit_CALC_SOFTMAX_LOOP_sva, or_dcpl_5);
+  assign mux_488_nl = MUX_s_1_2_2(or_12_cse, (~ or_tmp_230), and_dcpl_34);
+  assign operator_74_54_false_AC_TRN_AC_WRAP_1_mux_nl = MUX_s_1_2_2(BATCH_LOOP_stage_0_1,
+      BATCH_LOOP_stage_0, BATCH_LOOP_and_34_tmp);
+  assign nor_176_nl = ~(BATCH_LOOP_and_34_tmp | BATCH_LOOP_and_31_tmp);
+  assign BATCH_LOOP_mux_85_nl = MUX_s_1_2_2(BATCH_LOOP_stage_0_1, BATCH_LOOP_stage_0_2,
+      nor_176_nl);
+  assign and_462_nl = or_dcpl_65 & (~ BATCH_LOOP_and_31_tmp);
+  assign BATCH_LOOP_mux_84_nl = MUX_s_1_2_2(BATCH_LOOP_stage_0_2, BATCH_LOOP_stage_0_3,
+      and_462_nl);
+  assign nand_97_nl = ~(BATCH_LOOP_stage_v_2 & BATCH_LOOP_stage_0_3 & mux_tmp_20);
+  assign and_985_nl = BATCH_LOOP_BATCH_LOOP_or_6_cse & BATCH_LOOP_stage_0_6;
+  assign mux_422_nl = MUX_s_1_2_2(not_tmp_10, mux_421_cse, and_985_nl);
+  assign mux_424_nl = MUX_s_1_2_2(mux_tmp_20, mux_422_nl, BATCH_LOOP_stage_v_5);
+  assign mux_425_nl = MUX_s_1_2_2(not_tmp_10, mux_424_nl, BATCH_LOOP_stage_0_5);
+  assign nand_98_nl = ~(BATCH_LOOP_stage_0_4 & mux_425_nl);
+  assign mux_426_nl = MUX_s_1_2_2(nand_97_nl, nand_98_nl, BATCH_LOOP_stage_v_3);
+  assign BATCH_LOOP_mux_83_nl = MUX_s_1_2_2(BATCH_LOOP_stage_0_3, BATCH_LOOP_stage_0_4,
+      mux_426_nl);
+  assign nand_94_nl = ~(BATCH_LOOP_stage_v_3 & BATCH_LOOP_stage_0_4 & mux_535_cse);
+  assign nand_95_nl = ~(BATCH_LOOP_BATCH_LOOP_or_6_cse & BATCH_LOOP_stage_0_5 & mux_434_cse);
+  assign mux_435_nl = MUX_s_1_2_2(nand_94_nl, nand_95_nl, BATCH_LOOP_stage_v_4);
+  assign BATCH_LOOP_mux_82_nl = MUX_s_1_2_2(BATCH_LOOP_stage_0_4, BATCH_LOOP_stage_0_5,
+      mux_435_nl);
+  assign nand_89_nl = ~(BATCH_LOOP_BATCH_LOOP_or_6_cse & BATCH_LOOP_stage_v_4 & BATCH_LOOP_stage_0_5
+      & mux_535_cse);
+  assign nand_90_nl = ~(BATCH_LOOP_stage_0_6 & mux_442_cse);
+  assign mux_450_nl = MUX_s_1_2_2(nand_89_nl, nand_90_nl, BATCH_LOOP_stage_v_5);
+  assign BATCH_LOOP_mux_81_nl = MUX_s_1_2_2(BATCH_LOOP_stage_0_5, BATCH_LOOP_stage_0_6,
+      mux_450_nl);
+  assign nand_86_nl = ~(BATCH_LOOP_stage_v_5 & BATCH_LOOP_stage_0_6 & mux_535_cse);
+  assign nand_87_nl = ~(BATCH_LOOP_stage_0_7 & mux_441_cse);
+  assign mux_465_nl = MUX_s_1_2_2(nand_86_nl, nand_87_nl, BATCH_LOOP_stage_v_6);
+  assign BATCH_LOOP_mux_80_nl = MUX_s_1_2_2(BATCH_LOOP_stage_0_6, BATCH_LOOP_stage_0_7,
+      mux_465_nl);
+  assign nand_83_nl = ~(BATCH_LOOP_stage_v_6 & BATCH_LOOP_stage_0_7 & mux_539_cse);
+  assign nand_84_nl = ~(BATCH_LOOP_stage_0_8 & mux_474_cse);
+  assign mux_475_nl = MUX_s_1_2_2(nand_83_nl, nand_84_nl, BATCH_LOOP_stage_v_7);
+  assign BATCH_LOOP_mux_79_nl = MUX_s_1_2_2(BATCH_LOOP_stage_0_7, BATCH_LOOP_stage_0_8,
+      mux_475_nl);
+  assign nand_80_nl = ~(BATCH_LOOP_stage_v_7 & BATCH_LOOP_stage_0_8 & mux_539_cse);
+  assign nand_81_nl = ~(BATCH_LOOP_stage_0_9 & mux_473_cse);
+  assign mux_482_nl = MUX_s_1_2_2(nand_80_nl, nand_81_nl, BATCH_LOOP_stage_v_8);
+  assign BATCH_LOOP_mux_78_nl = MUX_s_1_2_2(BATCH_LOOP_stage_0_8, BATCH_LOOP_stage_0_9,
+      mux_482_nl);
+  assign mux_483_nl = MUX_s_1_2_2(and_tmp_206, mux_tmp_100, and_1002_cse);
+  assign BATCH_LOOP_mux_77_nl = MUX_s_1_2_2(BATCH_LOOP_stage_0_10, BATCH_LOOP_stage_0_9,
+      mux_483_nl);
+  assign nand_76_nl = ~(and_988_cse & nand_tmp_27);
+  assign nand_77_nl = ~(BATCH_LOOP_stage_0_11 & or_84_cse & nand_tmp_27);
+  assign mux_487_nl = MUX_s_1_2_2(nand_76_nl, nand_77_nl, BATCH_LOOP_stage_v_10);
+  assign BATCH_LOOP_mux_nl = MUX_s_1_2_2(BATCH_LOOP_stage_0_10, BATCH_LOOP_stage_0_11,
+      mux_487_nl);
+  assign ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_sum_exp_and_1_nl
+      = (~ or_305_tmp) & (fsm_output[2]);
+  assign and_552_nl = and_tmp_164 & (~ CALC_SOFTMAX_LOOP_asn_2_itm_2);
+  assign and_659_nl = and_tmp_164 & (exit_BATCH_LOOP_lpi_2_dfm_st_2 | lfst_exit_CALC_SOFTMAX_LOOP_lpi_2_dfm_1_st_2_1
+      | (~ LOAD_LOOP_and_1_svs_st_2));
+  assign and_559_nl = BATCH_LOOP_stage_0_5 & mux_434_cse;
+  assign mux_499_nl = MUX_s_1_2_2(mux_535_cse, and_559_nl, BATCH_LOOP_stage_v_3);
+  assign and_560_nl = BATCH_LOOP_BATCH_LOOP_or_6_cse & mux_499_nl;
+  assign mux_500_nl = MUX_s_1_2_2(mux_535_cse, and_560_nl, BATCH_LOOP_stage_v_4);
 
   function automatic [0:0] MUX1HOT_s_1_3_2;
     input [0:0] input_2;
@@ -4514,135 +4494,6 @@ module esp_acc_softmax_cxx_softmax_cxx_core (
     result = result | ( input_1 & {1{sel[1]}});
     result = result | ( input_2 & {1{sel[2]}});
     MUX1HOT_s_1_3_2 = result;
-  end
-  endfunction
-
-
-  function automatic [0:0] MUX1HOT_s_1_4_2;
-    input [0:0] input_3;
-    input [0:0] input_2;
-    input [0:0] input_1;
-    input [0:0] input_0;
-    input [3:0] sel;
-    reg [0:0] result;
-  begin
-    result = input_0 & {1{sel[0]}};
-    result = result | ( input_1 & {1{sel[1]}});
-    result = result | ( input_2 & {1{sel[2]}});
-    result = result | ( input_3 & {1{sel[3]}});
-    MUX1HOT_s_1_4_2 = result;
-  end
-  endfunction
-
-
-  function automatic [9:0] MUX1HOT_v_10_8_2;
-    input [9:0] input_7;
-    input [9:0] input_6;
-    input [9:0] input_5;
-    input [9:0] input_4;
-    input [9:0] input_3;
-    input [9:0] input_2;
-    input [9:0] input_1;
-    input [9:0] input_0;
-    input [7:0] sel;
-    reg [9:0] result;
-  begin
-    result = input_0 & {10{sel[0]}};
-    result = result | ( input_1 & {10{sel[1]}});
-    result = result | ( input_2 & {10{sel[2]}});
-    result = result | ( input_3 & {10{sel[3]}});
-    result = result | ( input_4 & {10{sel[4]}});
-    result = result | ( input_5 & {10{sel[5]}});
-    result = result | ( input_6 & {10{sel[6]}});
-    result = result | ( input_7 & {10{sel[7]}});
-    MUX1HOT_v_10_8_2 = result;
-  end
-  endfunction
-
-
-  function automatic [3:0] MUX1HOT_v_4_3_2;
-    input [3:0] input_2;
-    input [3:0] input_1;
-    input [3:0] input_0;
-    input [2:0] sel;
-    reg [3:0] result;
-  begin
-    result = input_0 & {4{sel[0]}};
-    result = result | ( input_1 & {4{sel[1]}});
-    result = result | ( input_2 & {4{sel[2]}});
-    MUX1HOT_v_4_3_2 = result;
-  end
-  endfunction
-
-
-  function automatic [73:0] MUX1HOT_v_74_3_2;
-    input [73:0] input_2;
-    input [73:0] input_1;
-    input [73:0] input_0;
-    input [2:0] sel;
-    reg [73:0] result;
-  begin
-    result = input_0 & {74{sel[0]}};
-    result = result | ( input_1 & {74{sel[1]}});
-    result = result | ( input_2 & {74{sel[2]}});
-    MUX1HOT_v_74_3_2 = result;
-  end
-  endfunction
-
-
-  function automatic [6:0] MUX1HOT_v_7_3_2;
-    input [6:0] input_2;
-    input [6:0] input_1;
-    input [6:0] input_0;
-    input [2:0] sel;
-    reg [6:0] result;
-  begin
-    result = input_0 & {7{sel[0]}};
-    result = result | ( input_1 & {7{sel[1]}});
-    result = result | ( input_2 & {7{sel[2]}});
-    MUX1HOT_v_7_3_2 = result;
-  end
-  endfunction
-
-
-  function automatic [6:0] MUX1HOT_v_7_4_2;
-    input [6:0] input_3;
-    input [6:0] input_2;
-    input [6:0] input_1;
-    input [6:0] input_0;
-    input [3:0] sel;
-    reg [6:0] result;
-  begin
-    result = input_0 & {7{sel[0]}};
-    result = result | ( input_1 & {7{sel[1]}});
-    result = result | ( input_2 & {7{sel[2]}});
-    result = result | ( input_3 & {7{sel[3]}});
-    MUX1HOT_v_7_4_2 = result;
-  end
-  endfunction
-
-
-  function automatic [7:0] MUX1HOT_v_8_8_2;
-    input [7:0] input_7;
-    input [7:0] input_6;
-    input [7:0] input_5;
-    input [7:0] input_4;
-    input [7:0] input_3;
-    input [7:0] input_2;
-    input [7:0] input_1;
-    input [7:0] input_0;
-    input [7:0] sel;
-    reg [7:0] result;
-  begin
-    result = input_0 & {8{sel[0]}};
-    result = result | ( input_1 & {8{sel[1]}});
-    result = result | ( input_2 & {8{sel[2]}});
-    result = result | ( input_3 & {8{sel[3]}});
-    result = result | ( input_4 & {8{sel[4]}});
-    result = result | ( input_5 & {8{sel[5]}});
-    result = result | ( input_6 & {8{sel[6]}});
-    result = result | ( input_7 & {8{sel[7]}});
-    MUX1HOT_v_8_8_2 = result;
   end
   endfunction
 
@@ -4681,11 +4532,11 @@ module esp_acc_softmax_cxx_softmax_cxx_core (
   endfunction
 
 
-  function automatic [31:0] MUX_v_32_2_2;
-    input [31:0] input_0;
-    input [31:0] input_1;
+  function automatic [9:0] MUX_v_10_2_2;
+    input [9:0] input_0;
+    input [9:0] input_1;
     input [0:0] sel;
-    reg [31:0] result;
+    reg [9:0] result;
   begin
     case (sel)
       1'b0 : begin
@@ -4695,7 +4546,50 @@ module esp_acc_softmax_cxx_softmax_cxx_core (
         result = input_1;
       end
     endcase
-    MUX_v_32_2_2 = result;
+    MUX_v_10_2_2 = result;
+  end
+  endfunction
+
+
+  function automatic [9:0] MUX_v_10_8_2;
+    input [9:0] input_0;
+    input [9:0] input_1;
+    input [9:0] input_2;
+    input [9:0] input_3;
+    input [9:0] input_4;
+    input [9:0] input_5;
+    input [9:0] input_6;
+    input [9:0] input_7;
+    input [2:0] sel;
+    reg [9:0] result;
+  begin
+    case (sel)
+      3'b000 : begin
+        result = input_0;
+      end
+      3'b001 : begin
+        result = input_1;
+      end
+      3'b010 : begin
+        result = input_2;
+      end
+      3'b011 : begin
+        result = input_3;
+      end
+      3'b100 : begin
+        result = input_4;
+      end
+      3'b101 : begin
+        result = input_5;
+      end
+      3'b110 : begin
+        result = input_6;
+      end
+      default : begin
+        result = input_7;
+      end
+    endcase
+    MUX_v_10_8_2 = result;
   end
   endfunction
 
@@ -4773,6 +4667,25 @@ module esp_acc_softmax_cxx_softmax_cxx_core (
   endfunction
 
 
+  function automatic [66:0] MUX_v_67_2_2;
+    input [66:0] input_0;
+    input [66:0] input_1;
+    input [0:0] sel;
+    reg [66:0] result;
+  begin
+    case (sel)
+      1'b0 : begin
+        result = input_0;
+      end
+      default : begin
+        result = input_1;
+      end
+    endcase
+    MUX_v_67_2_2 = result;
+  end
+  endfunction
+
+
   function automatic [73:0] MUX_v_74_2_2;
     input [73:0] input_0;
     input [73:0] input_1;
@@ -4834,6 +4747,68 @@ module esp_acc_softmax_cxx_softmax_cxx_core (
       end
     endcase
     MUX_v_7_4_2 = result;
+  end
+  endfunction
+
+
+  function automatic [7:0] MUX_v_8_2_2;
+    input [7:0] input_0;
+    input [7:0] input_1;
+    input [0:0] sel;
+    reg [7:0] result;
+  begin
+    case (sel)
+      1'b0 : begin
+        result = input_0;
+      end
+      default : begin
+        result = input_1;
+      end
+    endcase
+    MUX_v_8_2_2 = result;
+  end
+  endfunction
+
+
+  function automatic [7:0] MUX_v_8_8_2;
+    input [7:0] input_0;
+    input [7:0] input_1;
+    input [7:0] input_2;
+    input [7:0] input_3;
+    input [7:0] input_4;
+    input [7:0] input_5;
+    input [7:0] input_6;
+    input [7:0] input_7;
+    input [2:0] sel;
+    reg [7:0] result;
+  begin
+    case (sel)
+      3'b000 : begin
+        result = input_0;
+      end
+      3'b001 : begin
+        result = input_1;
+      end
+      3'b010 : begin
+        result = input_2;
+      end
+      3'b011 : begin
+        result = input_3;
+      end
+      3'b100 : begin
+        result = input_4;
+      end
+      3'b101 : begin
+        result = input_5;
+      end
+      3'b110 : begin
+        result = input_6;
+      end
+      default : begin
+        result = input_7;
+      end
+    endcase
+    MUX_v_8_8_2 = result;
   end
   endfunction
 
@@ -4992,32 +4967,11 @@ module esp_acc_softmax_cxx_softmax_cxx_struct (
 
 
   // Interconnect Declarations
-  wire [31:0] plm_in_data_rsci_d_d;
-  wire [31:0] plm_in_data_rsci_q_d;
-  wire [6:0] plm_in_data_rsci_radr_d;
-  wire [6:0] plm_in_data_rsci_wadr_d;
-  wire plm_in_data_rsci_readA_r_ram_ir_internal_RMASK_B_d;
-  wire [31:0] plm_out_data_rsci_d_d;
-  wire [31:0] plm_out_data_rsci_q_d;
-  wire [6:0] plm_out_data_rsci_radr_d;
-  wire [6:0] plm_out_data_rsci_wadr_d;
-  wire plm_out_data_rsci_readA_r_ram_ir_internal_RMASK_B_d;
-  wire ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_clken_d;
   wire [66:0] ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_d_d;
   wire [66:0] ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_q_d;
+  wire [6:0] ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_radr_d;
+  wire [6:0] ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_wadr_d;
   wire ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_readA_r_ram_ir_internal_RMASK_B_d;
-  wire plm_in_data_rsc_clken;
-  wire [31:0] plm_in_data_rsc_q;
-  wire [6:0] plm_in_data_rsc_radr;
-  wire plm_in_data_rsc_we;
-  wire [31:0] plm_in_data_rsc_d;
-  wire [6:0] plm_in_data_rsc_wadr;
-  wire plm_out_data_rsc_clken;
-  wire [31:0] plm_out_data_rsc_q;
-  wire [6:0] plm_out_data_rsc_radr;
-  wire plm_out_data_rsc_we;
-  wire [31:0] plm_out_data_rsc_d;
-  wire [6:0] plm_out_data_rsc_wadr;
   wire ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsc_clken;
   wire [66:0] ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsc_q;
   wire [6:0] ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsc_radr;
@@ -5026,37 +4980,10 @@ module esp_acc_softmax_cxx_softmax_cxx_struct (
   wire [6:0] ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsc_wadr;
   wire [66:0] dma_read_ctrl_rsc_dat;
   wire [66:0] dma_write_ctrl_rsc_dat;
-  wire plm_in_data_rsci_we_d_iff;
-  wire plm_out_data_rsci_we_d_iff;
-  wire [6:0] ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_radr_d_iff;
   wire ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_we_d_iff;
 
 
   // Interconnect Declarations for Component Instantiations 
-  BLOCK_1R1W_RBW #(.addr_width(32'sd7),
-  .data_width(32'sd32),
-  .depth(32'sd128),
-  .latency(32'sd1)) plm_in_data_rsc_comp (
-      .clk(clk),
-      .clken(plm_in_data_rsc_clken),
-      .d(plm_in_data_rsc_d),
-      .q(plm_in_data_rsc_q),
-      .radr(plm_in_data_rsc_radr),
-      .wadr(plm_in_data_rsc_wadr),
-      .we(plm_in_data_rsc_we)
-    );
-  BLOCK_1R1W_RBW #(.addr_width(32'sd7),
-  .data_width(32'sd32),
-  .depth(32'sd128),
-  .latency(32'sd1)) plm_out_data_rsc_comp (
-      .clk(clk),
-      .clken(plm_out_data_rsc_clken),
-      .d(plm_out_data_rsc_d),
-      .q(plm_out_data_rsc_q),
-      .radr(plm_out_data_rsc_radr),
-      .wadr(plm_out_data_rsc_wadr),
-      .we(plm_out_data_rsc_we)
-    );
   BLOCK_1R1W_RBW #(.addr_width(32'sd7),
   .data_width(32'sd67),
   .depth(32'sd128),
@@ -5070,40 +4997,6 @@ module esp_acc_softmax_cxx_softmax_cxx_struct (
       .wadr(ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsc_wadr),
       .we(ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsc_we)
     );
-  esp_acc_softmax_cxx_softmax_cxx_Xilinx_RAMS_BLOCK_1R1W_RBW_rwport_en_8_7_32_128_128_32_1_gen
-      plm_in_data_rsci (
-      .clken(plm_in_data_rsc_clken),
-      .q(plm_in_data_rsc_q),
-      .radr(plm_in_data_rsc_radr),
-      .we(plm_in_data_rsc_we),
-      .d(plm_in_data_rsc_d),
-      .wadr(plm_in_data_rsc_wadr),
-      .clken_d(1'b1),
-      .d_d(plm_in_data_rsci_d_d),
-      .q_d(plm_in_data_rsci_q_d),
-      .radr_d(plm_in_data_rsci_radr_d),
-      .wadr_d(plm_in_data_rsci_wadr_d),
-      .we_d(plm_in_data_rsci_we_d_iff),
-      .writeA_w_ram_ir_internal_WMASK_B_d(plm_in_data_rsci_we_d_iff),
-      .readA_r_ram_ir_internal_RMASK_B_d(plm_in_data_rsci_readA_r_ram_ir_internal_RMASK_B_d)
-    );
-  esp_acc_softmax_cxx_softmax_cxx_Xilinx_RAMS_BLOCK_1R1W_RBW_rwport_en_9_7_32_128_128_32_1_gen
-      plm_out_data_rsci (
-      .clken(plm_out_data_rsc_clken),
-      .q(plm_out_data_rsc_q),
-      .radr(plm_out_data_rsc_radr),
-      .we(plm_out_data_rsc_we),
-      .d(plm_out_data_rsc_d),
-      .wadr(plm_out_data_rsc_wadr),
-      .clken_d(1'b1),
-      .d_d(plm_out_data_rsci_d_d),
-      .q_d(plm_out_data_rsci_q_d),
-      .radr_d(plm_out_data_rsci_radr_d),
-      .wadr_d(plm_out_data_rsci_wadr_d),
-      .we_d(plm_out_data_rsci_we_d_iff),
-      .writeA_w_ram_ir_internal_WMASK_B_d(plm_out_data_rsci_we_d_iff),
-      .readA_r_ram_ir_internal_RMASK_B_d(plm_out_data_rsci_readA_r_ram_ir_internal_RMASK_B_d)
-    );
   esp_acc_softmax_cxx_softmax_cxx_Xilinx_RAMS_BLOCK_1R1W_RBW_rwport_en_10_7_67_128_128_67_1_gen
       ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci
       (
@@ -5113,11 +5006,11 @@ module esp_acc_softmax_cxx_softmax_cxx_struct (
       .we(ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsc_we),
       .d(ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsc_d),
       .wadr(ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsc_wadr),
-      .clken_d(ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_clken_d),
+      .clken_d(1'b1),
       .d_d(ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_d_d),
       .q_d(ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_q_d),
-      .radr_d(ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_radr_d_iff),
-      .wadr_d(ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_radr_d_iff),
+      .radr_d(ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_radr_d),
+      .wadr_d(ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_wadr_d),
       .we_d(ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_we_d_iff),
       .writeA_w_ram_ir_internal_WMASK_B_d(ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_we_d_iff),
       .readA_r_ram_ir_internal_RMASK_B_d(ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_readA_r_ram_ir_internal_RMASK_B_d)
@@ -5144,23 +5037,11 @@ module esp_acc_softmax_cxx_softmax_cxx_struct (
       .dma_write_chnl_rsc_vld(dma_write_chnl_rsc_vld),
       .dma_write_chnl_rsc_rdy(dma_write_chnl_rsc_rdy),
       .acc_done_sync_vld(acc_done_sync_vld),
-      .plm_in_data_rsci_d_d(plm_in_data_rsci_d_d),
-      .plm_in_data_rsci_q_d(plm_in_data_rsci_q_d),
-      .plm_in_data_rsci_radr_d(plm_in_data_rsci_radr_d),
-      .plm_in_data_rsci_wadr_d(plm_in_data_rsci_wadr_d),
-      .plm_in_data_rsci_readA_r_ram_ir_internal_RMASK_B_d(plm_in_data_rsci_readA_r_ram_ir_internal_RMASK_B_d),
-      .plm_out_data_rsci_d_d(plm_out_data_rsci_d_d),
-      .plm_out_data_rsci_q_d(plm_out_data_rsci_q_d),
-      .plm_out_data_rsci_radr_d(plm_out_data_rsci_radr_d),
-      .plm_out_data_rsci_wadr_d(plm_out_data_rsci_wadr_d),
-      .plm_out_data_rsci_readA_r_ram_ir_internal_RMASK_B_d(plm_out_data_rsci_readA_r_ram_ir_internal_RMASK_B_d),
-      .ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_clken_d(ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_clken_d),
       .ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_d_d(ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_d_d),
       .ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_q_d(ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_q_d),
+      .ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_radr_d(ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_radr_d),
+      .ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_wadr_d(ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_wadr_d),
       .ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_readA_r_ram_ir_internal_RMASK_B_d(ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_readA_r_ram_ir_internal_RMASK_B_d),
-      .plm_in_data_rsci_we_d_pff(plm_in_data_rsci_we_d_iff),
-      .plm_out_data_rsci_we_d_pff(plm_out_data_rsci_we_d_iff),
-      .ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_radr_d_pff(ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_radr_d_iff),
       .ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_we_d_pff(ac_math_ac_softmax_pwl_AC_TRN_false_0_0_AC_TRN_AC_WRAP_false_0_0_AC_TRN_AC_WRAP_128U_32_6_true_AC_TRN_AC_WRAP_32_2_AC_TRN_AC_WRAP_exp_arr_rsci_we_d_iff)
     );
   assign dma_read_ctrl_rsc_dat_index = dma_read_ctrl_rsc_dat[31:0];

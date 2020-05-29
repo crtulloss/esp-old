@@ -83,8 +83,31 @@ static int validate_buf(token_t *out, token_t *gold)
             {
 				errors++;
             }
+#if 0
+#ifndef __riscv
+        	printf("  [%X, %X] data %lX / gold %lX\n", i, j, out_data_fxd, gold_data_fxd);
+#else
+        	print_uart("  [");
+            print_uart_int((uint32_t)i);
+            print_uart(",");
+            print_uart_int((uint32_t)j);
+            print_uart("] data ");
+            print_uart_int64(out_data_fxd);
+            print_uart(" / gold ");
+            print_uart_int64(gold_data_fxd);
+			if (error_it > allowed_error)
+                print_uart(" *** ERROR ***");
+            print_uart("\n");
+#endif
+#endif
         }
     }
+
+#ifndef __riscv
+	printf("  total errors %u\n", errors);
+#else
+	print_uart("  total errors "); print_uart_int(errors); print_uart("\n");
+#endif
 
 	return errors;
 }
@@ -146,8 +169,9 @@ static void init_buf (token_t *in, token_t * gold)
         {
 			in_local_gold[i * size + j] = ((i * size + j) % 32) + 0.25;
         }
+
+        softmax_sw(in_local_gold + (i*size), out_local_gold + (i*size));
     }
-    softmax_sw(in_local_gold, out_local_gold);
 
 #ifndef __riscv
 	printf("  gold output data @%p\n", gold);
@@ -160,6 +184,20 @@ static void init_buf (token_t *in, token_t * gold)
             float data_flt = out_local_gold[i * size + j];
             token_t data_fxd = float_to_fixed32(data_flt, 2);
 			gold[i * out_words_adj + j] = 0xdeadbeef00000000 | (token_t) data_fxd;
+
+#if 0
+#ifndef __riscv
+        	printf("  [%X, %X] init gold %lX\n", i, j, gold[i * out_words_adj + j]);
+#else
+        	print_uart("  [");
+            print_uart_int((uint32_t)i);
+            print_uart(",");
+            print_uart_int((uint32_t)j);
+            print_uart("] init gold ");
+            print_uart_int64(gold[i * out_words_adj + j]);
+            print_uart("\n");
+#endif
+#endif
         }
     }
 }
@@ -185,13 +223,13 @@ int main(int argc, char * argv[])
 		in_words_adj = round_up(size, DMA_WORD_PER_BEAT(sizeof(token_t)));
 		out_words_adj = round_up(size, DMA_WORD_PER_BEAT(sizeof(token_t)));
 	}
-	in_len = in_words_adj * (batch);
+
+    in_len = in_words_adj * (batch);
 	out_len = out_words_adj * (batch);
 	in_size = in_len * sizeof(token_t);
 	out_size = out_len * sizeof(token_t);
 	out_offset  = in_len;
 	mem_size = (out_offset * sizeof(token_t)) + out_size;
-
 
 	// Search for the device
 #ifndef __riscv
@@ -261,6 +299,12 @@ int main(int argc, char * argv[])
 
         init_buf(mem, gold);
 
+#ifndef __riscv
+		printf("  ... input ready!\n");
+#else
+		print_uart("  ... input ready!\n");
+#endif
+
 		// Pass common configuration parameters
 
 		iowrite32(dev, SELECT_REG, ioread32(dev, DEVID_REG));
@@ -328,6 +372,12 @@ int main(int argc, char * argv[])
 		aligned_free(mem);
 		aligned_free(gold);
 	}
+
+#ifndef __riscv
+	printf("DONE\n");
+#else
+    print_uart("DONE\n");
+#endif
 
 	return 0;
 }

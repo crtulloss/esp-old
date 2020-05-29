@@ -85,7 +85,7 @@ directive set -REGISTER_THRESHOLD 8192
 #directive set -TRANSACTION_SYNC ready
 #directive set -DATA_SYNC none
 #directive set -CLOCKS {clk {-CLOCK_PERIOD 0.0 -CLOCK_EDGE rising -CLOCK_UNCERTAINTY 0.0 -RESET_SYNC_NAME rst -RESET_ASYNC_NAME arst_n -RESET_KIND sync -RESET_SYNC_ACTIVE high -RESET_ASYNC_ACTIVE low -ENABLE_ACTIVE high}}
-#directive set -RESET_CLEARS_ALL_REGS true
+directive set -RESET_CLEARS_ALL_REGS true
 #directive set -CLOCK_OVERHEAD 20.000000
 #directive set -OPT_CONST_MULTS use_library
 #directive set -CHARACTERIZE_ROM false
@@ -266,7 +266,8 @@ if {$opt(hsynth)} {
     directive set /$ACCELERATOR -GATE_EFFORT normal
 
     # Add ESP accelerator done signal
-    directive set /$ACCELERATOR/store -DONE_FLAG acc_done
+    ###directive set /$ACCELERATOR/store -DONE_FLAG acc_done
+    directive set /$ACCELERATOR -DONE_FLAG acc_done
 
     go assembly
 
@@ -300,7 +301,8 @@ if {$opt(hsynth)} {
     directive set /$ACCELERATOR/dma_write_chnl:rsc -MAP_TO_MODULE ccs_ioport.ccs_out_wait
 
     # Arrays
-
+    directive set /$ACCELERATOR/core/plm_in.data:rsc -MAP_TO_MODULE Xilinx_RAMS.BLOCK_1R1W_RBW
+    directive set /$ACCELERATOR/core/plm_out.data:rsc -MAP_TO_MODULE Xilinx_RAMS.BLOCK_1R1W_RBW
 
     # Loops
     ###directive set /$ACCELERATOR/$ACCELERATOR:core/core/main -PIPELINE_INIT_INTERVAL 1
@@ -323,14 +325,8 @@ if {$opt(hsynth)} {
 
     directive set /$ACCELERATOR/core/CONFIG_LOOP -ITERATIONS 1
 
-    directive set /$ACCELERATOR/core/LOAD_OUTER_LOOP -PIPELINE_INIT_INTERVAL 1
-    directive set /$ACCELERATOR/core/LOAD_OUTER_LOOP -PIPELINE_STALL_MODE flush
-
-    directive set /$ACCELERATOR/core/COMPUTE_LOOP -PIPELINE_INIT_INTERVAL 1
-    directive set /$ACCELERATOR/core/COMPUTE_LOOP -PIPELINE_STALL_MODE flush
-
-    directive set /$ACCELERATOR/core/STORE_OUTER_LOOP -PIPELINE_INIT_INTERVAL 1
-    directive set /$ACCELERATOR/core/STORE_OUTER_LOOP -PIPELINE_STALL_MODE flush
+    directive set /$ACCELERATOR/core/BATCH_LOOP -PIPELINE_INIT_INTERVAL 1
+    directive set /$ACCELERATOR/core/BATCH_LOOP -PIPELINE_STALL_MODE flush
 
     # Loops performance tracing
 
@@ -341,7 +337,8 @@ if {$opt(hsynth)} {
     ###directive set /$ACCELERATOR/compute/core -DESIGN_GOAL Latency
     ###directive set /$ACCELERATOR/store/core -DESIGN_GOAL Latency
 
-    directive set /$ACCELERATOR/$ACCELERATOR:core/core -DESIGN_GOAL Latency
+    directive set /$ACCELERATOR/core -EFFORT_LEVEL high
+    directive set /$ACCELERATOR/core -DESIGN_GOAL Latency
 
     if {$opt(debug) != 1} {
         go architect

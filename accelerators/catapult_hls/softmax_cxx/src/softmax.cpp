@@ -237,13 +237,25 @@ void CCS_BLOCK(softmax_cxx)(
         ac_channel<dma_data_t> &dma_read_chnl,
         ac_channel<dma_data_t> &dma_write_chnl) {
 
-    ESP_REPORT_INFO(VON, "conf_info.batch = %u", ESP_TO_UINT32(conf_info.batch));
+    // Bookkeeping variables
+    uint32_t dma_read_data_index = 0;
+    uint32_t dma_read_data_length = PLM_SIZE;
+    uint32_t dma_write_data_index= 0;
+    uint32_t dma_write_data_length = PLM_SIZE;
 
-    plm_in_t plm_in;
-    plm_out_t plm_out;
+    // DMA configuration
+    dma_info_t dma_read_info = {0, 0, 0};
+    dma_info_t dma_write_info = {0, 0, 0};
 
     bool end = false;
     uint32_t batch = 0;
+
+    // Private Local Memories
+    plm_in_t plm_in;
+    plm_out_t plm_out;
+
+    ESP_REPORT_INFO(VON, "conf_info.batch = %u", ESP_TO_UINT32(conf_info.batch));
+
 #pragma hls_unroll no
 CONFIG_LOOP:
     do
@@ -253,24 +265,20 @@ CONFIG_LOOP:
         batch = conf_info.batch;
     } while (!end);
 
-    // Bookkeeping variables
-    uint32_t dma_read_data_index = 0;
-    uint32_t dma_read_data_length = PLM_SIZE;
-    uint32_t dma_write_data_index= 0;
-    uint32_t dma_write_data_length = PLM_SIZE;
-
-LOAD_OUTER_LOOP:
+BATCH_LOOP:
     for (uint32_t b = 0; b < BATCH_MAX; b++) {
 
         if (b >= batch) break;
 
         // Configure DMA read channel (CTRL)
-        dma_info_t dma_info = {dma_read_data_index, dma_read_data_length, DMA_SIZE};
-        ESP_REPORT_INFO(VON, "DMA read ctrl: data index = %u, data length = %u, size [2 = 32b, 3 = 64b] = %llu", ESP_TO_UINT32(dma_info.index), ESP_TO_UINT32(dma_info.length), dma_info.size.to_uint64());
-        dma_read_ctrl.write(dma_info);
+        dma_read_info = {dma_read_data_index, dma_read_data_length, DMA_SIZE};
+        ESP_REPORT_INFO(VON, "DMA read ctrl: data index = %u, data length = %u, size [2 = 32b, 3 = 64b] = %llu", ESP_TO_UINT32(dma_read_info.index), ESP_TO_UINT32(dma_read_info.length), dma_read_info.size.to_uint64());
+        dma_read_ctrl.write(dma_read_info);
         ESP_REPORT_INFO(VOFF, "dma_read_ctrl done!");
 
-LOAD_INNER_LOOP:
+        dma_read_data_index += dma_read_data_length;
+
+LOAD_LOOP:
         for (uint16_t i = 0; i < PLM_SIZE; i++) {
 
             if (i >= dma_read_data_length) break;
@@ -289,29 +297,19 @@ LOAD_INNER_LOOP:
             ESP_REPORT_INFO(VOFF, "plm_in[%u] = %f", ESP_TO_UINT32(i), data.to_double());
         }
 
-        dma_read_data_index += dma_read_data_length;
-    }
-
-COMPUTE_LOOP:
-    for (uint32_t b = 0; b < BATCH_MAX; b++) {
-
-        if (b >= batch) break;
 
         ac_math::ac_softmax_pwl(plm_in.data, plm_out.data);
-    }
 
-STORE_OUTER_LOOP:
-    for (uint32_t b = 0; b < BATCH_MAX; b++) {
-
-        if (b >= batch) break;
 
         // Configure DMA write channle (CTRL)
-        dma_info_t dma_info = {dma_write_data_index, dma_write_data_length, DMA_SIZE};
-        ESP_REPORT_INFO(VON, "DMA write ctrl: data index = %u, data length = %u, size [2 = 32b, 3 = 64b] = %llu", ESP_TO_UINT32(dma_info.index), ESP_TO_UINT32(dma_info.length), dma_info.size.to_uint64());
-        dma_write_ctrl.write(dma_info);
+        dma_write_info = {dma_write_data_index, dma_write_data_length, DMA_SIZE};
+        ESP_REPORT_INFO(VON, "DMA write ctrl: data index = %u, data length = %u, size [2 = 32b, 3 = 64b] = %llu", ESP_TO_UINT32(dma_write_info.index), ESP_TO_UINT32(dma_write_info.length), dma_write_info.size.to_uint64());
+        dma_write_ctrl.write(dma_write_info);
         ESP_REPORT_INFO(VOFF, "dma_read_ctrl done!");
 
-STORE_INNER_LOOP:
+        dma_write_data_index += dma_write_data_length;
+
+STORE_LOOP:
         for (uint16_t i = 0; i < PLM_SIZE; i++) {
 
             if (i >= dma_write_data_length) break;
@@ -332,7 +330,6 @@ STORE_INNER_LOOP:
             ESP_REPORT_INFO(VOFF, "plm_out[%u] = %f", ESP_TO_UINT32(i), data.to_double());
         }
 
-        dma_write_data_index += dma_write_data_length;
     }
 
     debug = 0;
