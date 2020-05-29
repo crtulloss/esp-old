@@ -25,7 +25,7 @@ static unsigned DMA_WORD_PER_BEAT(unsigned _st)
 #define DEV_NAME "sld,softmax_cxx"
 
 /* <<--params-->> */
-const int32_t batch = 1;
+const int32_t batch = 8;
 
 static unsigned in_words_adj;
 static unsigned out_words_adj;
@@ -35,6 +35,8 @@ static unsigned in_size;
 static unsigned out_size;
 static unsigned out_offset;
 static unsigned mem_size;
+
+const int32_t size = 128;
 
 /* Size of the contiguous chunks for scatter/gather */
 #define CHUNK_SHIFT 20
@@ -46,8 +48,6 @@ static unsigned mem_size;
 /* User defined registers */
 /* <<--regs-->> */
 #define SOFTMAX_CXX_BATCH_REG 0x40
-
-#define size 128
 
 float abs_float(const float input)
 {
@@ -70,7 +70,7 @@ static int validate_buf(token_t *out, token_t *gold)
 	print_uart("       output data @"); print_uart_addr((uintptr_t) out); print_uart("\n");
 #endif
 
-	for (i = 0; i < 1; i++) {
+	for (i = 0; i < batch; i++) {
 		for (j = 0; j < size; j++)
         {
             token_t gold_data_fxd = gold[i * out_words_adj + j];
@@ -128,7 +128,7 @@ static void init_buf (token_t *in, token_t * gold)
 	print_uart("       input  data @"); print_uart_addr((uintptr_t) in); print_uart("\n");
 #endif
 
-	for (i = 0; i < 1; i++)
+	for (i = 0; i < batch; i++)
     {
 		for (j = 0; j < size; j++)
         {
@@ -138,9 +138,9 @@ static void init_buf (token_t *in, token_t * gold)
         }
     }
 
-    float in_local_gold[size];
-    float out_local_gold[size];
-	for (i = 0; i < 1; i++)
+    float in_local_gold[batch*size];
+    float out_local_gold[batch*size];
+	for (i = 0; i < batch; i++)
     {
 		for (j = 0; j < size; j++)
         {
@@ -155,7 +155,7 @@ static void init_buf (token_t *in, token_t * gold)
 	print_uart("  gold output data @"); print_uart_addr((uintptr_t) gold); print_uart("\n");
 #endif
 
-    for (i = 0; i < 1; i++) {
+    for (i = 0; i < batch; i++) {
 		for (j = 0; j < size; j++) {
             float data_flt = out_local_gold[i * size + j];
             token_t data_fxd = float_to_fixed32(data_flt, 2);
@@ -179,14 +179,14 @@ int main(int argc, char * argv[])
 	unsigned errors = 0;
 
 	if (DMA_WORD_PER_BEAT(sizeof(token_t)) == 0) {
-		in_words_adj = 128 * batch;
-		out_words_adj = 128 * batch;
+		in_words_adj = size;
+		out_words_adj = size;
 	} else {
-		in_words_adj = round_up(128 * batch, DMA_WORD_PER_BEAT(sizeof(token_t)));
-		out_words_adj = round_up(128 * batch, DMA_WORD_PER_BEAT(sizeof(token_t)));
+		in_words_adj = round_up(size, DMA_WORD_PER_BEAT(sizeof(token_t)));
+		out_words_adj = round_up(size, DMA_WORD_PER_BEAT(sizeof(token_t)));
 	}
-	in_len = in_words_adj * (128);
-	out_len = out_words_adj * (128);
+	in_len = in_words_adj * (batch);
+	out_len = out_words_adj * (batch);
 	in_size = in_len * sizeof(token_t);
 	out_size = out_len * sizeof(token_t);
 	out_offset  = in_len;
