@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 syn:
-	catapult -f ./build_prj_top.tcl
+	catapult -product ultra -f ./build_prj_top.tcl
 .PHONY: syn
 
 clean:
