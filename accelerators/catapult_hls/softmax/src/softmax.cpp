@@ -76,7 +76,7 @@ void softmax::load() {
 LOAD_BATCH_LOOP:
     for (uint32_t b = 0; b < batch; b++) {
 
-        dma_info_t dma_info(offset, PLM_SIZE, 32);
+        dma_info_t dma_info(offset, PLM_SIZE, 3);
 
         offset += PLM_SIZE;
 
@@ -222,7 +222,7 @@ STORE_BATCH_LOOP:
             store_compute_handshake();
             ESP_REPORT_TIME(VOFF, sc_time_stamp(), "Store store() --> compute()");
 
-            dma_info_t dma_info(offset, PLM_SIZE, 32);
+            dma_info_t dma_info(offset, PLM_SIZE, 3);
 
             offset += PLM_SIZE;
 
@@ -323,7 +323,7 @@ CONFIG_LOOP:
 BATCH_LOOP:
     for (uint32_t b = 0; b < batch; b++) {
 
-        dma_info_t dma_read_info(dma_read_offset, PLM_SIZE, 32);
+        dma_info_t dma_read_info(dma_read_offset, PLM_SIZE, 3);
 
         dma_read_offset += PLM_SIZE;
 
@@ -356,7 +356,7 @@ LOAD_LOOP:
         dma_write_offset = (PLM_SIZE * batch) + PLM_SIZE * b;
 
         // Store-process body
-        dma_info_t dma_write_info(dma_write_offset, PLM_SIZE, 32);
+        dma_info_t dma_write_info(dma_write_offset, PLM_SIZE, 3);
 
         dma_write_offset += PLM_SIZE;
 

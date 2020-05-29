@@ -9,7 +9,7 @@
 #include "softmax.hpp"
 
 const size_t SIZE = 128;
-const size_t BATCH = 8;
+const size_t BATCH = 4;
 
 const size_t MEM_SIZE = 2 * SIZE * BATCH;
 
