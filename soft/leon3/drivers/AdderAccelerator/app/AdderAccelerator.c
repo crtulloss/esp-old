@@ -74,7 +74,7 @@ int main(int argc, char **argv)
 	errors = validate_buffer(&buf[out_offset], gold);
 
 	free(gold);
-	esp_cleanup(buf);
+	esp_free(buf);
 
         if (errors)
 		printf("  + TEST FAIL\n");

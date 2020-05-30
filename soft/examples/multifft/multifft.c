@@ -261,7 +261,7 @@ int main(int argc, char **argv)
 	printf("\n============\n\n");
 
 	free(gold);
-	esp_cleanup(buf);
+	esp_free(buf);
 
 	return errors;
 }

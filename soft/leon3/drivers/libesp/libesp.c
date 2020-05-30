@@ -376,7 +376,7 @@ void esp_run_parallel(esp_thread_info_t* cfg[], unsigned nthreads, unsigned* nac
 }
 
 
-void esp_cleanup(void *buf)
+void esp_free(void *buf)
 {
     remove_buf(buf);   
 }

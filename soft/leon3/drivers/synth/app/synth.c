@@ -386,7 +386,7 @@ static int validate_buffer(accelerator_thread_info_t *thread_info, esp_thread_in
 
 static void free_phase(accelerator_thread_info_t **thread_info, esp_thread_info_t **cfg, int nthreads){
     for (int i = 0; i < nthreads; i++){
-        esp_cleanup(cfg[i]->hw_buf); 
+        esp_free(cfg[i]->hw_buf); 
         free(thread_info[i]);
         free(cfg[i]);
     }
