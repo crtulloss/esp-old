@@ -37,7 +37,7 @@ CCS_MAIN(int argv, char **argc) {
 
     // Accelerator configuration
     conf_info_t conf_info;
-    conf_info.batch = 4;
+    conf_info.batch = 1;
     
     const unsigned softmax_size = PLM_SIZE;
 

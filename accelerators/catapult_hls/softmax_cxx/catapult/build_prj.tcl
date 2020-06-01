@@ -47,58 +47,8 @@ flow package option set /SCVerify/USE_CCS_BLOCK true
 flow package option set /SCVerify/USE_QUESTASIM true
 flow package option set /SCVerify/USE_NCSIM false
 
-#options set Flows/OSCI/GCOV true
-#flow package require /CCOV
-#flow package require /SLEC
-#flow package require /CDesignChecker
-
-#directive set -DESIGN_GOAL area
-##directive set -OLD_SCHED false
-#directive set -SPECULATE true
-#directive set -MERGEABLE true
 directive set -REGISTER_THRESHOLD 8192
-#directive set -MEM_MAP_THRESHOLD 32
-#directive set -LOGIC_OPT false
-#directive set -FSM_ENCODING none
-#directive set -FSM_BINARY_ENCODING_THRESHOLD 64
-#directive set -REG_MAX_FANOUT 0
-#directive set -NO_X_ASSIGNMENTS true
-#directive set -SAFE_FSM false
-#directive set -REGISTER_SHARING_MAX_WIDTH_DIFFERENCE 8
-#directive set -REGISTER_SHARING_LIMIT 0
-#directive set -ASSIGN_OVERHEAD 0
-#directive set -TIMING_CHECKS true
-#directive set -MUXPATH true
-#directive set -REALLOC true
-#directive set -UNROLL no
-#directive set -IO_MODE super
-#directive set -CHAN_IO_PROTOCOL standard
-#directive set -ARRAY_SIZE 1024
-#directive set -REGISTER_IDLE_SIGNAL false
-#directive set -IDLE_SIGNAL {}
-#directive set -STALL_FLAG false
-##############################directive set -TRANSACTION_DONE_SIGNAL true
-#directive set -DONE_FLAG {}
-#directive set -READY_FLAG {}
-#directive set -START_FLAG {}
-#directive set -BLOCK_SYNC none
-#directive set -TRANSACTION_SYNC ready
-#directive set -DATA_SYNC none
-#directive set -CLOCKS {clk {-CLOCK_PERIOD 0.0 -CLOCK_EDGE rising -CLOCK_UNCERTAINTY 0.0 -RESET_SYNC_NAME rst -RESET_ASYNC_NAME arst_n -RESET_KIND sync -RESET_SYNC_ACTIVE high -RESET_ASYNC_ACTIVE low -ENABLE_ACTIVE high}}
 directive set -RESET_CLEARS_ALL_REGS true
-#directive set -CLOCK_OVERHEAD 20.000000
-#directive set -OPT_CONST_MULTS use_library
-#directive set -CHARACTERIZE_ROM false
-#directive set -PROTOTYPE_ROM true
-#directive set -ROM_THRESHOLD 64
-#directive set -CLUSTER_ADDTREE_IN_COUNT_THRESHOLD 0
-#directive set -CLUSTER_OPT_CONSTANT_INPUTS true
-#directive set -CLUSTER_RTL_SYN false
-#directive set -CLUSTER_FAST_MODE false
-#directive set -CLUSTER_TYPE combinational
-#directive set -COMPGRADE fast
-
-#set CLOCK_PERIOD 12.5
 
 # Flag to indicate SCVerify readiness
 set can_simulate 1
@@ -113,20 +63,6 @@ if {$opt(asic) > 0} {
     solution options set Flows/QuestaSIM/SCCOM_OPTS {-g -x /usr/bin/g++-5 -Wall -Wno-unused-label -Wno-unknown-pragmas -DCLOCK_PERIOD=12500}
 } else {
     solution options set Flows/QuestaSIM/SCCOM_OPTS {-64 -g -x c++ -Wall -Wno-unused-label -Wno-unknown-pragmas -DCLOCK_PERIOD=12500}
-}
-
-if {$opt(channels) == 0} {
-    if {$opt(plm_shrd)} {
-        solution options set /Input/CompilerFlags {-DHLS_CATAPULT -D__MNTR_AC_SHRD__ -DCLOCK_PERIOD=12500}
-    } else {
-        solution options set /Input/CompilerFlags {-DHLS_CATAPULT -DCLOCK_PERIOD=12500}
-    }
-} else {
-    if {$opt(plm_shrd)} {
-        solution options set /Input/CompilerFlags {-DHLS_CATAPULT -D__MATCHLIB_CONNECTIONS__ -D__MNTR_AC_SHARED__ -DCLOCK_PERIOD=12500}
-    } else {
-        solution options set /Input/CompilerFlags {-DHLS_CATAPULT -D__MATCHLIB_CONNECTIONS__ -DCLOCK_PERIOD=12500}
-    }
 }
 
 #
@@ -234,16 +170,6 @@ if {$opt(hsynth)} {
     #
     #
 
-    #directive set -CLOCKS { \
-    #    clk { \
-    #        -CLOCK_PERIOD 6.4 \
-    #        -CLOCK_HIGH_TIME 3.2 \
-    #        -CLOCK_OFFSET 0.000000 \
-    #        -CLOCK_UNCERTAINTY 0.0 \
-    #    } \
-    #}
-
-
     directive set -CLOCKS { \
         clk { \
             -CLOCK_PERIOD 6.4 \
@@ -277,27 +203,14 @@ if {$opt(hsynth)} {
 
     # Top-Module I/O
     directive set /$ACCELERATOR/debug:rsc -MAP_TO_MODULE ccs_ioport.ccs_out
-    #directive set /$ACCELERATOR/$ACCELERATOR:core/debug:rsc -MAP_TO_MODULE ccs_ioport.ccs
-
+    
     directive set /$ACCELERATOR/conf_info.batch:rsc -MAP_TO_MODULE ccs_ioport.ccs_in
-    #directive set /$ACCELERATOR/$ACCELERATOR:core/conf_info.batch:rsc -MAP_TO_MODULE ccs_ioport.ccs_in_vld
-
     directive set /$ACCELERATOR/conf_info.batch:rsc -MAP_TO_MODULE ccs_ioport.ccs_in 
-    #directive set /$ACCELERATOR/config/conf_info.batch:rsc -MAP_TO_MODULE ccs_ioport.ccs_in
-
     directive set /$ACCELERATOR/conf_done:rsc -MAP_TO_MODULE ccs_ioport.ccs_in
-    #directive set /$ACCELERATOR/config/conf_done:rsc -MAP_TO_MODULE ccs_ioport.ccs_in
-
-    #directive set /$ACCELERATOR/load/dma_read_ctrl:rsc -MAP_TO_MODULE ccs_ioport.ccs_out_wait
+    
     directive set /$ACCELERATOR/dma_read_ctrl:rsc -MAP_TO_MODULE ccs_ioport.ccs_out_wait
-
-    #directive set /$ACCELERATOR/store/dma_write_ctrl:rsc -MAP_TO_MODULE ccs_ioport.ccs_out_wait
     directive set /$ACCELERATOR/dma_write_ctrl:rsc -MAP_TO_MODULE ccs_ioport.ccs_out_wait
-
-    #directive set /$ACCELERATOR/load/dma_read_chnl:rsc -MAP_TO_MODULE ccs_ioport.ccs_in_wait
     directive set /$ACCELERATOR/dma_read_chnl:rsc -MAP_TO_MODULE ccs_ioport.ccs_in_wait
-
-    #directive set /$ACCELERATOR/store/dma_write_chnl:rsc -MAP_TO_MODULE ccs_ioport.ccs_out_wait
     directive set /$ACCELERATOR/dma_write_chnl:rsc -MAP_TO_MODULE ccs_ioport.ccs_out_wait
 
     # Arrays
@@ -305,24 +218,6 @@ if {$opt(hsynth)} {
     directive set /$ACCELERATOR/core/plm_out.data:rsc -MAP_TO_MODULE Xilinx_RAMS.BLOCK_1R1W_RBW
 
     # Loops
-    ###directive set /$ACCELERATOR/$ACCELERATOR:core/core/main -PIPELINE_INIT_INTERVAL 1
-    ###directive set /$ACCELERATOR/$ACCELERATOR:core/core/main -PIPELINE_STALL_MODE flush
-
-    ###directive set /$ACCELERATOR/load/core/LOAD_INNER_LOOP -PIPELINE_INIT_INTERVAL 1
-    ###directive set /$ACCELERATOR/load/core/LOAD_INNER_LOOP -PIPELINE_STALL_MODE flush
-
-    ###directive set /$ACCELERATOR/compute/core/CALC_EXP_LOOP -PIPELINE_INIT_INTERVAL 1
-    ###directive set /$ACCELERATOR/compute/core/CALC_EXP_LOOP -PIPELINE_STALL_MODE flush
-
-    ###directive set /$ACCELERATOR/compute/core/SUM_EXP_LOOP -PIPELINE_INIT_INTERVAL 1
-    ###directive set /$ACCELERATOR/compute/core/SUM_EXP_LOOP -PIPELINE_STALL_MODE flush
-
-    ###directive set /$ACCELERATOR/compute/core/CALC_SOFTMAX_LOOP -PIPELINE_INIT_INTERVAL 1
-    ###directive set /$ACCELERATOR/compute/core/CALC_SOFTMAX_LOOP -PIPELINE_STALL_MODE flush
-
-    ###directive set /$ACCELERATOR/store/core/STORE_INNER_LOOP -PIPELINE_INIT_INTERVAL 1
-    ###directive set /$ACCELERATOR/store/core/STORE_INNER_LOOP -PIPELINE_STALL_MODE flush
-
     directive set /$ACCELERATOR/core/CONFIG_LOOP -ITERATIONS 1
 
     directive set /$ACCELERATOR/core/BATCH_LOOP -PIPELINE_INIT_INTERVAL 1
@@ -330,12 +225,7 @@ if {$opt(hsynth)} {
 
     # Loops performance tracing
 
-
     # Area vs Latency Goals
-    ###directive set /$ACCELERATOR/$ACCELERATOR:core/core -DESIGN_GOAL Latency
-    ###directive set /$ACCELERATOR/load/core -DESIGN_GOAL Latency
-    ###directive set /$ACCELERATOR/compute/core -DESIGN_GOAL Latency
-    ###directive set /$ACCELERATOR/store/core -DESIGN_GOAL Latency
 
     directive set /$ACCELERATOR/core -EFFORT_LEVEL high
     directive set /$ACCELERATOR/core -DESIGN_GOAL Latency
