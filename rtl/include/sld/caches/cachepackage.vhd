@@ -125,7 +125,7 @@ package cachepackage is
   function read_word (line : line_t; w_off : integer)
     return word_t;
 
-  function make_header (coh_msg     : coh_msg_t; mem_info : tile_mem_info_vector(0 to MEM_MAX_NUM - 1);
+  function make_header (coh_msg     : coh_msg_t; mem_info : tile_mem_info_vector(0 to CFG_NMEM_TILE - 1);
                         mem_num     : integer; hprot : hprot_t; addr : line_addr_t;
                         local_x     : local_yx; local_y : local_yx;
                         to_req      : std_ulogic; req_id : cache_id_t;
@@ -154,7 +154,7 @@ package cachepackage is
       mem_hindex  : integer := 4;
       mem_hconfig : ahb_config_type;
       mem_num     : integer := 1;
-      mem_info    : tile_mem_info_vector(0 to MEM_MAX_NUM - 1);
+      mem_info    : tile_mem_info_vector(0 to CFG_NMEM_TILE - 1);
       cache_y     : yx_vec(0 to 2**NL2_MAX_LOG2 - 1);
       cache_x     : yx_vec(0 to 2**NL2_MAX_LOG2 - 1);
       cache_id      : integer := 0;
@@ -204,7 +204,7 @@ package cachepackage is
       local_y     : local_yx;
       local_x     : local_yx;
       mem_num     : integer := 1;
-      mem_info    : tile_mem_info_vector(0 to MEM_MAX_NUM - 1);
+      mem_info    : tile_mem_info_vector(0 to CFG_NMEM_TILE - 1);
       cache_y     : yx_vec(0 to 2**NL2_MAX_LOG2 - 1);
       cache_x     : yx_vec(0 to 2**NL2_MAX_LOG2 - 1);
       cache_tile_id : cache_attribute_array);
@@ -275,8 +275,8 @@ package cachepackage is
       l2_cache_en : integer                      := 0;
       cache_tile_id : cache_attribute_array;
       dma_tile_id   : dma_attribute_array;
-      tile_cache_id : tile_attribute_array;
-      tile_dma_id   : tile_attribute_array;
+      tile_cache_id : attribute_vector(0 to CFG_TILES_NUM - 1);
+      tile_dma_id   : attribute_vector(0 to CFG_TILES_NUM - 1);
       dma_y         : yx_vec(0 to 2**NLLC_MAX_LOG2 - 1);
       dma_x         : yx_vec(0 to 2**NLLC_MAX_LOG2 - 1);
       cache_y       : yx_vec(0 to 2**NL2_MAX_LOG2 - 1);
@@ -369,7 +369,7 @@ package body cachepackage is
 
   end function read_word;
   
-  function make_header (coh_msg     : coh_msg_t; mem_info : tile_mem_info_vector(0 to MEM_MAX_NUM - 1);
+  function make_header (coh_msg     : coh_msg_t; mem_info : tile_mem_info_vector(0 to CFG_NMEM_TILE - 1);
                         mem_num     : integer; hprot : hprot_t; addr : line_addr_t;
                         local_x     : local_yx; local_y : local_yx;
                         to_req      : std_ulogic; req_id : cache_id_t;
