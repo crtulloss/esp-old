@@ -8,7 +8,7 @@ array set opt {
     asic       0
     csim       1
     hsynth     1
-    rtlsim     0
+    rtlsim     1
     lsynth     0
     debug      0
 }
