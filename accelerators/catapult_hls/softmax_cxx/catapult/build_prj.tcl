@@ -205,8 +205,7 @@ if {$opt(hsynth)} {
     directive set /$ACCELERATOR/debug:rsc -MAP_TO_MODULE ccs_ioport.ccs_out
     
     directive set /$ACCELERATOR/conf_info.batch:rsc -MAP_TO_MODULE ccs_ioport.ccs_in
-    directive set /$ACCELERATOR/conf_info.batch:rsc -MAP_TO_MODULE ccs_ioport.ccs_in 
-    directive set /$ACCELERATOR/conf_done:rsc -MAP_TO_MODULE ccs_ioport.ccs_in
+    directive set /$ACCELERATOR/conf_done:rsc -MAP_TO_MODULE ccs_ioport.ccs_in_wait
     
     directive set /$ACCELERATOR/dma_read_ctrl:rsc -MAP_TO_MODULE ccs_ioport.ccs_out_wait
     directive set /$ACCELERATOR/dma_write_ctrl:rsc -MAP_TO_MODULE ccs_ioport.ccs_out_wait
@@ -218,7 +217,7 @@ if {$opt(hsynth)} {
     directive set /$ACCELERATOR/core/plm_out.data:rsc -MAP_TO_MODULE Xilinx_RAMS.BLOCK_1R1W_RBW
 
     # Loops
-    directive set /$ACCELERATOR/core/CONFIG_LOOP -ITERATIONS 1
+    #directive set /$ACCELERATOR/core/CONFIG_LOOP -ITERATIONS 1
 
     directive set /$ACCELERATOR/core/BATCH_LOOP -PIPELINE_INIT_INTERVAL 1
     directive set /$ACCELERATOR/core/BATCH_LOOP -PIPELINE_STALL_MODE flush

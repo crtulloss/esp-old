@@ -9,6 +9,8 @@ add wave -noupdate -divider DUT
 add wave -noupdate -divider config
 add wave -noupdate -label conf_info_batch_rsc_dat -radix hexadecimal /scverify_top/rtl/conf_info_batch_rsc_dat
 add wave -noupdate -label conf_done_rsc_dat -radix hexadecimal /scverify_top/rtl/conf_done_rsc_dat
+add wave -noupdate -label conf_done_rsc_rdy -radix hexadecimal /scverify_top/rtl/conf_done_rsc_rdy
+add wave -noupdate -label conf_done_rsc_vld -radix hexadecimal /scverify_top/rtl/conf_done_rsc_vld
 add wave -noupdate -divider dma_read_ctrl
 add wave -noupdate -label dma_read_ctrl_rsc_dat -radix hexadecimal /scverify_top/rtl/dma_read_ctrl_rsc_dat
 add wave -noupdate -label dma_read_ctrl_rsc_vld -radix hexadecimal /scverify_top/rtl/dma_read_ctrl_rsc_vld
@@ -32,7 +34,6 @@ add wave -noupdate -label debug_rsc_dat -radix hexadecimal /scverify_top/rtl/deb
 add wave -noupdate -divider misc
 add wave -noupdate -label debug_rsc_triosy_lz -radix hexadecimal /scverify_top/rtl/debug_rsc_triosy_lz
 add wave -noupdate -label conf_info_batch_rsc_triosy_lz -radix hexadecimal /scverify_top/rtl/conf_info_batch_rsc_triosy_lz
-add wave -noupdate -label conf_done_rsc_triosy_lz -radix hexadecimal /scverify_top/rtl/conf_done_rsc_triosy_lz
 add wave -noupdate -divider OutputCompare
 add wave -noupdate -color blue -label dma_read_ctrl_index-TRANS# -radix hexadecimal /scverify_top/user_tb/dma_read_ctrl_index_comp/_compare_cnt_sig
 add wave -noupdate -label dma_read_ctrl_index-GOLDEN -radix hexadecimal /scverify_top/user_tb/dma_read_ctrl_index_comp/_golden_sig
@@ -70,7 +71,7 @@ add wave -noupdate -divider Active_Processes
 add wave -noupdate -label softmax_cxx_struct_inst/softmax_cxx_core_inst -radix hexadecimal /scverify_top/rtl/softmax_cxx_struct_inst/softmax_cxx_core_inst/softmax_cxx_core_staller_inst/core_wen
 add wave -noupdate -label deadlock -radix hexadecimal /scverify_top/deadlocked
 TreeUpdate [SetDefaultTree]
-WaveRestoreCursors {{Cursor 1} {13328637 ps} 0}
+WaveRestoreCursors {{Cursor 1} {4597242 ps} 0}
 quietly wave cursor active 1
 configure wave -namecolwidth 263
 configure wave -valuecolwidth 100
@@ -86,4 +87,4 @@ configure wave -griddelta 40
 configure wave -timeline 0
 configure wave -timelineunits ns
 update
-WaveRestoreZoom {0 ps} {5984324 ps}
+WaveRestoreZoom {0 ps} {1939350 ps}

@@ -38,7 +38,8 @@ typedef plm_t<FPDATA_OUT, PLM_SIZE> plm_out_t;
 void softmax_cxx(
         debug_info_t &debug,
         conf_info_t conf_info,
-        bool conf_done,
+        //bool &conf_done,
+        ac_channel<bool> &conf_done,
         ac_channel<dma_info_t> &dma_read_ctrl,
         ac_channel<dma_info_t> &dma_write_ctrl,
         ac_channel<dma_data_t> &dma_read_chnl,

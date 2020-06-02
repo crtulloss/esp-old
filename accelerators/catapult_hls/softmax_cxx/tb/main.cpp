@@ -80,7 +80,9 @@ CCS_MAIN(int argv, char **argc) {
     }
 
     // Run the accelerator
-    bool conf_done = true;
+    ac_channel<bool> conf_done;
+    //conf_done.write(false);
+    conf_done.write(true);
     softmax_cxx(debug, conf_info, conf_done, dma_read_ctrl, dma_write_ctrl, dma_read_chnl, dma_write_chnl);
 
     // Fetch outputs from the accelerator
