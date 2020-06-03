@@ -277,18 +277,10 @@ if {$opt(hsynth)} {
 
     # Top-Module I/O
     directive set /$ACCELERATOR/debug:rsc -MAP_TO_MODULE ccs_ioport.ccs_out
-    #directive set /$ACCELERATOR/$ACCELERATOR:core/debug:rsc -MAP_TO_MODULE ccs_ioport.ccs
 
     directive set /$ACCELERATOR/conf_info.batch:rsc -MAP_TO_MODULE ccs_ioport.ccs_in
-    #directive set /$ACCELERATOR/$ACCELERATOR:core/conf_info.batch:rsc -MAP_TO_MODULE ccs_ioport.ccs_in_vld
-
-    directive set /$ACCELERATOR/conf_info.batch:rsc -MAP_TO_MODULE ccs_ioport.ccs_in 
-    #directive set /$ACCELERATOR/config/conf_info.batch:rsc -MAP_TO_MODULE ccs_ioport.ccs_in
-
     directive set /$ACCELERATOR/conf_done:rsc -MAP_TO_MODULE ccs_ioport.ccs_in
-    #directive set /$ACCELERATOR/config/conf_done:rsc -MAP_TO_MODULE ccs_ioport.ccs_in
 
-    #directive set /$ACCELERATOR/load/dma_read_ctrl:rsc -MAP_TO_MODULE ccs_ioport.ccs_out_wait
     directive set /$ACCELERATOR/dma_read_ctrl:rsc -MAP_TO_MODULE ccs_ioport.ccs_out_wait
 
     #directive set /$ACCELERATOR/store/dma_write_ctrl:rsc -MAP_TO_MODULE ccs_ioport.ccs_out_wait

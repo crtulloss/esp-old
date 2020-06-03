@@ -37,8 +37,8 @@ CCS_MAIN(int argv, char **argc) {
 
     // Accelerator configuration
     conf_info_t conf_info;
-    conf_info.batch = 4;
-    
+    conf_info.batch = 1;
+
     const unsigned softmax_size = PLM_SIZE;
 
     ESP_REPORT_INFO(VON, "Configuration:");
@@ -80,6 +80,9 @@ CCS_MAIN(int argv, char **argc) {
     }
 
     // Run the accelerator
+    //ac_channel<bool> conf_done;
+    //conf_done.write(false);
+    //conf_done.write(true);
     bool conf_done = true;
     softmax_cxx(debug, conf_info, conf_done, dma_read_ctrl, dma_write_ctrl, dma_read_chnl, dma_write_chnl);
 
