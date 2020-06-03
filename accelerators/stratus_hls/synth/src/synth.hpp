@@ -49,6 +49,9 @@ public:
     // Configure synth
     esp_config_proc cfg;
 
+    //channel for transferring errors between loads and stores
+    sc_signal<uint32_t> rd_errs;
+    
     // Functions
 
     // Private local memories

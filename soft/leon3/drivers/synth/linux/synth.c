@@ -23,7 +23,7 @@
 #define SYNTH_OUT_SIZE_REG		0x68
 #define SYNTH_IN_PLACE_REG		0x6c
 #define SYNTH_WR_DATA_REG       0x70
-
+#define SYNTH_RD_DATA_REG       0x74
 struct synth_device {
 	struct esp_device esp;
 };
@@ -67,6 +67,7 @@ static void synth_prep_xfer(struct esp_device *esp, void *arg)
 	iowrite32be(a->out_size, esp->iomem + SYNTH_OUT_SIZE_REG);
 	iowrite32be(a->in_place, esp->iomem + SYNTH_IN_PLACE_REG);
     iowrite32be(a->wr_data, esp->iomem + SYNTH_WR_DATA_REG);
+    iowrite32be(a->rd_data, esp->iomem + SYNTH_RD_DATA_REG);
 }
 
 static bool synth_xfer_input_ok(struct esp_device *esp, void *arg)

@@ -32,6 +32,7 @@ struct synth_access {
     unsigned int out_size;                  /* size of output dataset */
     unsigned int in_place;                  /* output stored in place of input */
     unsigned int wr_data;                   /* output word to be written */
+    unsigned int rd_data;                   /* input word to be validate reads */
     unsigned src_offset;
     unsigned dst_offset;
 };

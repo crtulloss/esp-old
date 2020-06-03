@@ -207,7 +207,7 @@ static void config_threads(FILE* f, accelerator_thread_info_t **thread_info, esp
             } else if (!strncmp(pattern, "IRREGULAR", 9)){
                 (*cfg)[t][d].desc.synth_desc.pattern = PATTERN_IRREGULAR;
             }
-            fscanf(f, "%d %d %d %d %d %d %d %d %s", 
+            fscanf(f, "%d %d %d %d %d %d %d %d %d %s", 
                 &(*cfg)[t][d].desc.synth_desc.access_factor,
                 &(*cfg)[t][d].desc.synth_desc.burst_len,
                 &(*cfg)[t][d].desc.synth_desc.compute_bound_factor,
@@ -216,6 +216,7 @@ static void config_threads(FILE* f, accelerator_thread_info_t **thread_info, esp
                 &(*cfg)[t][d].desc.synth_desc.stride_len,
                 &(*cfg)[t][d].desc.synth_desc.in_place,
                 &(*cfg)[t][d].desc.synth_desc.wr_data,
+                &(*cfg)[t][d].desc.synth_desc.rd_data,
                 coh_choice);
             
             if ((*cfg)[t][d].desc.synth_desc.pattern == PATTERN_IRREGULAR)
@@ -345,6 +346,10 @@ static void alloc_phase(accelerator_thread_info_t **thread_info, esp_thread_info
             die_errno("error: cannot allocate %zu contig bytes", thread_info[i]->memsz);   
         }
 
+        for (int j = 0; j < (*cfg)[i][0].desc.synth_desc.in_size; j++){
+            buffers[i][j] = (*cfg)[i][0].desc.synth_desc.rd_data;
+        }
+
         for (int acc = 0; acc < thread_info[i]->ndev; acc++){
             (*cfg)[i][acc].hw_buf = (void*) buffers[i];
         }
@@ -364,8 +369,8 @@ static int validate_buffer(accelerator_thread_info_t *thread_info, esp_thread_in
         int out_size = cfg[t][i].desc.synth_desc.out_size;
         int in_place = cfg[t][i].desc.synth_desc.in_place;
         int wr_data = cfg[t][i].desc.synth_desc.wr_data;
-        
         int next_in_place;
+        
         if (i != thread_info->ndev - 1){
            next_in_place = cfg[t][i+1].desc.synth_desc.in_place;
            if (next_in_place)
@@ -376,7 +381,11 @@ static int validate_buffer(accelerator_thread_info_t *thread_info, esp_thread_in
             offset += in_size; 
         
         for (int j = offset; j < offset + out_size; j++){
-            if (buf[j] != wr_data){
+            if (j == offset + out_size - 1 && buf[j] != wr_data){
+                errors += buf[j];
+                printf("%d read errors in thread %d device %d\n", buf[j], t, i);
+            }
+            else if (j != offset + out_size - 1 && buf[j] != wr_data){
                 errors++;
             }
         }
@@ -562,7 +571,7 @@ int main (int argc, char** argv)
         alloc_phase(thread_info[p], &cfg, nthreads, *soc_config, alloc_mode, alloc, buffers, p); 
         
         gettime(&th_start);
-
+        
         esp_run_parallel(cfg, nthreads, nacc);
 
         gettime(&th_end); 

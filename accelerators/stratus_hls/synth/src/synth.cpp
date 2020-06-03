@@ -24,6 +24,8 @@ void synth::load_input()
     uint32_t stride_len;
     uint32_t in_place; 
     uint32_t offset;
+    uint32_t rd_data;
+    uint32_t wr_data;
 
     uint32_t nwords;
     uint32_t ntrans;
@@ -33,7 +35,7 @@ void synth::load_input()
     uint32_t stride;
     uint32_t ld_st_ratio_cnt;
     uint32_t burst_len_log;
-
+    uint32_t rd_err;
     // Reset
     {
 	HLS_DEFINE_PROTOCOL("load-reset");
@@ -55,6 +57,7 @@ void synth::load_input()
 	stride_len = 0;
 	in_place = 0;
 	offset = 0;
+    rd_data = 0;
 
 	nwords = 0;
 	ntrans = 0;
@@ -64,6 +67,7 @@ void synth::load_input()
 	stride = 0;
 	ld_st_ratio_cnt = 0;
 	burst_len_log = 0;
+    rd_err = 0; 
 
 	wait();
     }
@@ -87,6 +91,8 @@ void synth::load_input()
 	stride_len = config.stride_len;
 	in_place = config.in_place;
 	offset = config.offset;
+    rd_data = config.rd_data;
+    wr_data = config.wr_data;
 
 	// Logarithms
 	burst_len_log = ilog2(burst_len);
@@ -106,6 +112,13 @@ void synth::load_input()
 
 	// Seed for semi-random DMA load index
 	masked_seed = (irregular_seed & (ntrans - 1)) << burst_len_log;
+    
+    if (pattern == IRREGULAR){
+        in_place = 0;     
+    }
+    
+    if (ld_st_ratio != 1 || in_place != 1)
+	    reuse_factor = 1;
     }
 
     // Load
@@ -142,25 +155,27 @@ void synth::load_input()
 		for (uint32_t i = 0; i < burst_len; i++)
 		{
 		    HLS_LOAD_INPUT_LOOP;
-
 		    {
 			HLS_LOAD_DMA;
 			uint32_t data = this->dma_read_chnl.get().to_uint();
 			wait();
-		    }
+		    if (r == 0 && data != rd_data)
+                rd_err += 1;
+            else if (r > 0 && data != wr_data)
+                rd_err += 1;
+            
+            }
 		}
 
 		// Handshake to compute process
 		ld_st_ratio_cnt++;
 
 		if (ld_st_ratio_cnt == ld_st_ratio) {
-
-		    if ((ld_st_ratio == 1 && in_place == 1) || (r == reuse_factor - 1))
-		        this->load_compute_handshake();
-
-
-		    ld_st_ratio_cnt = 0;
-		}
+		    rd_errs.write(rd_err); 
+            this->load_compute_handshake();
+            ld_st_ratio_cnt = 0;
+		
+        }
 
 		// Compute-bound emulation
 		for (uint32_t i = 0; i < compute_bound_delay; i++)
@@ -181,8 +196,8 @@ void synth::load_input()
 		    
 		    index += stride_len;
 		    if (index >= in_size) {
-			stride += burst_len;
-			index = stride;
+			    stride += burst_len;
+			    index = stride;
 		    }
 
 		} else { // pattern == IRREGULAR
@@ -205,6 +220,7 @@ void synth::load_input()
 void synth::store_output()
 {
 
+    uint32_t pattern;
     uint32_t burst_len;
     uint32_t in_size;
     uint32_t out_size;
@@ -212,12 +228,15 @@ void synth::store_output()
     uint32_t ld_st_ratio;
     uint32_t in_place;
     uint32_t offset;
+    uint32_t rd_err;
+    uint32_t stride_len;
 
     uint32_t nwords;
     uint32_t ntrans;
     uint32_t index;
     uint32_t burst_len_log;
     uint32_t wr_data;
+    uint32_t stride;
     // Reset
     {
 	HLS_DEFINE_PROTOCOL("store-reset");
@@ -227,20 +246,24 @@ void synth::store_output()
 	// PLM memories reset
 
 	// User-defined reset code
-	burst_len = 0;
+	pattern = 0;
+    burst_len = 0;
 	in_size = 0;
 	out_size = 0;
 	reuse_factor = 0;
 	ld_st_ratio = 0;
 	in_place = 0;
 	offset = 0;
+    rd_err = 0;
+    stride_len = 0;
 
 	nwords = 0;
 	ntrans = 0;
-	index = 0;
+    index = 0;
 	burst_len_log = 0;
-
-	wait();
+    wr_data = 0;   
+    stride = 0;
+    wait();
     }
 
     // Config
@@ -250,6 +273,7 @@ void synth::store_output()
 	cfg.wait_for_config(); // config process
 	conf_info_t config = this->conf_info.read();
 
+    pattern = config.pattern;
 	burst_len = config.burst_len;
 	in_size = config.in_size;
 	out_size = config.out_size;
@@ -258,15 +282,21 @@ void synth::store_output()
 	in_place = config.in_place;
 	offset = config.offset;
     wr_data = config.wr_data;
-
-	if (ld_st_ratio != 1 || in_place != 1)
+	stride_len = config.stride_len;
+	
+    if (ld_st_ratio != 1 || in_place != 1)
 	    reuse_factor = 1;
+
+    if (pattern == IRREGULAR){
+        in_place = 0;     
+    }
 
 	// Logarithms
 	burst_len_log = ilog2(burst_len);
 
 	nwords = out_size;
 	ntrans = nwords >> burst_len_log;
+
     }
 
     // Store
@@ -275,10 +305,11 @@ void synth::store_output()
 	for (uint32_t r = 0; r < reuse_factor; r++)
 	{
 
-	    if (!in_place)
-		index = in_size;
-	    else
-		index = 0;
+	    stride = 0;
+        if (!in_place)
+		    index = in_size;
+	    else 
+		    index = 0;
 
 	    for (uint32_t b = 0; b < ntrans; b++)
 	    {
@@ -288,7 +319,7 @@ void synth::store_output()
 
         {
 		    HLS_DEFINE_PROTOCOL("store-dma-conf");
-
+            rd_err = rd_errs.read();
 		    // Configure DMA transaction
 		    dma_info_t dma_info(index + offset, burst_len, SIZE_WORD);
 		    this->dma_write_ctrl.put(dma_info);
@@ -299,20 +330,35 @@ void synth::store_output()
 
 		    {
 			HLS_STORE_DMA;
-			this->dma_write_chnl.put(wr_data);
+			if (r == reuse_factor - 1 && b == ntrans - 1 && i == burst_len - 1 && rd_err > 0)
+                this->dma_write_chnl.put(rd_err);
+            else
+                this->dma_write_chnl.put(wr_data);
 			wait();
 		    }
 		}
 
-		index += burst_len;
-	    }
-	}
-    }
+	    // Index calculation
+		if (in_place) {
+            if (pattern == STREAMING) {
+                
+                index += burst_len;
 
-    //wait for final transactions to complete
-    {
-        HLS_DEFINE_PROTOCOL("final-wait");
-        wait(1000);
+            } else if (pattern == STRIDED) {
+                
+                index += stride_len;
+                if (index >= out_size) {
+                stride += burst_len;
+                index = stride;
+                }
+
+            } 
+        } else {
+            index += burst_len;
+        }
+
+        }
+	}
     }
 
     // Conclude

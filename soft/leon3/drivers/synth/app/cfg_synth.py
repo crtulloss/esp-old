@@ -24,9 +24,9 @@ x.close()
 max_words = pt_size / 4
 sizes = ["K1", "K2", "K4", "K8", "K16", "K32", "K64", "K128", "K256", "K512", "M1", "M2", "M4", "M8"]
 patterns = ["STREAMING", "STRIDED", "IRREGULAR"]
-burst_lens = [4, 8, 16, 32, 64, 128]
+burst_lens = [4, 8, 16, 32, 64, 128, 256]
 cb_factors = [1, 2, 4, 8, 16, 32]
-reuse_factors = [1]
+reuse_factors = [1, 2, 4, 8]
 ld_st_ratios = [1, 2, 4]
 stride_lens = [32, 64, 128, 256, 512]
 coherence_choices = ["none", "llc", "recall", "full"]
@@ -85,6 +85,7 @@ for p in range(phases):
         #ALLOCATION
         alloc = rand.choice(alloc_choices)
         f.write(alloc + "\n")
+        first = True
         for d in range(ndev):
             #DEVICE
             d = rand.choice(devices)
@@ -139,17 +140,27 @@ for p in range(phases):
             
             #STRIDE LEN
             if pattern == "STRIDED":
-                stride_len = rand.choice(stride_lens)
+                if burst_len == 256:
+                    stride_len = 512
+                elif burst_len >= 32:
+                    index = stride_lens.index(burst_len)
+                    stride_len = rand.choice(stride_lens[index+1:-1])
+                else:
+                    stride_len = rand.choice(stride_lens)
             else:
                 stride_len = 0
             f.write(str(stride_len) + " ")
             
             #IN PLACE
             out_size = math.pow(2, log_size)
-            if thread_size_avail >= out_size and total_size_avail >= out_size:
+            in_place = 0
+            if thread_size_avail >= out_size and total_size_avail >= out_size and pattern != "IRREGULAR":
                 in_place = rand.randint(0, 1)
+            elif pattern == "IRREGULAR":
+                in_place = 0
             else:
                 in_place = 1 
+            
             if in_place == 0:
                 thread_size_avail -= out_size 
                 total_size_avail -= out_size
@@ -159,11 +170,21 @@ for p in range(phases):
             wr_data = rand.randint(0, 4294967295)
             f.write(str(wr_data) + " ")
 
+            #READ DATA
+            if first:
+                rd_data = rand.randint(0, 4294967295)
+            else: 
+                rd_data = last_wr_data
+            f.write(str(rd_data) + " ")
+            
+            last_wr_data = wr_data
+            first = False
+
             #COHERENCE
             if flow_choice == "p2p":
                 coherence = "none"
             else:
                 coherence = rand.choice(coherence_choices) 
             f.write(coherence + "\n")
-
+            
 f.close()

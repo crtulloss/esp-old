@@ -68,6 +68,8 @@ public:
 
     // Send configuration
     void send_config(int acc_id);
+    void load_memory_acc_id(int acc_id);
+    int validate_acc_id(int acc_id);
 
     // Dump internal memory
     void dump_memory();
@@ -76,7 +78,8 @@ public:
     int validate();
 
     // Accelerator-specific data
-    
+    uint32_t *in;
+    uint32_t *out;
 
     // Other Functions
 
