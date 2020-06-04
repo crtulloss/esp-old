@@ -30,7 +30,7 @@ array set opt {
     hsynth     1
     rtlsim     0
     lsynth     0
-    debug      0
+    debug      1
 }
 
 source ./build_prj.tcl

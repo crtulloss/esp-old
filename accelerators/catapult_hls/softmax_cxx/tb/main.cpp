@@ -36,21 +36,23 @@ CCS_MAIN(int argv, char **argc) {
     debug_info_t debug;
 
     // Accelerator configuration
-    conf_info_t conf_info;
-    conf_info.batch = 1;
+    conf_info_t conf_info_data;
+    conf_info_data.batch = 4;
+
+    ac_channel<conf_info_t> conf_info;
 
     const unsigned softmax_size = PLM_SIZE;
 
     ESP_REPORT_INFO(VON, "Configuration:");
-    ESP_REPORT_INFO(VON, "  - batch: %u", ESP_TO_UINT32(conf_info.batch));
+    ESP_REPORT_INFO(VON, "  - batch: %u", ESP_TO_UINT32(conf_info_data.batch));
     ESP_REPORT_INFO(VON, "Other info:");
     ESP_REPORT_INFO(VON, "  - DMA width: %u", DMA_WIDTH);
     ESP_REPORT_INFO(VON, "  - DMA size [2 = 32b, 3 = 64b]: %u", DMA_SIZE);
     ESP_REPORT_INFO(VON, "  - PLM size: %u", PLM_SIZE);
     ESP_REPORT_INFO(VON, "  - DATA width: %u", DATA_WIDTH);
     ESP_REPORT_INFO(VON, "  - SoftMax size: %u", softmax_size);
-    ESP_REPORT_INFO(VON, "  - memory in (words): %u", softmax_size * ESP_TO_UINT32(conf_info.batch));
-    ESP_REPORT_INFO(VON, "  - memory out (words): %u", softmax_size * ESP_TO_UINT32(conf_info.batch));
+    ESP_REPORT_INFO(VON, "  - memory in (words): %u", softmax_size * ESP_TO_UINT32(conf_info_data.batch));
+    ESP_REPORT_INFO(VON, "  - memory out (words): %u", softmax_size * ESP_TO_UINT32(conf_info_data.batch));
     ESP_REPORT_INFO(VON, "-----------------");
 
     // Communication channels
@@ -65,7 +67,7 @@ CCS_MAIN(int argv, char **argc) {
     double gold_outputs[PLM_SIZE * BATCH_MAX];
 
     // Pass inputs to the accelerator
-    for (unsigned i = 0; i < conf_info.batch * softmax_size; i++) {
+    for (unsigned i = 0; i < conf_info_data.batch * softmax_size; i++) {
 
         FPDATA_IN data_fp = (i % 32) + 0.25;
 
@@ -79,15 +81,15 @@ CCS_MAIN(int argv, char **argc) {
         dma_read_chnl.write(data_ac);
     }
 
+    // Pass configuration to the accelerator
+    conf_info.write(conf_info_data);
+
     // Run the accelerator
-    //ac_channel<bool> conf_done;
-    //conf_done.write(false);
-    //conf_done.write(true);
-    bool conf_done = true;
-    softmax_cxx(debug, conf_info, conf_done, dma_read_ctrl, dma_write_ctrl, dma_read_chnl, dma_write_chnl);
+    softmax_cxx(debug, conf_info, dma_read_ctrl, dma_write_ctrl, dma_read_chnl, dma_write_chnl);
 
     // Fetch outputs from the accelerator
-    for (unsigned i = 0; i < conf_info.batch * softmax_size; i++) {
+    while (!dma_write_chnl.available(conf_info_data.batch * softmax_size)) {} // Testbench stalls until data ready
+    for (unsigned i = 0; i < conf_info_data.batch * softmax_size; i++) {
         // DMA_WIDTH = 64
         // discard bits in the range(63,32)
         // keep bits in the range(31,0)
@@ -97,14 +99,14 @@ CCS_MAIN(int argv, char **argc) {
 
     // Validation
     ESP_REPORT_INFO(VON, "-----------------");
-    for (unsigned i = 0; i < conf_info.batch; i++) {
+    for (unsigned i = 0; i < conf_info_data.batch; i++) {
         softmax_tb(inputs + i * softmax_size, gold_outputs + i * softmax_size);
     }
     unsigned errors = 0;
 
     double allowed_error = 0.001;
 
-    for (unsigned i = 0; i < conf_info.batch * softmax_size; i++) {
+    for (unsigned i = 0; i < conf_info_data.batch * softmax_size; i++) {
         float gold = gold_outputs[i];
         FPDATA_OUT data = outputs[i];
 

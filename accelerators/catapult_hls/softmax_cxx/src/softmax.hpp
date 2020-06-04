@@ -12,7 +12,7 @@
 
 // NoC-/Accelerator-interface dimensions
 #define DMA_WIDTH 64
-#define DMA_SIZE SIZE_DWORD 
+#define DMA_SIZE SIZE_DWORD
 
 typedef ac_int<DMA_WIDTH, false> dma_data_t;
 
@@ -37,9 +37,7 @@ typedef plm_t<FPDATA_OUT, PLM_SIZE> plm_out_t;
 // Accelerator top module
 void softmax_cxx(
         debug_info_t &debug,
-        conf_info_t conf_info,
-        bool &conf_done,
-        //ac_channel<bool> &conf_done,
+        ac_channel<conf_info_t> &conf_info,
         ac_channel<dma_info_t> &dma_read_ctrl,
         ac_channel<dma_info_t> &dma_write_ctrl,
         ac_channel<dma_data_t> &dma_read_chnl,

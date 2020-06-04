@@ -278,18 +278,14 @@ if {$opt(hsynth)} {
     # Top-Module I/O
     directive set /$ACCELERATOR/debug:rsc -MAP_TO_MODULE ccs_ioport.ccs_out
 
-    directive set /$ACCELERATOR/conf_info.batch:rsc -MAP_TO_MODULE ccs_ioport.ccs_in
-    directive set /$ACCELERATOR/conf_done:rsc -MAP_TO_MODULE ccs_ioport.ccs_in
+    directive set /$ACCELERATOR/conf_info:rsc -MAP_TO_MODULE ccs_ioport.ccs_in_wait
 
     directive set /$ACCELERATOR/dma_read_ctrl:rsc -MAP_TO_MODULE ccs_ioport.ccs_out_wait
 
-    #directive set /$ACCELERATOR/store/dma_write_ctrl:rsc -MAP_TO_MODULE ccs_ioport.ccs_out_wait
     directive set /$ACCELERATOR/dma_write_ctrl:rsc -MAP_TO_MODULE ccs_ioport.ccs_out_wait
 
-    #directive set /$ACCELERATOR/load/dma_read_chnl:rsc -MAP_TO_MODULE ccs_ioport.ccs_in_wait
     directive set /$ACCELERATOR/dma_read_chnl:rsc -MAP_TO_MODULE ccs_ioport.ccs_in_wait
 
-    #directive set /$ACCELERATOR/store/dma_write_chnl:rsc -MAP_TO_MODULE ccs_ioport.ccs_out_wait
     directive set /$ACCELERATOR/dma_write_chnl:rsc -MAP_TO_MODULE ccs_ioport.ccs_out_wait
 
     # Arrays
@@ -315,7 +311,7 @@ if {$opt(hsynth)} {
     ###directive set /$ACCELERATOR/store/core/STORE_INNER_LOOP -PIPELINE_INIT_INTERVAL 1
     ###directive set /$ACCELERATOR/store/core/STORE_INNER_LOOP -PIPELINE_STALL_MODE flush
 
-    directive set /$ACCELERATOR/core/CONFIG_LOOP -ITERATIONS 1
+    #directive set /$ACCELERATOR/core/CONFIG_LOOP -ITERATIONS 1
 
     directive set /$ACCELERATOR/core/BATCH_LOOP -PIPELINE_INIT_INTERVAL 1
     directive set /$ACCELERATOR/core/BATCH_LOOP -PIPELINE_STALL_MODE flush
