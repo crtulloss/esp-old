@@ -112,16 +112,16 @@ static int validate_buf(token_t *out, token_t *gold)
 }
 
 // Returns approximate value of e^x,
-// using sum of first n terms of Taylor Series  
-static float exponential(int n, float x)  
+// using sum of first n terms of Taylor Series
+static float exponential(int n, float x)
 {
     float sum = 1.0f; // initialize sum of series
     int i;
     for (i = n - 1; i > 0; --i )
-        sum = 1 + x * sum / i;  
-                    
-    return sum;  
-}  
+        sum = 1 + x * sum / i;
+
+    return sum;
+}
 
 
 static void softmax_sw(float *input, float *output)
@@ -223,7 +223,7 @@ int main(int argc, char * argv[])
 		out_words_adj = round_up(size, DMA_WORD_PER_BEAT(sizeof(token_t)));
 	}
 
-	in_len = in_words_adj * (batch);
+    in_len = in_words_adj * (batch);
 	out_len = out_words_adj * (batch);
 	in_size = in_len * sizeof(token_t);
 	out_size = out_len * sizeof(token_t);

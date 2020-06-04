@@ -115,6 +115,15 @@ end entity softmax_cxx_rtl;
 
 architecture mapping of softmax_cxx_rtl is
 
+-- signals for conf_done fsm
+
+type rsc_state_t is (rsc_idle, rsc_handshake);
+signal rsc_state, rsc_state_next : rsc_state_t;
+
+signal conf_info_rsc_valid : std_ulogic;
+signal conf_info_rsc_ready : std_ulogic;
+
+
 begin  -- mapping
 
 
@@ -123,9 +132,10 @@ begin  -- mapping
     port map(
       clk                        => clk,
       rst                        => acc_rst,
-          
-      conf_info_batch_rsc_dat    => conf_info_batch,
-      conf_done_rsc_dat          => conf_done,
+
+      conf_info_rsc_dat          => conf_info_batch,
+      conf_info_rsc_vld          => conf_info_rsc_valid,
+      conf_info_rsc_rdy          => conf_info_rsc_ready,
 
       dma_read_ctrl_rsc_dat(66 downto 64) => dma_read_ctrl_data_size,
       dma_read_ctrl_rsc_dat(63 downto 32) => dma_read_ctrl_data_length,
@@ -149,7 +159,45 @@ begin  -- mapping
 
       acc_done_sync_vld          => acc_done
     );
+
+
+  -- CONF_DONE FSM
+
+  conf_done_fsm: process (rsc_state, conf_done, conf_info_rsc_ready) is
+  begin  -- process conf_done_fsm
+    rsc_state_next <= rsc_state;
+    conf_info_rsc_valid <= '0';
+
+    case rsc_state is
+
+      when rsc_idle =>
+        if conf_done = '1' then
+          rsc_state_next <= rsc_handshake;
+        end if;
+
+      when rsc_handshake =>
+        conf_info_rsc_valid <= '1';
+        if conf_info_rsc_ready = '1' then
+          rsc_state_next <= rsc_idle;
+        end if;
+
+      when others =>
+        rsc_state_next <= rsc_idle;
+
+    end case;
+  end process conf_done_fsm;
+
+  conf_done_state_update: process (clk, acc_rst) is
+  begin  -- process conf_done_state_update
+    if clk'event and clk = '1' then    -- rising clock edge
+      if acc_rst = '0' then            -- synchronous active low
+        rsc_state <= rsc_idle;
+      else
+        rsc_state <= rsc_state_next;
+      end if;
+    end if;
+  end process conf_done_state_update;
+
   end generate impl_basic_fx32_dma64_gen;
 
 end mapping;
-

@@ -16,6 +16,5 @@ clean:
 	rm -f catapult.log
 	rm -f vsim_stacktrace.vstf
 	rm -f design_checker_constraints.tcl
-	rm -f design_checker_pre_build.tcl 
+	rm -f design_checker_pre_build.tcl
 .PHONY: clean
-

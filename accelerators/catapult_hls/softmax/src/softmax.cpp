@@ -358,8 +358,6 @@ LOAD_LOOP:
         // Store-process body
         dma_info_t dma_write_info(dma_write_offset, PLM_SIZE, 3);
 
-        dma_write_offset += PLM_SIZE;
-
         ESP_REPORT_TIME(VOFF, sc_time_stamp(), "dma_write_info.index = %u, dma_write_info.length = %u, dma_write_info.size = %llu", ESP_TO_UINT32(dma_write_info.index), ESP_TO_UINT32(dma_write_info.length), dma_write_info.size.to_uint64());
 
         DMA_WRITE(dma_write_info, dma_write_ctrl);

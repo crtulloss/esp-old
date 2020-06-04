@@ -25,7 +25,7 @@ static unsigned DMA_WORD_PER_BEAT(unsigned _st)
 #define DEV_NAME "sld,softmax_cxx"
 
 /* <<--params-->> */
-const int32_t batch = 8;
+const int32_t batch = 4;
 
 static unsigned in_words_adj;
 static unsigned out_words_adj;
@@ -113,16 +113,16 @@ static int validate_buf(token_t *out, token_t *gold)
 }
 
 // Returns approximate value of e^x,
-// using sum of first n terms of Taylor Series  
-static float exponential(int n, float x)  
+// using sum of first n terms of Taylor Series
+static float exponential(int n, float x)
 {
     float sum = 1.0f; // initialize sum of series
     int i;
     for (i = n - 1; i > 0; --i )
-        sum = 1 + x * sum / i;  
-                    
-    return sum;  
-}  
+        sum = 1 + x * sum / i;
+
+    return sum;
+}
 
 
 static void softmax_sw(float *input, float *output)
