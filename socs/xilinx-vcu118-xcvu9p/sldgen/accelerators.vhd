@@ -117,10 +117,8 @@ architecture mapping of softmax_cxx_rtl is
 
 -- signals for conf_done fsm
 
-type conf_done_state_t is (conf_done_idle, aps_starting, aps_running, aps_wait_for_completion);
---signal ap_state, ap_next : start_state_t;
---signal ap_start : std_ulogic;
---signal ap_done : std_ulogic;
+type rsc_state_t is (rsc_idle, rsc_handshake);
+signal rsc_state, rsc_state_next : rsc_state_t;
 
 signal conf_info_rsc_vld : std_ulogic;
 signal conf_info_rsc_rdy : std_ulogic;
@@ -165,41 +163,26 @@ begin  -- mapping
 
   -- CONF_DONE FSM
 
-  conf_done_fsm: process (conf_done_state, conf_done, ap_idle, ap_ready, ap_done) is
+  conf_done_fsm: process (rsc_state, conf_done, conf_info_rsc_rdy) is
   begin  -- process conf_done_fsm
-    ap_next <= ap_state;
-    ap_start <= '0';
+    rsc_state_next <= rsc_state;
+    conf_info_rsc_vld <= '0';
 
-    case ap_state is
+    case rsc_state is
 
-      when aps_idle =>
-        if (ap_idle and conf_done) = '1' then
-          ap_next <= aps_starting;
+      when rsc_idle =>
+        if conf_done = '1' then
+          rsc_state_next <= rsc_handshake;
         end if;
 
-      when aps_starting =>
-        ap_start <= '1';
-        if ap_ready = '1' then
-          ap_next <= aps_wait_for_completion;
-        elsif ap_idle = '0' then
-          ap_next <= aps_running;
-        end if;
-
-      when aps_running =>
-        ap_start <= '1';
-        if ap_done = '1' then
-          ap_next <= aps_idle;
-        elsif ap_ready = '1' then
-          ap_next <= aps_wait_for_completion;
-        end if;
-
-      when aps_wait_for_completion =>
-        if ap_done = '1' then
-          ap_next <= aps_idle;
+      when rsc_handshake =>
+        conf_info_rsc_vld <= '1';
+        if conf_info_rsc_rdy = '1' then
+          rsc_state_next <= rsc_idle;
         end if;
 
       when others =>
-        ap_next <= aps_idle;
+        rsc_state_next <= rsc_idle;
 
     end case;
   end process conf_done_fsm;
@@ -207,10 +190,10 @@ begin  -- mapping
   conf_done_state_update: process (clk, acc_rst) is
   begin  -- process conf_done_state_update
     if clk'event and clk = '1' then    -- rising clock edge
-      if ap_rst = '1' then             -- synchronous active high
-        ap_state <= aps_idle;
+      if acc_rst = '1' then             -- synchronous active high
+        rsc_state <= rsc_idle;
       else
-        ap_state <= ap_next;
+        rsc_state <= rsc_state_next;
       end if;
     end if;
   end process conf_done_state_update;
@@ -218,7 +201,3 @@ begin  -- mapping
   end generate impl_basic_fx32_dma64_gen;
 
 end mapping;
-
-
-end mapping;
-
