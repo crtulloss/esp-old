@@ -5,3 +5,6 @@ Catapult_*
 catapult.pinfo
 catapult_cache_*
 xilinx_cache
+vish_stacktrace.vstf
+design_checker_constraints.tcl
+design_checker_pre_build.tcl
