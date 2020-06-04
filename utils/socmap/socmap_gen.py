@@ -1766,6 +1766,36 @@ def print_ariane_devtree(fp, esp_config):
   fp.write("      };\n")
   fp.write("    };\n")
 
+  # ESP L2 caches
+  base = AHB2APB_HADDR[esp_config.cpu_arch] << 20
+  for i in range(esp_config.nl2):
+    l2 = esp_config.l2s[i]
+    if l2.idx != -1:
+      address = base + 0xD000 + (l2.idx << 8)
+      address_str = format(address, "X")
+      size_str = "100"
+      fp.write("      espl2cache" + str(l2.id) + "@" + address_str + " {\n")
+      fp.write("      compatible = \"sld,l2_cache\";\n")
+      fp.write("      reg = <0x0 0x" + address_str + " 0x0 0x" + size_str + ">;\n")
+      fp.write("      reg-shift = <2>; // regs are spaced on 32 bit boundary\n")
+      fp.write("      reg-io-width = <4>; // only 32-bit access are supported\n")
+      fp.write("    };\n")
+
+  # ESP LLC caches
+  base = AHB2APB_HADDR[esp_config.cpu_arch] << 20
+  for i in range(esp_config.nllc):
+    llc = esp_config.llcs[i]
+    if llc.idx != -1:
+      address = base + 0xD000 + (llc.idx << 8)
+      address_str = format(address, "X")
+      size_str = "100"
+      fp.write("      espllccache" + str(llc.id) + "@" + address_str + " {\n")
+      fp.write("      compatible = \"sld,llc_cache\";\n")
+      fp.write("      reg = <0x0 0x" + address_str + " 0x0 0x" + size_str + ">;\n")
+      fp.write("      reg-shift = <2>; // regs are spaced on 32 bit boundary\n")
+      fp.write("      reg-io-width = <4>; // only 32-bit access are supported\n")
+      fp.write("    };\n")
+
   # Reset all THIRDPARTY accelerators counters
   THIRDPARTY_N = 0
   
