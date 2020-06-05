@@ -157,7 +157,7 @@ begin  -- mapping
       dma_write_chnl_rsc_vld     => dma_write_chnl_valid,
       dma_write_chnl_rsc_rdy     => dma_write_chnl_ready,
 
-      acc_done_sync_vld          => acc_done
+      acc_done_rsc_vld           => acc_done
     );
 
 

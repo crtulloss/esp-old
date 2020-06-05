@@ -59,7 +59,7 @@ package allacc is
       dma_write_chnl_rsc_vld     : out std_ulogic;
       dma_write_chnl_rsc_rdy     : in  std_ulogic;
 
-      acc_done_sync_vld          : out std_ulogic
+      acc_done_rsc_vld           : out std_ulogic
     );
   end component;
 

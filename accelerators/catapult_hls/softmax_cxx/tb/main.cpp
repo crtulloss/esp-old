@@ -27,21 +27,37 @@ double abs_double(const double &input)
 CCS_MAIN(int argv, char **argc) {
     ESP_REPORT_INFO(VON, "--------------------------------");
     ESP_REPORT_INFO(VON, "ESP - SoftMax [Catapult HLS C++]");
+#ifdef HIERARCHICAL_BLOCKS
+    ESP_REPORT_INFO(VON, "      Hierarchical blocks");
+#else
+    ESP_REPORT_INFO(VON, "      Single block");
+#endif
     ESP_REPORT_INFO(VON, "--------------------------------");
+
+    const unsigned softmax_size = PLM_SIZE;
 
     // Testbench return value (0 = PASS, non-0 = FAIL)
     int rc = 0;
 
-    // Debug information (return)
-    debug_info_t debug;
-
     // Accelerator configuration
+    ac_channel<conf_info_t> conf_info;
+
     conf_info_t conf_info_data;
     conf_info_data.batch = 4;
 
-    ac_channel<conf_info_t> conf_info;
+    // Communication channels
+    ac_channel<dma_info_t> dma_read_ctrl;
+    ac_channel<dma_info_t> dma_write_ctrl;
+    ac_channel<dma_data_t> dma_read_chnl;
+    ac_channel<dma_data_t> dma_write_chnl;
 
-    const unsigned softmax_size = PLM_SIZE;
+    // Accelerator done (workaround)
+    ac_sync acc_done;
+
+    // Testbench data
+    FPDATA_IN inputs[PLM_SIZE * BATCH_MAX];
+    FPDATA_OUT outputs[PLM_SIZE * BATCH_MAX];
+    double gold_outputs[PLM_SIZE * BATCH_MAX];
 
     ESP_REPORT_INFO(VON, "Configuration:");
     ESP_REPORT_INFO(VON, "  - batch: %u", ESP_TO_UINT32(conf_info_data.batch));
@@ -54,17 +70,6 @@ CCS_MAIN(int argv, char **argc) {
     ESP_REPORT_INFO(VON, "  - memory in (words): %u", softmax_size * ESP_TO_UINT32(conf_info_data.batch));
     ESP_REPORT_INFO(VON, "  - memory out (words): %u", softmax_size * ESP_TO_UINT32(conf_info_data.batch));
     ESP_REPORT_INFO(VON, "-----------------");
-
-    // Communication channels
-    ac_channel<dma_info_t> dma_read_ctrl;
-    ac_channel<dma_info_t> dma_write_ctrl;
-    ac_channel<dma_data_t> dma_read_chnl;
-    ac_channel<dma_data_t> dma_write_chnl;
-
-    // Testbench data
-    FPDATA_IN inputs[PLM_SIZE * BATCH_MAX];
-    FPDATA_OUT outputs[PLM_SIZE * BATCH_MAX];
-    double gold_outputs[PLM_SIZE * BATCH_MAX];
 
     // Pass inputs to the accelerator
     for (unsigned i = 0; i < conf_info_data.batch * softmax_size; i++) {
@@ -85,7 +90,7 @@ CCS_MAIN(int argv, char **argc) {
     conf_info.write(conf_info_data);
 
     // Run the accelerator
-    softmax_cxx(debug, conf_info, dma_read_ctrl, dma_write_ctrl, dma_read_chnl, dma_write_chnl);
+    softmax_cxx(conf_info, dma_read_ctrl, dma_write_ctrl, dma_read_chnl, dma_write_chnl, acc_done);
 
     // Fetch outputs from the accelerator
     while (!dma_write_chnl.available(conf_info_data.batch * softmax_size)) {} // Testbench stalls until data ready
@@ -119,7 +124,7 @@ CCS_MAIN(int argv, char **argc) {
         }
     }
 
-    if (errors > 0 || debug != 0) {
+    if (errors > 0) {
         ESP_REPORT_INFO(VON, "Validation: FAIL (errors %u / total %u)", errors, PLM_SIZE);
         rc = 1;
     } else {
@@ -127,7 +132,6 @@ CCS_MAIN(int argv, char **argc) {
         rc = 0;
     }
     ESP_REPORT_INFO(VON, "  - errors %u / total %u", errors, PLM_SIZE);
-    ESP_REPORT_INFO(VON, "  - debug flag %u", ESP_TO_UINT32(debug));
     ESP_REPORT_INFO(VON, "-----------------");
 
     CCS_RETURN(rc);

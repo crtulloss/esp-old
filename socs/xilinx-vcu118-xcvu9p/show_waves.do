@@ -42,28 +42,27 @@ add wave -noupdate -expand -group softmax_cxx /testbench/cpu/esp_1/tiles_gen(2)/
 add wave -noupdate -expand -group softmax_cxx /testbench/cpu/esp_1/tiles_gen(2)/accelerator_tile/tile_acc_i/softmax_cxx_gen/noc_softmax_cxx_i/softmax_cxx_rlt_i/conf_info_rsc_ready
 add wave -noupdate -expand -group softmax_cxx /testbench/cpu/esp_1/tiles_gen(2)/accelerator_tile/tile_acc_i/softmax_cxx_gen/noc_softmax_cxx_i/softmax_cxx_rlt_i/rsc_state
 add wave -noupdate -expand -group softmax_cxx /testbench/cpu/esp_1/tiles_gen(2)/accelerator_tile/tile_acc_i/softmax_cxx_gen/noc_softmax_cxx_i/softmax_cxx_rlt_i/rsc_state_next
-add wave -noupdate -group softmax /testbench/cpu/esp_1/tiles_gen(4)/accelerator_tile/tile_acc_i/softmax_gen/noc_softmax_i/softmax_rlt_i/hls_conf
-add wave -noupdate -group softmax /testbench/cpu/esp_1/tiles_gen(4)/accelerator_tile/tile_acc_i/softmax_gen/noc_softmax_i/softmax_rlt_i/conf_info_batch
-add wave -noupdate -group softmax /testbench/cpu/esp_1/tiles_gen(4)/accelerator_tile/tile_acc_i/softmax_gen/noc_softmax_i/softmax_rlt_i/clk
-add wave -noupdate -group softmax /testbench/cpu/esp_1/tiles_gen(4)/accelerator_tile/tile_acc_i/softmax_gen/noc_softmax_i/softmax_rlt_i/acc_rst
-add wave -noupdate -group softmax /testbench/cpu/esp_1/tiles_gen(4)/accelerator_tile/tile_acc_i/softmax_gen/noc_softmax_i/softmax_rlt_i/conf_done
-add wave -noupdate -group softmax /testbench/cpu/esp_1/tiles_gen(4)/accelerator_tile/tile_acc_i/softmax_gen/noc_softmax_i/softmax_rlt_i/dma_read_ctrl_valid
-add wave -noupdate -group softmax /testbench/cpu/esp_1/tiles_gen(4)/accelerator_tile/tile_acc_i/softmax_gen/noc_softmax_i/softmax_rlt_i/dma_read_ctrl_ready
-add wave -noupdate -group softmax /testbench/cpu/esp_1/tiles_gen(4)/accelerator_tile/tile_acc_i/softmax_gen/noc_softmax_i/softmax_rlt_i/dma_read_ctrl_data_index
-add wave -noupdate -group softmax /testbench/cpu/esp_1/tiles_gen(4)/accelerator_tile/tile_acc_i/softmax_gen/noc_softmax_i/softmax_rlt_i/dma_read_ctrl_data_length
-add wave -noupdate -group softmax /testbench/cpu/esp_1/tiles_gen(4)/accelerator_tile/tile_acc_i/softmax_gen/noc_softmax_i/softmax_rlt_i/dma_read_ctrl_data_size
-add wave -noupdate -group softmax /testbench/cpu/esp_1/tiles_gen(4)/accelerator_tile/tile_acc_i/softmax_gen/noc_softmax_i/softmax_rlt_i/dma_write_ctrl_valid
-add wave -noupdate -group softmax /testbench/cpu/esp_1/tiles_gen(4)/accelerator_tile/tile_acc_i/softmax_gen/noc_softmax_i/softmax_rlt_i/dma_write_ctrl_ready
-add wave -noupdate -group softmax /testbench/cpu/esp_1/tiles_gen(4)/accelerator_tile/tile_acc_i/softmax_gen/noc_softmax_i/softmax_rlt_i/dma_write_ctrl_data_index
-add wave -noupdate -group softmax /testbench/cpu/esp_1/tiles_gen(4)/accelerator_tile/tile_acc_i/softmax_gen/noc_softmax_i/softmax_rlt_i/dma_write_ctrl_data_length
-add wave -noupdate -group softmax /testbench/cpu/esp_1/tiles_gen(4)/accelerator_tile/tile_acc_i/softmax_gen/noc_softmax_i/softmax_rlt_i/dma_write_ctrl_data_size
-add wave -noupdate -group softmax /testbench/cpu/esp_1/tiles_gen(4)/accelerator_tile/tile_acc_i/softmax_gen/noc_softmax_i/softmax_rlt_i/dma_read_chnl_valid
-add wave -noupdate -group softmax /testbench/cpu/esp_1/tiles_gen(4)/accelerator_tile/tile_acc_i/softmax_gen/noc_softmax_i/softmax_rlt_i/dma_read_chnl_ready
-add wave -noupdate -group softmax /testbench/cpu/esp_1/tiles_gen(4)/accelerator_tile/tile_acc_i/softmax_gen/noc_softmax_i/softmax_rlt_i/dma_read_chnl_data
-add wave -noupdate -group softmax /testbench/cpu/esp_1/tiles_gen(4)/accelerator_tile/tile_acc_i/softmax_gen/noc_softmax_i/softmax_rlt_i/dma_write_chnl_valid
-add wave -noupdate -group softmax /testbench/cpu/esp_1/tiles_gen(4)/accelerator_tile/tile_acc_i/softmax_gen/noc_softmax_i/softmax_rlt_i/dma_write_chnl_ready
-add wave -noupdate -group softmax /testbench/cpu/esp_1/tiles_gen(4)/accelerator_tile/tile_acc_i/softmax_gen/noc_softmax_i/softmax_rlt_i/dma_write_chnl_data
-add wave -noupdate -group softmax /testbench/cpu/esp_1/tiles_gen(4)/accelerator_tile/tile_acc_i/softmax_gen/noc_softmax_i/softmax_rlt_i/acc_done
+add wave -noupdate -expand -group softmax /testbench/cpu/esp_1/tiles_gen(4)/accelerator_tile/tile_acc_i/softmax_gen/noc_softmax_i/softmax_rlt_i/hls_conf
+add wave -noupdate -expand -group softmax /testbench/cpu/esp_1/tiles_gen(4)/accelerator_tile/tile_acc_i/softmax_gen/noc_softmax_i/softmax_rlt_i/conf_info_batch
+add wave -noupdate -expand -group softmax /testbench/cpu/esp_1/tiles_gen(4)/accelerator_tile/tile_acc_i/softmax_gen/noc_softmax_i/softmax_rlt_i/clk
+add wave -noupdate -expand -group softmax /testbench/cpu/esp_1/tiles_gen(4)/accelerator_tile/tile_acc_i/softmax_gen/noc_softmax_i/softmax_rlt_i/acc_rst
+add wave -noupdate -expand -group softmax /testbench/cpu/esp_1/tiles_gen(4)/accelerator_tile/tile_acc_i/softmax_gen/noc_softmax_i/softmax_rlt_i/conf_done
+add wave -noupdate -expand -group softmax /testbench/cpu/esp_1/tiles_gen(4)/accelerator_tile/tile_acc_i/softmax_gen/noc_softmax_i/softmax_rlt_i/dma_read_ctrl_valid
+add wave -noupdate -expand -group softmax /testbench/cpu/esp_1/tiles_gen(4)/accelerator_tile/tile_acc_i/softmax_gen/noc_softmax_i/softmax_rlt_i/dma_read_ctrl_ready
+add wave -noupdate -expand -group softmax /testbench/cpu/esp_1/tiles_gen(4)/accelerator_tile/tile_acc_i/softmax_gen/noc_softmax_i/softmax_rlt_i/dma_read_ctrl_data_index
+add wave -noupdate -expand -group softmax /testbench/cpu/esp_1/tiles_gen(4)/accelerator_tile/tile_acc_i/softmax_gen/noc_softmax_i/softmax_rlt_i/dma_read_ctrl_data_length
+add wave -noupdate -expand -group softmax /testbench/cpu/esp_1/tiles_gen(4)/accelerator_tile/tile_acc_i/softmax_gen/noc_softmax_i/softmax_rlt_i/dma_read_ctrl_data_size
+add wave -noupdate -expand -group softmax /testbench/cpu/esp_1/tiles_gen(4)/accelerator_tile/tile_acc_i/softmax_gen/noc_softmax_i/softmax_rlt_i/dma_write_ctrl_valid
+add wave -noupdate -expand -group softmax /testbench/cpu/esp_1/tiles_gen(4)/accelerator_tile/tile_acc_i/softmax_gen/noc_softmax_i/softmax_rlt_i/dma_write_ctrl_ready
+add wave -noupdate -expand -group softmax /testbench/cpu/esp_1/tiles_gen(4)/accelerator_tile/tile_acc_i/softmax_gen/noc_softmax_i/softmax_rlt_i/dma_write_ctrl_data_index
+add wave -noupdate -expand -group softmax /testbench/cpu/esp_1/tiles_gen(4)/accelerator_tile/tile_acc_i/softmax_gen/noc_softmax_i/softmax_rlt_i/dma_write_ctrl_data_length
+add wave -noupdate -expand -group softmax /testbench/cpu/esp_1/tiles_gen(4)/accelerator_tile/tile_acc_i/softmax_gen/noc_softmax_i/softmax_rlt_i/dma_write_ctrl_data_size
+add wave -noupdate -expand -group softmax /testbench/cpu/esp_1/tiles_gen(4)/accelerator_tile/tile_acc_i/softmax_gen/noc_softmax_i/softmax_rlt_i/dma_read_chnl_valid
+add wave -noupdate -expand -group softmax /testbench/cpu/esp_1/tiles_gen(4)/accelerator_tile/tile_acc_i/softmax_gen/noc_softmax_i/softmax_rlt_i/dma_read_chnl_ready
+add wave -noupdate -expand -group softmax /testbench/cpu/esp_1/tiles_gen(4)/accelerator_tile/tile_acc_i/softmax_gen/noc_softmax_i/softmax_rlt_i/dma_read_chnl_data
+add wave -noupdate -expand -group softmax /testbench/cpu/esp_1/tiles_gen(4)/accelerator_tile/tile_acc_i/softmax_gen/noc_softmax_i/softmax_rlt_i/dma_write_chnl_valid
+add wave -noupdate -expand -group softmax /testbench/cpu/esp_1/tiles_gen(4)/accelerator_tile/tile_acc_i/softmax_gen/noc_softmax_i/softmax_rlt_i/dma_write_chnl_ready
+add wave -noupdate -expand -group softmax /testbench/cpu/esp_1/tiles_gen(4)/accelerator_tile/tile_acc_i/softmax_gen/noc_softmax_i/softmax_rlt_i/dma_write_chnl_data
 add wave -noupdate -group CPU /testbench/cpu/esp_1/tiles_gen(1)/cpu_tile/tile_cpu_i/SIMULATION
 add wave -noupdate -group CPU /testbench/cpu/esp_1/tiles_gen(1)/cpu_tile/tile_cpu_i/tile_id
 add wave -noupdate -group CPU /testbench/cpu/esp_1/tiles_gen(1)/cpu_tile/tile_cpu_i/rst

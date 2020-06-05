@@ -5,6 +5,10 @@ syn:
 	catapult -product ultra -f ./build_prj_top.tcl
 .PHONY: syn
 
+syn-sh:
+	catapult -product ultra -shell -f ./build_prj_top.tcl
+.PHONY: syn-sh
+
 clean:
 	rm -rf Catapult*
 	rm -rf catapult_cache*

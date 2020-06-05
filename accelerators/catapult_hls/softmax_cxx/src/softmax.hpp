@@ -6,9 +6,9 @@
 
 #include "fpdata.hpp"     // Fixed-point data types
 #include "conf_info.hpp"  // Configuration-port data type
-#include "debug_info.hpp" // Debug-port data type
 
 #include <ac_channel.h>   // Algorithmic C channel class
+#include <ac_sync.h>
 
 // NoC-/Accelerator-interface dimensions
 #define DMA_WIDTH 64
@@ -36,11 +36,11 @@ typedef plm_t<FPDATA_OUT, PLM_SIZE> plm_out_t;
 
 // Accelerator top module
 void softmax_cxx(
-        debug_info_t &debug,
         ac_channel<conf_info_t> &conf_info,
         ac_channel<dma_info_t> &dma_read_ctrl,
         ac_channel<dma_info_t> &dma_write_ctrl,
         ac_channel<dma_data_t> &dma_read_chnl,
-        ac_channel<dma_data_t> &dma_write_chnl);
+        ac_channel<dma_data_t> &dma_write_chnl,
+        ac_sync &acc_done);
 
 #endif /* __SOFTMAX_CXX_HPP__ */

@@ -110,23 +110,13 @@ set can_simulate 1
 #
 
 if {$opt(asic) > 0} {
-    solution options set Flows/QuestaSIM/SCCOM_OPTS {-g -x /usr/bin/g++-5 -Wall -Wno-unused-label -Wno-unknown-pragmas -DCLOCK_PERIOD=12500}
+    solution options set Flows/QuestaSIM/SCCOM_OPTS {-g -x /usr/bin/g++-5 -Wall -Wno-unused-label -Wno-unknown-pragmas}
 } else {
-    solution options set Flows/QuestaSIM/SCCOM_OPTS {-64 -g -x c++ -Wall -Wno-unused-label -Wno-unknown-pragmas -DCLOCK_PERIOD=12500}
+    solution options set Flows/QuestaSIM/SCCOM_OPTS {-64 -g -x c++ -Wall -Wno-unused-label -Wno-unknown-pragmas}
 }
 
-if {$opt(channels) == 0} {
-    if {$opt(plm_shrd)} {
-        solution options set /Input/CompilerFlags {-DHLS_CATAPULT -D__MNTR_AC_SHRD__ -DCLOCK_PERIOD=12500}
-    } else {
-        solution options set /Input/CompilerFlags {-DHLS_CATAPULT -DCLOCK_PERIOD=12500}
-    }
-} else {
-    if {$opt(plm_shrd)} {
-        solution options set /Input/CompilerFlags {-DHLS_CATAPULT -D__MATCHLIB_CONNECTIONS__ -D__MNTR_AC_SHARED__ -DCLOCK_PERIOD=12500}
-    } else {
-        solution options set /Input/CompilerFlags {-DHLS_CATAPULT -D__MATCHLIB_CONNECTIONS__ -DCLOCK_PERIOD=12500}
-    }
+if {$opt(hier)} {
+    solution options set /Input/CompilerFlags {-DHIERARCHICAL_BLOCKS}
 }
 
 #
@@ -234,16 +224,6 @@ if {$opt(hsynth)} {
     #
     #
 
-    #directive set -CLOCKS { \
-    #    clk { \
-    #        -CLOCK_PERIOD 6.4 \
-    #        -CLOCK_HIGH_TIME 3.2 \
-    #        -CLOCK_OFFSET 0.000000 \
-    #        -CLOCK_UNCERTAINTY 0.0 \
-    #    } \
-    #}
-
-
     directive set -CLOCKS { \
         clk { \
             -CLOCK_PERIOD 6.4 \
@@ -265,10 +245,6 @@ if {$opt(hsynth)} {
     # next releases of Catapult HLS, this may be fixed.
     directive set /$ACCELERATOR -GATE_EFFORT normal
 
-    # Add ESP accelerator done signal
-    ###directive set /$ACCELERATOR/store -DONE_FLAG acc_done
-    directive set /$ACCELERATOR -DONE_FLAG acc_done
-
     go assembly
 
     #
@@ -276,57 +252,56 @@ if {$opt(hsynth)} {
     #
 
     # Top-Module I/O
-    directive set /$ACCELERATOR/debug:rsc -MAP_TO_MODULE ccs_ioport.ccs_out
-
     directive set /$ACCELERATOR/conf_info:rsc -MAP_TO_MODULE ccs_ioport.ccs_in_wait
-
     directive set /$ACCELERATOR/dma_read_ctrl:rsc -MAP_TO_MODULE ccs_ioport.ccs_out_wait
-
     directive set /$ACCELERATOR/dma_write_ctrl:rsc -MAP_TO_MODULE ccs_ioport.ccs_out_wait
-
     directive set /$ACCELERATOR/dma_read_chnl:rsc -MAP_TO_MODULE ccs_ioport.ccs_in_wait
-
     directive set /$ACCELERATOR/dma_write_chnl:rsc -MAP_TO_MODULE ccs_ioport.ccs_out_wait
+    directive set /$ACCELERATOR/acc_done:rsc -MAP_TO_MODULE ccs_ioport.ccs_sync_out_vld
 
     # Arrays
-    directive set /$ACCELERATOR/core/plm_in.data:rsc -MAP_TO_MODULE Xilinx_RAMS.BLOCK_1R1W_RBW
-    directive set /$ACCELERATOR/core/plm_out.data:rsc -MAP_TO_MODULE Xilinx_RAMS.BLOCK_1R1W_RBW
+    if {$opt(hier)} {
+
+    } else {
+        directive set /$ACCELERATOR/core/plm_in.data:rsc -MAP_TO_MODULE Xilinx_RAMS.BLOCK_1R1W_RBW
+        directive set /$ACCELERATOR/core/plm_out.data:rsc -MAP_TO_MODULE Xilinx_RAMS.BLOCK_1R1W_RBW
+    }
 
     # Loops
-    ###directive set /$ACCELERATOR/$ACCELERATOR:core/core/main -PIPELINE_INIT_INTERVAL 1
-    ###directive set /$ACCELERATOR/$ACCELERATOR:core/core/main -PIPELINE_STALL_MODE flush
+    # 1 function
+    if {$opt(hier)} {
+        directive set /$ACCELERATOR/$ACCELERATOR:core/core/main -PIPELINE_INIT_INTERVAL 1
+        directive set /$ACCELERATOR/$ACCELERATOR:core/core/main -PIPELINE_STALL_MODE flush
 
-    ###directive set /$ACCELERATOR/load/core/LOAD_INNER_LOOP -PIPELINE_INIT_INTERVAL 1
-    ###directive set /$ACCELERATOR/load/core/LOAD_INNER_LOOP -PIPELINE_STALL_MODE flush
+        directive set /$ACCELERATOR/config/core/main -PIPELINE_INIT_INTERVAL 1
+        directive set /$ACCELERATOR/config/core/main -PIPELINE_STALL_MODE flush
 
-    ###directive set /$ACCELERATOR/compute/core/CALC_EXP_LOOP -PIPELINE_INIT_INTERVAL 1
-    ###directive set /$ACCELERATOR/compute/core/CALC_EXP_LOOP -PIPELINE_STALL_MODE flush
+        directive set /$ACCELERATOR/load/core/main -PIPELINE_INIT_INTERVAL 1
+        directive set /$ACCELERATOR/load/core/main -PIPELINE_STALL_MODE flush
 
-    ###directive set /$ACCELERATOR/compute/core/SUM_EXP_LOOP -PIPELINE_INIT_INTERVAL 1
-    ###directive set /$ACCELERATOR/compute/core/SUM_EXP_LOOP -PIPELINE_STALL_MODE flush
+        directive set /$ACCELERATOR/compute/core/main -PIPELINE_INIT_INTERVAL 1
+        directive set /$ACCELERATOR/compute/core/main -PIPELINE_STALL_MODE flush
 
-    ###directive set /$ACCELERATOR/compute/core/CALC_SOFTMAX_LOOP -PIPELINE_INIT_INTERVAL 1
-    ###directive set /$ACCELERATOR/compute/core/CALC_SOFTMAX_LOOP -PIPELINE_STALL_MODE flush
-
-    ###directive set /$ACCELERATOR/store/core/STORE_INNER_LOOP -PIPELINE_INIT_INTERVAL 1
-    ###directive set /$ACCELERATOR/store/core/STORE_INNER_LOOP -PIPELINE_STALL_MODE flush
-
-    #directive set /$ACCELERATOR/core/CONFIG_LOOP -ITERATIONS 1
-
-    directive set /$ACCELERATOR/core/BATCH_LOOP -PIPELINE_INIT_INTERVAL 1
-    directive set /$ACCELERATOR/core/BATCH_LOOP -PIPELINE_STALL_MODE flush
+        directive set /$ACCELERATOR/store/core/main -PIPELINE_INIT_INTERVAL 1
+        directive set /$ACCELERATOR/store/core/main -PIPELINE_STALL_MODE flush
+    } else {
+        directive set /$ACCELERATOR/core/BATCH_LOOP -PIPELINE_INIT_INTERVAL 1
+        directive set /$ACCELERATOR/core/BATCH_LOOP -PIPELINE_STALL_MODE flush
+    }
 
     # Loops performance tracing
 
 
     # Area vs Latency Goals
-    ###directive set /$ACCELERATOR/$ACCELERATOR:core/core -DESIGN_GOAL Latency
-    ###directive set /$ACCELERATOR/load/core -DESIGN_GOAL Latency
-    ###directive set /$ACCELERATOR/compute/core -DESIGN_GOAL Latency
-    ###directive set /$ACCELERATOR/store/core -DESIGN_GOAL Latency
-
-    directive set /$ACCELERATOR/core -EFFORT_LEVEL high
-    directive set /$ACCELERATOR/core -DESIGN_GOAL Latency
+    if {$opt(hier)} {
+        directive set /$ACCELERATOR/$ACCELERATOR:core/core -DESIGN_GOAL Latency
+        directive set /$ACCELERATOR/load/core -DESIGN_GOAL Latency
+        directive set /$ACCELERATOR/compute/core -DESIGN_GOAL Latency
+        directive set /$ACCELERATOR/store/core -DESIGN_GOAL Latency
+    } else {
+        directive set /$ACCELERATOR/core -EFFORT_LEVEL high
+        directive set /$ACCELERATOR/core -DESIGN_GOAL Latency
+    }
 
     if {$opt(debug) != 1} {
         go architect
