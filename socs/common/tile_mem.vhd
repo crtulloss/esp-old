@@ -123,46 +123,6 @@ entity tile_mem is
     mon_mem            : out monitor_mem_type;
     mon_cache          : out monitor_cache_type;
     mon_dvfs           : out monitor_dvfs_type);
-
-
-
---    noc1_input_port    : out noc_flit_type;
---    noc1_data_void_in  : out std_ulogic;
---    noc1_stop_in       : out std_ulogic;
---    noc1_output_port   : in  noc_flit_type;
---    noc1_data_void_out : in  std_ulogic;
---    noc1_stop_out      : in  std_ulogic;
---    noc2_input_port    : out noc_flit_type;
---    noc2_data_void_in  : out std_ulogic;
---    noc2_stop_in       : out std_ulogic;
---    noc2_output_port   : in  noc_flit_type;
---    noc2_data_void_out : in  std_ulogic;
---    noc2_stop_out      : in  std_ulogic;
---    noc3_input_port    : out noc_flit_type;
---    noc3_data_void_in  : out std_ulogic;
---    noc3_stop_in       : out std_ulogic;
---    noc3_output_port   : in  noc_flit_type;
---    noc3_data_void_out : in  std_ulogic;
---    noc3_stop_out      : in  std_ulogic;
---    noc4_input_port    : out noc_flit_type;
---    noc4_data_void_in  : out std_ulogic;
---    noc4_stop_in       : out std_ulogic;
---    noc4_output_port   : in  noc_flit_type;
---    noc4_data_void_out : in  std_ulogic;
---    noc4_stop_out      : in  std_ulogic;
---    noc5_input_port    : out misc_noc_flit_type;
---    noc5_data_void_in  : out std_ulogic;
---    noc5_stop_in       : out std_ulogic;
---    noc5_output_port   : in  misc_noc_flit_type;
---    noc5_data_void_out : in  std_ulogic;
---    noc5_stop_out      : in  std_ulogic;
---    noc6_input_port    : out noc_flit_type;
---    noc6_data_void_in  : out std_ulogic;
---    noc6_stop_in       : out std_ulogic;
---    noc6_output_port   : in  noc_flit_type;
---    noc6_data_void_out : in  std_ulogic;
---    noc6_stop_out      : in  std_ulogic;
-
 end;
 
 
@@ -178,7 +138,6 @@ architecture rtl of tile_mem is
         clk           : in  std_logic;
         clk_tile      : in  std_logic;
         rst           : in  std_logic;
---        CONST_PORTS   : in  std_logic_vector(4 downto 0); 
         CONST_local_x : in  std_logic_vector(2 downto 0);
         CONST_local_y : in  std_logic_vector(2 downto 0);
         noc1_data_n_in     : in  noc_flit_type;
@@ -476,7 +435,6 @@ begin
      clk                => sys_clk_int,
      clk_tile           => clk,
      rst                => rst,
---     CONST_PORTS        => ROUTER_PORTS,
      CONST_local_x      => this_local_x,
      CONST_local_y      => this_local_y,
      noc1_data_n_in     => noc1_data_n_in,
