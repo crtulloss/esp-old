@@ -171,13 +171,16 @@ architecture rtl of tile_mem is
   component sync_noc_set
      generic (
        PORTS     : std_logic_vector(4 downto 0);
-       local_x   : std_logic_vector(2 downto 0);
-       local_y   : std_logic_vector(2 downto 0);
+--       local_x   : std_logic_vector(2 downto 0);
+--       local_y   : std_logic_vector(2 downto 0);
        HAS_SYNC  : integer range 0 to 1 := 0);
      port (
         clk           : in  std_logic;
         clk_tile      : in  std_logic;
         rst           : in  std_logic;
+--        CONST_PORTS   : in  std_logic_vector(4 downto 0); 
+        CONST_local_x : in  std_logic_vector(2 downto 0);
+        CONST_local_y : in  std_logic_vector(2 downto 0);
         noc1_data_n_in     : in  noc_flit_type;
         noc1_data_s_in     : in  noc_flit_type;
         noc1_data_w_in     : in  noc_flit_type;
@@ -466,13 +469,16 @@ begin
   sync_noc_set_mem: sync_noc_set
   generic map (
      PORTS    => ROUTER_PORTS,
-     local_x  => this_local_x,
-     local_y  => this_local_y,
+--     local_x  => this_local_x,
+--     local_y  => this_local_y,
      HAS_SYNC => HAS_SYNC )
    port map (
      clk                => sys_clk_int,
      clk_tile           => clk,
      rst                => rst,
+--     CONST_PORTS        => ROUTER_PORTS,
+     CONST_local_x      => this_local_x,
+     CONST_local_y      => this_local_y,
      noc1_data_n_in     => noc1_data_n_in,
      noc1_data_s_in     => noc1_data_s_in,
      noc1_data_w_in     => noc1_data_w_in,

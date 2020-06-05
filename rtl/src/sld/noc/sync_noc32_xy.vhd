@@ -12,13 +12,16 @@ use work.nocpackage.all;
 entity sync_noc32_xy is
   generic (
     PORTS     : std_logic_vector(4 downto 0);
-    local_x   : std_logic_vector(2 downto 0);
-    local_y   : std_logic_vector(2 downto 0);
+--    local_x   : std_logic_vector(2 downto 0);
+--    local_y   : std_logic_vector(2 downto 0);
     HAS_SYNC  : integer range 0 to 1 := 0);
   port (
     clk           : in  std_logic;
     clk_tile      : in  std_logic;
     rst           : in  std_logic;
+--    CONST_PORTS   : in  std_logic_vector(4 downto 0);
+    CONST_local_x : in  std_logic_vector(2 downto 0);
+    CONST_local_y : in  std_logic_vector(2 downto 0);
     data_n_in     : in  misc_noc_flit_type; 
     data_s_in     : in  misc_noc_flit_type;
     data_w_in     : in  misc_noc_flit_type;
@@ -46,13 +49,17 @@ architecture mesh of sync_noc32_xy is
       flow_control : integer;
       width        : integer;
       depth        : integer;
-      ports        : std_logic_vector(4 downto 0);
-      localx       : std_logic_vector(2 downto 0);
-      localy       : std_logic_vector(2 downto 0));
+      ports        : std_logic_vector(4 downto 0)
+--      localx       : std_logic_vector(2 downto 0);
+--      localy       : std_logic_vector(2 downto 0)
+    );
 
     port (
       clk           : in  std_logic;
       rst           : in  std_logic;
+--      CONST_ports   : in  std_logic_vector(4 downto 0);
+      CONST_localx  : in  std_logic_vector(2 downto 0);
+      CONST_localy  : in  std_logic_vector(2 downto 0);
       data_n_in     : in  std_logic_vector(width-1 downto 0);
       data_s_in     : in  std_logic_vector(width-1 downto 0);
       data_w_in     : in  std_logic_vector(width-1 downto 0);
@@ -112,16 +119,20 @@ architecture mesh of sync_noc32_xy is
 ----------------------------------------------------------------------------------------------
 
     router_ij: router
-        generic map (
+      generic map (
           flow_control => FLOW_CONTROL,
           width        => MISC_NOC_FLIT_SIZE,
           depth        => ROUTER_DEPTH,
-          ports        => PORTS,
-          localx       => local_x,
-          localy       => local_y)
+          ports        => PORTS
+--          localx       => local_x,
+--          localy       => local_y
+      )
       port map (
           clk           => clk,
           rst           => rst,
+--          CONST_ports   => CONST_PORTS,
+          CONST_localx  => CONST_local_x,
+          CONST_localy  => CONST_local_y,
           data_n_in     => data_n_in,
           data_s_in     => data_s_in,
           data_w_in     => data_w_in,

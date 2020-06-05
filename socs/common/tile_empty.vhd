@@ -128,13 +128,16 @@ architecture rtl of tile_empty is
   component sync_noc_set
     generic (
     PORTS     : std_logic_vector(4 downto 0);
-    local_x   : std_logic_vector(2 downto 0);
-    local_y   : std_logic_vector(2 downto 0);
+--    local_x   : std_logic_vector(2 downto 0);
+--    local_y   : std_logic_vector(2 downto 0);
     HAS_SYNC  : integer range 0 to 1 := 0);
     port (
     clk           : in  std_logic;
     clk_tile      : in  std_logic;
     rst           : in  std_logic;
+--    CONST_PORTS   : in  std_logic_vector(4 downto 0);
+    CONST_local_x : in  std_logic_vector(2 downto 0);
+    CONST_local_y : in  std_logic_vector(2 downto 0);
     noc1_data_n_in     : in  noc_flit_type;
     noc1_data_s_in     : in  noc_flit_type;
     noc1_data_w_in     : in  noc_flit_type;
@@ -281,11 +284,12 @@ constant ROUTER_PORTS  : ports_vec := set_router_ports(CFG_XLEN, CFG_YLEN, this_
 
 begin
 
-mon_dvfs_out.vf       <= (others => '0');
-mon_dvfs_out.clk      <= sys_clk_int;
-mon_dvfs_out.acc_idle <= '0';
-mon_dvfs_out.traffic  <= '0';
-mon_dvfs_out.burst    <= '0';
+mon_dvfs_out.vf        <= (others => '0');
+mon_dvfs_out.clk       <= sys_clk_int;
+mon_dvfs_out.acc_idle  <= '0';
+mon_dvfs_out.traffic   <= '0';
+mon_dvfs_out.burst     <= '0';
+mon_dvfs_out.transient <= '0';
 
 -- Connect data_void, data_stop, data_in
 
@@ -328,13 +332,16 @@ noc6_stop_out <= noc6_stop_out_s(3 downto 0);
   sync_noc_set_empty: sync_noc_set
   generic map (
      PORTS    => ROUTER_PORTS,
-     local_x  => this_local_x,
-     local_y  => this_local_y,
+--     local_x  => this_local_x,
+--     local_y  => this_local_y,
      HAS_SYNC => HAS_SYNC )
    port map (
      clk                => sys_clk_int,
      clk_tile           => sys_clk_int,
      rst                => rst,
+--     CONST_PORTS        => ROUTER_PORTS,
+     CONST_local_x      => this_local_x,
+     CONST_local_y      => this_local_y,
      noc1_data_n_in     => noc1_data_n_in,
      noc1_data_s_in     => noc1_data_s_in,
      noc1_data_w_in     => noc1_data_w_in,
