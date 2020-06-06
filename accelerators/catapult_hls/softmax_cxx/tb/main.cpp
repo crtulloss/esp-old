@@ -43,7 +43,7 @@ CCS_MAIN(int argv, char **argc) {
     ac_channel<conf_info_t> conf_info;
 
     conf_info_t conf_info_data;
-    conf_info_data.batch = 4;
+    conf_info_data.batch = 16;
 
     // Communication channels
     ac_channel<dma_info_t> dma_read_ctrl;
