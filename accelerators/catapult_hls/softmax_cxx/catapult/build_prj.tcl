@@ -13,15 +13,9 @@ set DMA_WIDTH ${PLM_WIDTH}
 # Technology-dependend reports and project dirs.
 #
 
-if {$opt(asic) > 0} {
-    project new -name Catapult_asic
-    set CSIM_RESULTS "./tb_data/catapult_asic_csim_results.log"
-    set RTL_COSIM_RESULTS "./tb_data/catapult_asic_rtl_cosim_results.log"
-} else {
-    project new -name Catapult_fpga
-    set CSIM_RESULTS "./tb_data/catapult_fpga_csim_results.log"
-    set RTL_COSIM_RESULTS "./tb_data/catapult_fpga_rtl_cosim_results.log"
-}
+project new -name Catapult
+set CSIM_RESULTS "./tb_data/catapult_csim_results.log"
+set RTL_COSIM_RESULTS "./tb_data/catapult_rtl_cosim_results.log"
 
 #
 # Reset the options to the factory defaults
@@ -109,11 +103,7 @@ set can_simulate 1
 # Flags
 #
 
-if {$opt(asic) > 0} {
-    solution options set Flows/QuestaSIM/SCCOM_OPTS {-g -x /usr/bin/g++-5 -Wall -Wno-unused-label -Wno-unknown-pragmas}
-} else {
-    solution options set Flows/QuestaSIM/SCCOM_OPTS {-64 -g -x c++ -Wall -Wno-unused-label -Wno-unknown-pragmas}
-}
+solution options set Flows/QuestaSIM/SCCOM_OPTS {-64 -g -x c++ -Wall -Wno-unused-label -Wno-unknown-pragmas}
 
 if {$opt(hier)} {
     solution options set /Input/CompilerFlags {-DHIERARCHICAL_BLOCKS}
@@ -124,8 +114,9 @@ if {$opt(hier)} {
 #
 
 solution options set /Input/SearchPath { \
-    ../src \
     ../tb \
+    ../inc \
+    ../src \
     ../common }
 
 # Add source files.
@@ -195,28 +186,16 @@ if {$opt(csim)} {
 # Run HLS.
 if {$opt(hsynth)} {
 
-    if {$opt(asic) == 1} {
-        solution library add nangate-45nm_beh -- -rtlsyntool DesignCompiler -vendor Nangate -technology 045nm
-        solution library add ccs_sample_mem
-    } elseif {$opt(asic) == 2} {
-        solution library add nangate-45nm_beh -- -rtlsyntool RTLCompiler -vendor Nangate -technology 045nm
-        solution library add ccs_sample_mem
-    } elseif {$opt(asic) == 3} {
-        puts "ERROR: Cadence Genus is not supported"
-        exit 1
-    } else {
+    solution library add mgc_Xilinx-VIRTEX-uplus-2_beh -- -rtlsyntool Vivado -manufacturer Xilinx -family VIRTEX-uplus -speed -2 -part xcvu9p-flga2104-2-e
+    #solution library add mgc_Xilinx-VIRTEX-u-2_beh -- -rtlsyntool Vivado -manufacturer Xilinx -family VIRTEX-u -speed -2 -part xcvu440-flga2892-2-e
+    #solution library add mgc_Xilinx-VIRTEX-7-2_beh -- -rtlsyntool Vivado -manufacturer Xilinx -family VIRTEX-7 -speed -2 -part xc7v2000tflg1925-2
 
-        solution library add mgc_Xilinx-VIRTEX-uplus-2_beh -- -rtlsyntool Vivado -manufacturer Xilinx -family VIRTEX-uplus -speed -2 -part xcvu9p-flga2104-2-e
-        #solution library add mgc_Xilinx-VIRTEX-u-2_beh -- -rtlsyntool Vivado -manufacturer Xilinx -family VIRTEX-u -speed -2 -part xcvu440-flga2892-2-e
-        #solution library add mgc_Xilinx-VIRTEX-7-2_beh -- -rtlsyntool Vivado -manufacturer Xilinx -family VIRTEX-7 -speed -2 -part xc7v2000tflg1925-2
+    solution library add Xilinx_RAMS
+    solution library add Xilinx_ROMS
+    solution library add Xilinx_FIFO
 
-        solution library add Xilinx_RAMS
-        solution library add Xilinx_ROMS
-        solution library add Xilinx_FIFO
-
-        # For Catapult 10.5: disable all sequential clock-gating
-        directive set GATE_REGISTERS false
-    }
+    # For Catapult 10.5: disable all sequential clock-gating
+    directive set GATE_REGISTERS false
 
     go libraries
 
@@ -330,18 +309,8 @@ if {$opt(hsynth)} {
         }
 
         if {$opt(lsynth)} {
-
-            if {$opt(asic) == 1} {
-                flow run /DesignCompiler/dc_shell ./concat_${ACCELERATOR}.v.dc v
-            } elseif {$opt(asic) == 2} {
-                flow run /RTLCompiler/rc ./concat_${ACCELERATOR}.v.rc v
-            } elseif {$opt(asic) == 3} {
-                puts "ERROR: Cadence Genus is not supported"
-                exit 1
-            } else {
-                flow run /Vivado/synthesize -shell vivado_concat_v/concat_${ACCELERATOR}.v.xv
-                #flow run /Vivado/synthesize vivado_concat_v/concat_${ACCELERATOR}.v.xv
-            }
+            flow run /Vivado/synthesize -shell vivado_concat_v/concat_${ACCELERATOR}.v.xv
+            #flow run /Vivado/synthesize vivado_concat_v/concat_${ACCELERATOR}.v.xv
         }
     }
 }
