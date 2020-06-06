@@ -25,7 +25,7 @@ static unsigned DMA_WORD_PER_BEAT(unsigned _st)
 #define DEV_NAME "sld,softmax_cxx"
 
 /* <<--params-->> */
-const int32_t batch = 4;
+const int32_t batch = 1;
 
 static unsigned in_words_adj;
 static unsigned out_words_adj;
@@ -239,6 +239,13 @@ int main(int argc, char * argv[])
 #endif
 
 	ndev = probe(&espdevs, SLD_SOFTMAX_CXX, DEV_NAME);
+
+#ifndef __riscv
+	printf("Found %d devices: %s\n", ndev, DEV_NAME);
+#else
+	print_uart("Found "); print_uart_int(ndev); print_uart(" devices: sld,softmax_cxx\n");
+#endif
+
 	if (ndev == 0) {
 #ifndef __riscv
 		printf("softmax_cxx not found\n");

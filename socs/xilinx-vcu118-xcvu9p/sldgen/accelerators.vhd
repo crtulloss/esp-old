@@ -200,4 +200,78 @@ begin  -- mapping
 
   end generate impl_basic_fx32_dma64_gen;
 
+  impl_hier_fx32_dma64_gen: if hls_conf = HLSCFG_SOFTMAX_CXX_HIER_FX32_DMA64 generate
+    softmax_cxx_hier_fx32_dma64_i: softmax_cxx_hier_fx32_dma64
+    port map(
+      clk                        => clk,
+      rst                        => acc_rst,
+
+      conf_info_rsc_dat          => conf_info_batch,
+      conf_info_rsc_vld          => conf_info_rsc_valid,
+      conf_info_rsc_rdy          => conf_info_rsc_ready,
+
+      dma_read_ctrl_rsc_dat(66 downto 64) => dma_read_ctrl_data_size,
+      dma_read_ctrl_rsc_dat(63 downto 32) => dma_read_ctrl_data_length,
+      dma_read_ctrl_rsc_dat(31 downto 0)  => dma_read_ctrl_data_index,
+      dma_read_ctrl_rsc_vld      => dma_read_ctrl_valid,
+      dma_read_ctrl_rsc_rdy      => dma_read_ctrl_ready,
+
+      dma_write_ctrl_rsc_dat(66 downto 64) => dma_write_ctrl_data_size,
+      dma_write_ctrl_rsc_dat(63 downto 32) => dma_write_ctrl_data_length,
+      dma_write_ctrl_rsc_dat(31 downto 0)  => dma_write_ctrl_data_index,
+      dma_write_ctrl_rsc_vld     => dma_write_ctrl_valid,
+      dma_write_ctrl_rsc_rdy     => dma_write_ctrl_ready,
+
+      dma_read_chnl_rsc_dat      => dma_read_chnl_data,
+      dma_read_chnl_rsc_vld      => dma_read_chnl_valid,
+      dma_read_chnl_rsc_rdy      => dma_read_chnl_ready,
+
+      dma_write_chnl_rsc_dat     => dma_write_chnl_data,
+      dma_write_chnl_rsc_vld     => dma_write_chnl_valid,
+      dma_write_chnl_rsc_rdy     => dma_write_chnl_ready,
+
+      acc_done_rsc_vld           => acc_done
+    );
+
+
+  -- CONF_DONE FSM
+
+  conf_done_fsm: process (rsc_state, conf_done, conf_info_rsc_ready) is
+  begin  -- process conf_done_fsm
+    rsc_state_next <= rsc_state;
+    conf_info_rsc_valid <= '0';
+
+    case rsc_state is
+
+      when rsc_idle =>
+        if conf_done = '1' then
+          rsc_state_next <= rsc_handshake;
+        end if;
+
+      when rsc_handshake =>
+        conf_info_rsc_valid <= '1';
+        if conf_info_rsc_ready = '1' then
+          rsc_state_next <= rsc_idle;
+        end if;
+
+      when others =>
+        rsc_state_next <= rsc_idle;
+
+    end case;
+  end process conf_done_fsm;
+
+  conf_done_state_update: process (clk, acc_rst) is
+  begin  -- process conf_done_state_update
+    if clk'event and clk = '1' then    -- rising clock edge
+      if acc_rst = '0' then            -- synchronous active low
+        rsc_state <= rsc_idle;
+      else
+        rsc_state <= rsc_state_next;
+      end if;
+    end if;
+  end process conf_done_state_update;
+
+  end generate impl_hier_fx32_dma64_gen;
+
+
 end mapping;
