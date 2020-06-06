@@ -17,8 +17,9 @@ $(error please define the desired DMA_WIDTH for simulation)
 endif
 
 INCDIR ?=
-INCDIR += -I../src
 INCDIR += -I../tb
+INCDIR += -I../inc
+INCDIR += -I../src
 INCDIR += -I../common
 INCDIR += -I$(SYSTEMC)/include
 #INCDIR += -I$(CATAPULT_PATH)/shared/include
@@ -53,8 +54,9 @@ LDFLAGS += -lpthread
 TARGET = $(ACCELERATOR)
 
 VPATH ?=
-VPATH += ../src
 VPATH += ../tb
+VPATH += ../inc
+VPATH += ../src
 VPATH += ../common
 #VPATH += $(ESP_ROOT)/accelerators/catapult_hls/common/syn-templates/core/systems
 
@@ -65,7 +67,7 @@ SRCS += $(foreach s, $(wildcard ../src/*.cpp) $(wildcard ../tb/*.cpp), $(shell b
 
 OBJS := $(SRCS:.cpp=.o)
 
-HDRS := $(wildcard ../src/*.hpp) $(wildcard ../tb/*.hpp)
+HDRS := $(wildcard ../inc/*.hpp) $(wildcard ../tb/*.hpp)
 
 
 all: $(TARGET)
