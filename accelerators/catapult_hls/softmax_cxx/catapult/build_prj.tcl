@@ -105,8 +105,9 @@ set can_simulate 1
 
 solution options set Flows/QuestaSIM/SCCOM_OPTS {-64 -g -x c++ -Wall -Wno-unused-label -Wno-unknown-pragmas}
 
+set uarch "basic"
 if {$opt(hier)} {
-    solution options set /Input/CompilerFlags {-DHIERARCHICAL_BLOCKS}
+    set uarch "hier"
 }
 
 #
@@ -116,15 +117,15 @@ if {$opt(hier)} {
 solution options set /Input/SearchPath { \
     ../tb \
     ../inc \
-    ../src \
+    ../src/$uarch \
     ../common }
 
 # Add source files.
-solution file add ../src/softmax.cpp -type C++
+solution file add ../src/$uarch/softmax.cpp -type C++
 solution file add ../tb/main.cpp -type C++ -exclude true
-
-#solution file set ../tb/sc_main.cpp -args {-DDISABLE_PRINTF}
-
+if {$opt(hier)} {
+    solution file set ../tb/main.cpp -args {-DHIERARCHICAL_BLOCKS}
+}
 
 #
 # Output
@@ -316,3 +317,13 @@ if {$opt(hsynth)} {
 }
 
 project save
+
+puts "***************************************************************"
+if {$opt(hier)} {
+    puts "uArch: Hierarchical blocks"
+} else {
+    puts "uArch: Single block"
+}
+puts "***************************************************************"
+puts "Done!"
+
