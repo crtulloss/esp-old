@@ -229,14 +229,19 @@ static void config_threads(FILE* f, accelerator_thread_info_t **thread_info, esp
             (*cfg)[t][d].desc.synth_desc.out_size = out_size;        
             (*cfg)[t][d].desc.synth_desc.offset = offset; 
            
-            if((*cfg)[t][d].desc.synth_desc.in_place == 0){
+            if((*cfg)[t][d].desc.synth_desc.in_place == 0 && !thread_info[t]->p2p){
                 memsz += out_size;
                 offset += in_size;
             }
 
+            if (thread_info[t]->p2p && d == thread_info[t]->ndev - 1){
+                memsz += out_size;
+                (*cfg)[t][d].desc.synth_desc.offset = (*cfg)[t][0].desc.synth_desc.in_size - in_size;
+            }
+           
             unsigned int footprint = in_size >> (*cfg)[t][d].desc.synth_desc.access_factor;
 
-            if (!(*cfg)[t][d].desc.synth_desc.in_place)
+            if (!(*cfg)[t][d].desc.synth_desc.in_place && (!thread_info[t]->p2p || d == thread_info[t]->ndev - 1))
                 footprint += out_size;
                     
             if (thread_info[t]->p2p){
@@ -377,13 +382,15 @@ static int validate_buffer(accelerator_thread_info_t *thread_info, esp_thread_in
                continue;
         }
 
-        if (!in_place)
+        if (!in_place && !thread_info->p2p)
             offset += in_size; 
-        
+        else if (thread_info->p2p)
+            offset = cfg[t][0].desc.synth_desc.in_size;
+
         for (int j = offset; j < offset + out_size; j++){
             if (j == offset + out_size - 1 && buf[j] != wr_data){
                 errors += buf[j];
-                printf("%d read errors in thread %d device %d\n", buf[j], t, i);
+                printf("%u read errors in thread %d device %d\n", buf[j], t, i);
             }
             else if (j != offset + out_size - 1 && buf[j] != wr_data){
                 errors++;
@@ -490,7 +497,7 @@ int main (int argc, char** argv)
         fprintf(out_file,  "Device/Thread/Phase name, devID/nacc/nthreads, coherence, allocation, footprint, DDR#, time\n");
     }
     
-    enum accelerator_coherence coherence; 
+    enum accelerator_coherence coherence = ACC_COH_NONE; 
     enum alloc_effort alloc; 
     int coherence_mode, alloc_mode;
     
@@ -578,7 +585,7 @@ int main (int argc, char** argv)
         for (int t = 0; t < nthreads; t++){
             int errors = validate_buffer(thread_info[p][t], cfg, buffers[t]);
             if (errors)
-                printf("[FAIL] Thread %d.%d : %d errors\n", p, t, errors);
+                printf("[FAIL] Thread %d.%d : %u errors\n", p, t, errors);
             else 
                 printf("[PASS] Thread %d.%d\n", p, t);  
         }

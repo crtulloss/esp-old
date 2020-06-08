@@ -65,7 +65,8 @@ for p in range(phases):
 
         if flow_choice == "p2p":
             p2p_burst_len = rand.choice(burst_lens)
-        
+            p2p_reuse_factor = rand.choice(reuse_factors) 
+
         #INPUT SIZE
         size = rand.choice(sizes)
         log_size = 10 + sizes.index(size)
@@ -90,11 +91,9 @@ for p in range(phases):
             #DEVICE
             d = rand.choice(devices)
             devices.remove(d)
-            f.write(str(d) + " ")
             
             #PATTERN
             pattern = rand.choice(patterns)
-            f.write(pattern + " ")
             
             #ACCESS FACTOR
             if flow_choice == "p2p":
@@ -109,7 +108,6 @@ for p in range(phases):
             else:
                 access_factor = 0
             log_size -= access_factor
-            f.write(str(access_factor) + " ")
             
             #BURST LEN
             if flow_choice == "p2p":
@@ -117,15 +115,14 @@ for p in range(phases):
             else: 
                 burst_len = rand.choice(burst_lens)
             
-            f.write(str(burst_len) + " ")
-            
             #COMPUTE BOUND FACTOR
             cb_factor = rand.choice(cb_factors)
-            f.write(str(cb_factor) + " ")
             
             #REUSE FACTOR
-            reuse_factor = rand.choice(reuse_factors)
-            f.write(str(reuse_factor) + " ")
+            if flow_choice == "p2p":
+                reuse_factor = p2p_reuse_factor
+            else:
+                reuse_factor = rand.choice(reuse_factors)
             
             #LD ST RATIO   
             upper = log_size - 10
@@ -136,7 +133,6 @@ for p in range(phases):
             else:
                 ld_st_ratio = rand.choice(ld_st_ratios[0:upper])
             log_size -= ld_st_ratios.index(ld_st_ratio)
-            f.write(str(ld_st_ratio) + " ")
             
             #STRIDE LEN
             if pattern == "STRIDED":
@@ -149,33 +145,38 @@ for p in range(phases):
                     stride_len = rand.choice(stride_lens)
             else:
                 stride_len = 0
-            f.write(str(stride_len) + " ")
             
             #IN PLACE
             out_size = math.pow(2, log_size)
             in_place = 0
-            if thread_size_avail >= out_size and total_size_avail >= out_size and pattern != "IRREGULAR":
-                in_place = rand.randint(0, 1)
-            elif pattern == "IRREGULAR":
+            
+            if flow_choice == "p2p":
+                in_place = 0
+            elif thread_size_avail < out_size or total_size_avail < out_size:
+                in_place = 1 
+            elif pattern == "IRREGULAR" or (ld_st_ratio > 1 and reuse_factor > 1):
                 in_place = 0
             else:
-                in_place = 1 
+                in_place = rand.randint(0, 1)
+           
+            if in_place ==  1:
+                if pattern == "IRREGULAR":
+                    pattern = "STREAMING"
+                if ld_st_ratio > 1 and reuse_factor > 1:
+                    ld_st_ratio = 1
             
-            if in_place == 0:
+            if in_place == 0 and (not flow_choice == "p2p" or d == ndev - 1):
                 thread_size_avail -= out_size 
                 total_size_avail -= out_size
-            f.write(str(in_place) + " ")
                 
             #WRITE DATA
             wr_data = rand.randint(0, 4294967295)
-            f.write(str(wr_data) + " ")
 
             #READ DATA
             if first:
                 rd_data = rand.randint(0, 4294967295)
             else: 
                 rd_data = last_wr_data
-            f.write(str(rd_data) + " ")
             
             last_wr_data = wr_data
             first = False
@@ -185,6 +186,18 @@ for p in range(phases):
                 coherence = "none"
             else:
                 coherence = rand.choice(coherence_choices) 
+            
+            f.write(str(d) + " ")
+            f.write(pattern + " ")
+            f.write(str(access_factor) + " ")
+            f.write(str(burst_len) + " ")
+            f.write(str(cb_factor) + " ")
+            f.write(str(reuse_factor) + " ")
+            f.write(str(ld_st_ratio) + " ")
+            f.write(str(stride_len) + " ")
+            f.write(str(in_place) + " ")
+            f.write(str(wr_data) + " ")
+            f.write(str(rd_data) + " ")
             f.write(coherence + "\n")
             
 f.close()
