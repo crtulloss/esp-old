@@ -36,7 +36,7 @@ solution options set Cache/DefaultCacheHomeEnabled false
 
 flow package require /SCVerify
 flow package option set /SCVerify/USE_QUESTASIM true
-flow package option set /SCVerify/USE_NCSIM true
+flow package option set /SCVerify/USE_NCSIM false
 
 #options set Flows/OSCI/GCOV true
 #flow package require /CCOV
@@ -99,6 +99,11 @@ directive set -TRANSACTION_DONE_SIGNAL true
 
 solution options set Flows/QuestaSIM/SCCOM_OPTS {-64 -g -x c++ -Wall -Wno-unused-label -Wno-unknown-pragmas -DCLOCK_PERIOD=12500}
 
+set uarch "basic"
+if {$opt(hier)} {
+    set uarch "hier"
+}
+
 if {$opt(plm_shrd)} {
     solution options set /Input/CompilerFlags {-DHLS_CATAPULT -D__MNTR_AC_SHARED__ -DCLOCK_PERIOD=12500}
 } else {
@@ -112,7 +117,7 @@ if {$opt(plm_shrd)} {
 solution options set /Input/SearchPath { \
     ../tb \
     ../inc \
-    ../src \
+    ../src/$uarch \
     ../../common/syn-templates \
     ../../common/syn-templates/core \
     ../../common/syn-templates/core/accelerators \
@@ -121,11 +126,12 @@ solution options set /Input/SearchPath { \
     ../../common/syn-templates/utils/configs }
 
 # Add source files.
-solution file add ../src/softmax.cpp -type C++
+solution file add ../src/$uarch/softmax.cpp -type C++
 solution file add ../tb/sc_main.cpp -type C++ -exclude true
 solution file add ../tb/system.cpp -type C++ -exclude true
-
-#solution file set ../tb/sc_main.cpp -args {-DDISABLE_PRINTF}
+if {$opt(hier)} {
+    solution file set ../tb/main.cpp -args {-DHIERARCHICAL_BLOCKS}
+}
 
 
 #
@@ -163,10 +169,10 @@ go analyze
 # Set the top module and inline all of the other functions.
 
 # 10.4c
-#directive set -DESIGN_HIERARCHY ${ACCELERATOR}
+#directive set -DESIGN_HIERARCHY $ACCELERATOR
 
 # 10.5
-solution design set ${ACCELERATOR} -top
+solution design set $ACCELERATOR -top
 
 #directive set PRESERVE_STRUCTS false
 
@@ -217,7 +223,7 @@ if {$opt(hsynth)} {
 
     # BUGFIX: This prevents the creation of the empty module CGHpart. In the
     # next releases of Catapult HLS, this may be fixed.
-    directive set /${ACCELERATOR} -GATE_EFFORT normal
+    directive set /$ACCELERATOR -GATE_EFFORT normal
 
     go assembly
 
@@ -229,28 +235,28 @@ if {$opt(hsynth)} {
 
     # Arrays
 
-    ###directive set /${ACCELERATOR}/plm_in:cns -MAP_TO_MODULE Xilinx_RAMS.BLOCK_1R1W_RBW
-    ###directive set /${ACCELERATOR}/plm_in -WORD_WIDTH 32
+    ###directive set /$ACCELERATOR/plm_in:cns -MAP_TO_MODULE Xilinx_RAMS.BLOCK_1R1W_RBW
+    ###directive set /$ACCELERATOR/plm_in -WORD_WIDTH 32
 
-    ###directive set /${ACCELERATOR}/plm_out:cns -MAP_TO_MODULE Xilinx_RAMS.BLOCK_1R1W_RBW
-    ###directive set /${ACCELERATOR}/plm_out -WORD_WIDTH 32
+    ###directive set /$ACCELERATOR/plm_out:cns -MAP_TO_MODULE Xilinx_RAMS.BLOCK_1R1W_RBW
+    ###directive set /$ACCELERATOR/plm_out -WORD_WIDTH 32
 
-    ###directive set /${ACCELERATOR}/${ACCELERATOR}:load_input/load_input/LOAD_BATCH_LOOP:plm_local.data:rsc -MAP_TO_MODULE Xilinx_RAMS.BLOCK_1R1W_RBW
-    ###directive set /${ACCELERATOR}/${ACCELERATOR}:load_input/load_input/LOAD_BATCH_LOOP:plm_local.data -WORD_WIDTH 32
-    ###directive set /${ACCELERATOR}/${ACCELERATOR}:load_input/load_input/LOAD_BATCH_LOOP:plm_local.data:rsc -GEN_EXTERNAL_ENABLE true
+    ###directive set /$ACCELERATOR/$ACCELERATOR:load_input/load_input/LOAD_BATCH_LOOP:plm_local.data:rsc -MAP_TO_MODULE Xilinx_RAMS.BLOCK_1R1W_RBW
+    ###directive set /$ACCELERATOR/$ACCELERATOR:load_input/load_input/LOAD_BATCH_LOOP:plm_local.data -WORD_WIDTH 32
+    ###directive set /$ACCELERATOR/$ACCELERATOR:load_input/load_input/LOAD_BATCH_LOOP:plm_local.data:rsc -GEN_EXTERNAL_ENABLE true
 
-    ###directive set /${ACCELERATOR}/${ACCELERATOR}:compute_kernel/compute_kernel/COMPUTE_BATCH_LOOP:plm_local_in.data:rsc -MAP_TO_MODULE Xilinx_RAMS.BLOCK_1R1W_RBW
-    ###directive set /${ACCELERATOR}/${ACCELERATOR}:compute_kernel/compute_kernel/COMPUTE_BATCH_LOOP:plm_local_in.data -WORD_WIDTH 32
-    ###directive set /${ACCELERATOR}/${ACCELERATOR}:compute_kernel/compute_kernel/COMPUTE_BATCH_LOOP:plm_local_out.data:rsc -MAP_TO_MODULE Xilinx_RAMS.BLOCK_1R1W_RBW
-    ###directive set /${ACCELERATOR}/${ACCELERATOR}:compute_kernel/compute_kernel/COMPUTE_BATCH_LOOP:plm_local_out.data -WORD_WIDTH 32
+    ###directive set /$ACCELERATOR/$ACCELERATOR:compute_kernel/compute_kernel/COMPUTE_BATCH_LOOP:plm_local_in.data:rsc -MAP_TO_MODULE Xilinx_RAMS.BLOCK_1R1W_RBW
+    ###directive set /$ACCELERATOR/$ACCELERATOR:compute_kernel/compute_kernel/COMPUTE_BATCH_LOOP:plm_local_in.data -WORD_WIDTH 32
+    ###directive set /$ACCELERATOR/$ACCELERATOR:compute_kernel/compute_kernel/COMPUTE_BATCH_LOOP:plm_local_out.data:rsc -MAP_TO_MODULE Xilinx_RAMS.BLOCK_1R1W_RBW
+    ###directive set /$ACCELERATOR/$ACCELERATOR:compute_kernel/compute_kernel/COMPUTE_BATCH_LOOP:plm_local_out.data -WORD_WIDTH 32
 
-    ###directive set /${ACCELERATOR}/${ACCELERATOR}:store_output/store_output/STORE_BATCH_LOOP:plm_local.data:rsc -MAP_TO_MODULE Xilinx_RAMS.BLOCK_1R1W_RBW
-    ###directive set /${ACCELERATOR}/${ACCELERATOR}:store_output/store_output/STORE_BATCH_LOOP:plm_local.data -WORD_WIDTH 32
-    ###directive set /${ACCELERATOR}/${ACCELERATOR}:store_output/store_output/STORE_BATCH_LOOP:plm_local.data:rsc -GEN_EXTERNAL_ENABLE true
+    ###directive set /$ACCELERATOR/$ACCELERATOR:store_output/store_output/STORE_BATCH_LOOP:plm_local.data:rsc -MAP_TO_MODULE Xilinx_RAMS.BLOCK_1R1W_RBW
+    ###directive set /$ACCELERATOR/$ACCELERATOR:store_output/store_output/STORE_BATCH_LOOP:plm_local.data -WORD_WIDTH 32
+    ###directive set /$ACCELERATOR/$ACCELERATOR:store_output/store_output/STORE_BATCH_LOOP:plm_local.data:rsc -GEN_EXTERNAL_ENABLE true
 
-    ###directive set /${ACCELERATOR}/${ACCELERATOR}:compute_kernel/compute_kernel/COMPUTE_BATCH_LOOP -PIPELINE_INIT_INTERVAL 1
-    ###directive set /${ACCELERATOR}/${ACCELERATOR}:store_output/store_output/STORE_BATCH_LOOP -PIPELINE_INIT_INTERVAL 1
-    ###directive set /${ACCELERATOR}/${ACCELERATOR}:load_input/load_input/LOAD_BATCH_LOOP -PIPELINE_INIT_INTERVAL 1
+    ###directive set /$ACCELERATOR/$ACCELERATOR:compute_kernel/compute_kernel/COMPUTE_BATCH_LOOP -PIPELINE_INIT_INTERVAL 1
+    ###directive set /$ACCELERATOR/$ACCELERATOR:store_output/store_output/STORE_BATCH_LOOP -PIPELINE_INIT_INTERVAL 1
+    ###directive set /$ACCELERATOR/$ACCELERATOR:load_input/load_input/LOAD_BATCH_LOOP -PIPELINE_INIT_INTERVAL 1
 
     directive set /$ACCELERATOR/run/BATCH_LOOP -PIPELINE_INIT_INTERVAL 1
     directive set /$ACCELERATOR/run/BATCH_LOOP -PIPELINE_STALL_MODE flush
@@ -259,25 +265,25 @@ if {$opt(hsynth)} {
 
     # Loops performance tracing
 
-    ###directive set /${ACCELERATOR}/config_accelerator/CONFIG_LOOP -ITERATIONS 1
+    ###directive set /$ACCELERATOR/config_accelerator/CONFIG_LOOP -ITERATIONS 1
 
-    ###directive set /${ACCELERATOR}/${ACCELERATOR}:load_input/load_input/WAIT_FOR_CONFIG_LOOP -ITERATIONS 1
-    ###directive set /${ACCELERATOR}/${ACCELERATOR}:load_input/load_input/LOAD_BATCH_LOOP -ITERATIONS 16
-    ###directive set /${ACCELERATOR}/${ACCELERATOR}:load_input/load_input/LOAD_DATA_INNER_LOOP -ITERATIONS 128
+    ###directive set /$ACCELERATOR/$ACCELERATOR:load_input/load_input/WAIT_FOR_CONFIG_LOOP -ITERATIONS 1
+    ###directive set /$ACCELERATOR/$ACCELERATOR:load_input/load_input/LOAD_BATCH_LOOP -ITERATIONS 16
+    ###directive set /$ACCELERATOR/$ACCELERATOR:load_input/load_input/LOAD_DATA_INNER_LOOP -ITERATIONS 128
 
-    ###directive set /${ACCELERATOR}/${ACCELERATOR}:compute_kernel/compute_kernel/WAIT_FOR_CONFIG_LOOP -ITERATIONS 1
-    ###directive set /${ACCELERATOR}/${ACCELERATOR}:compute_kernel/compute_kernel/COMPUTE_BATCH_LOOP -ITERATIONS 16
+    ###directive set /$ACCELERATOR/$ACCELERATOR:compute_kernel/compute_kernel/WAIT_FOR_CONFIG_LOOP -ITERATIONS 1
+    ###directive set /$ACCELERATOR/$ACCELERATOR:compute_kernel/compute_kernel/COMPUTE_BATCH_LOOP -ITERATIONS 16
 
-    ###directive set /${ACCELERATOR}/${ACCELERATOR}:store_output/store_output/WAIT_FOR_CONFIG_LOOP -ITERATIONS 1
-    ###directive set /${ACCELERATOR}/${ACCELERATOR}:store_output/store_output/STORE_BATCH_LOOP -ITERATIONS 16
-    ###directive set /${ACCELERATOR}/${ACCELERATOR}:store_output/store_output/STORE_DATA_INNER_LOOP -ITERATIONS 128
+    ###directive set /$ACCELERATOR/$ACCELERATOR:store_output/store_output/WAIT_FOR_CONFIG_LOOP -ITERATIONS 1
+    ###directive set /$ACCELERATOR/$ACCELERATOR:store_output/store_output/STORE_BATCH_LOOP -ITERATIONS 16
+    ###directive set /$ACCELERATOR/$ACCELERATOR:store_output/store_output/STORE_DATA_INNER_LOOP -ITERATIONS 128
 
     # Area vs Latency Goals
 
-    ###directive set /${ACCELERATOR}/config_accelerator -DESIGN_GOAL latency
-    ###directive set /${ACCELERATOR}/${ACCELERATOR}:load_input/load_input -DESIGN_GOAL latency
-    ###directive set /${ACCELERATOR}/${ACCELERATOR}:compute_kernel/compute_kernel -DESIGN_GOAL latency
-    ###directive set /${ACCELERATOR}/${ACCELERATOR}:store_output/store_output -DESIGN_GOAL latency
+    ###directive set /$ACCELERATOR/config_accelerator -DESIGN_GOAL latency
+    ###directive set /$ACCELERATOR/$ACCELERATOR:load_input/load_input -DESIGN_GOAL latency
+    ###directive set /$ACCELERATOR/$ACCELERATOR:compute_kernel/compute_kernel -DESIGN_GOAL latency
+    ###directive set /$ACCELERATOR/$ACCELERATOR:store_output/store_output -DESIGN_GOAL latency
 
     if {$opt(debug) != 1} {
         go architect
@@ -307,10 +313,19 @@ if {$opt(hsynth)} {
 
         if {$opt(lsynth)} {
 
-            flow run /Vivado/synthesize -shell vivado_concat_v/concat_${ACCELERATOR}.v.xv
-            #flow run /Vivado/synthesize vivado_concat_v/concat_${ACCELERATOR}.v.xv
+            flow run /Vivado/synthesize -shell vivado_concat_v/concat_$ACCELERATOR.v.xv
+            #flow run /Vivado/synthesize vivado_concat_v/concat_$ACCELERATOR.v.xv
         }
     }
 }
 
 project save
+
+puts "***************************************************************"
+if {$opt(hier)} {
+    puts "uArch: Hierarchical blocks"
+} else {
+    puts "uArch: Single block"
+}
+puts "***************************************************************"
+puts "Done!"

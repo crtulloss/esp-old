@@ -113,7 +113,7 @@ public:
           , input_ready("input_ready")
           , output_ready("output_ready")
     {
-#if 0
+#ifdef HIERARCHICAL_BLOCKS
         SC_CTHREAD(config_accelerator, clk.pos());
         reset_signal_is(rst, false);
         // set_stack_size(0x400000);
@@ -139,7 +139,7 @@ public:
     //
     // Processes
     //
-#if 0
+#ifdef HIERARCHICAL_BLOCKS
     // Configure the accelerator
     void config();
     // Load the input data
@@ -167,6 +167,7 @@ public:
     // Functions
     //
 
+#ifdef HIERARCHICAL_BLOCKS
     // Reset callable by load_input
     inline void reset_load_input();
     // Reset callable by compute_kernel
@@ -183,10 +184,12 @@ public:
     inline void store_compute_handshake();
     // Call to wait for configuration
     inline void wait_for_config();
+#else
     // The process is done
     inline void process_done();
     // The accelerator is done
     inline void accelerator_done();
+#endif
 
     //
     // Private local memories

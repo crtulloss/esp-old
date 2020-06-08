@@ -1,4 +1,4 @@
-softmax
+softmax_sysc
 *.txt
 *.vcd
 *.sh
