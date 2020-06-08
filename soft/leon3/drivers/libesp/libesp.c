@@ -54,6 +54,50 @@ void remove_buf(void *buf){
     free(cur);
 }
 
+bool thread_is_p2p(esp_thread_info_t *thread)
+{
+     switch (thread->type) {
+        // <<--esp-prepare-->>
+         case fftaccelerator :
+            return (thread->desc.fftaccelerator_desc.esp.p2p_store 
+                    || thread->desc.fftaccelerator_desc.esp.p2p_nsrcs);
+        case adderaccelerator :
+            return (thread->desc.adderaccelerator_desc.esp.p2p_store 
+                    || thread->desc.adderaccelerator_desc.esp.p2p_nsrcs);
+        case fft :
+            return (thread->desc.fft_desc.esp.p2p_store 
+                    || thread->desc.fft_desc.esp.p2p_nsrcs);
+        case adder:
+            return (thread->desc.adder_desc.esp.p2p_store 
+                    || thread->desc.adder_desc.esp.p2p_nsrcs);
+        case CounterAccelerator:
+            return (thread->desc.CounterAccelerator_desc.esp.p2p_store 
+                    || thread->desc.CounterAccelerator_desc.esp.p2p_nsrcs);
+        case dummy:
+            return (thread->desc.dummy_desc.esp.p2p_store 
+                    || thread->desc.dummy_desc.esp.p2p_nsrcs);
+        case sort:
+            return (thread->desc.sort_desc.esp.p2p_store 
+                    || thread->desc.sort_desc.esp.p2p_nsrcs);
+        case spmv:
+            return (thread->desc.spmv_desc.esp.p2p_store 
+                    || thread->desc.spmv_desc.esp.p2p_nsrcs);
+        case synth:
+            return (thread->desc.synth_desc.esp.p2p_store 
+                    || thread->desc.synth_desc.esp.p2p_nsrcs);
+        case visionchip:
+            return (thread->desc.visionchip_desc.esp.p2p_store 
+                    || thread->desc.visionchip_desc.esp.p2p_nsrcs);
+        case vitbfly2:
+            return (thread->desc.vitbfly2_desc.esp.p2p_store 
+                    || thread->desc.vitbfly2_desc.esp.p2p_nsrcs);
+        default :
+            die("Error: accelerator type specified for accelerator %s not supported\n", thread->devname);
+            break;
+        }
+
+}
+
 unsigned DMA_WORD_PER_BEAT(unsigned _st)
 {
 	return (sizeof(void *) / _st);
@@ -305,12 +349,25 @@ static void print_time_info(esp_thread_info_t *info[], unsigned long long hw_ns,
 void esp_run(esp_thread_info_t cfg[], unsigned nacc)
 { 
     int i;
-    esp_thread_info_t **cfg_ptrs = malloc(sizeof(esp_thread_info_t*) * nacc);
+   
+    if (thread_is_p2p(&cfg[0])){
+        esp_thread_info_t *cfg_ptrs[1]; 
+        cfg_ptrs[0] = cfg;
     
-    for (i = 0; i < nacc; i++)
-        cfg_ptrs[i] = &cfg[i];
+        esp_run_parallel(cfg_ptrs, 1, &nacc);
+    } else{
+        esp_thread_info_t **cfg_ptrs = malloc(sizeof(esp_thread_info_t*) * nacc);
+        unsigned *nacc_arr = malloc(sizeof(unsigned) * nacc);
+        
+        for (i = 0; i < nacc; i++){
+            nacc_arr[i] = 1;
+            cfg_ptrs[i] = &cfg[i];
+        }
+        esp_run_parallel(cfg_ptrs, nacc, nacc_arr);
+        free(nacc_arr);
+        free(cfg_ptrs);
+    }
     
-    esp_run_parallel(cfg_ptrs, 1, &nacc);
 }
 
 void esp_run_parallel(esp_thread_info_t* cfg[], unsigned nthreads, unsigned* nacc)
@@ -351,7 +408,7 @@ void esp_run_parallel(esp_thread_info_t* cfg[], unsigned nthreads, unsigned* nac
         args->info = cfg[i];
         args->nacc = nacc[i];
         
-        if (cfg[i]->desc.synth_desc.esp.p2p_store || cfg[i]->desc.synth_desc.esp.p2p_nsrcs)
+        if (thread_is_p2p(cfg[i]))
             rc = pthread_create(&thread[i], NULL, accelerator_thread_p2p, (void*) args);
         else
             rc = pthread_create(&thread[i], NULL, accelerator_thread_serial, (void*) args);

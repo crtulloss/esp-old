@@ -211,16 +211,7 @@ int main(int argc, char **argv)
     for (k = 0; k < NACC; k++)
 	    cfg_parallel[k].hw_buf = buf;
 
-    esp_thread_info_t *cfg_ptrs[NACC];
-    
-    unsigned int *nacc = malloc(sizeof(int)*NACC);
-    for (k = 0; k < NACC;k++){
-        cfg_ptrs[k] = malloc(sizeof(esp_thread_info_t));
-        cfg_ptrs[k] = &cfg_parallel[k];
-        nacc[k] = 1;
-    }
-
-    esp_run_parallel(cfg_ptrs, NACC, nacc);
+    esp_run(cfg_parallel, NACC);
 
 	printf("\n  ** DONE **\n");
 
