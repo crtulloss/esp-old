@@ -6,7 +6,7 @@ use ieee.std_logic_1164.all;
 
 package allacc is
 
-  component softmax_basic_fx32_dma64
+  component softmax_sysc_basic_fx32_dma64
     port (
       clk                        : in  std_ulogic;
       rst                        : in  std_ulogic;

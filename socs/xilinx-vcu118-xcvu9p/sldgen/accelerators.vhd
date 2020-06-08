@@ -7,7 +7,7 @@ use ieee.std_logic_1164.all;
 use work.sld_devices.all;
 use work.allacc.all;
 
-entity softmax_rtl is
+entity softmax_sysc_rtl is
 
     generic (
       hls_conf  : hlscfg_t
@@ -37,16 +37,16 @@ entity softmax_rtl is
       acc_done                   : out std_ulogic
     );
 
-end entity softmax_rtl;
+end entity softmax_sysc_rtl;
 
 
-architecture mapping of softmax_rtl is
+architecture mapping of softmax_sysc_rtl is
 
 begin  -- mapping
 
 
-  impl_basic_fx32_dma64_gen: if hls_conf = HLSCFG_SOFTMAX_BASIC_FX32_DMA64 generate
-    softmax_basic_fx32_dma64_i: softmax_basic_fx32_dma64
+  impl_basic_fx32_dma64_gen: if hls_conf = HLSCFG_SOFTMAX_SYSC_BASIC_FX32_DMA64 generate
+    softmax_sysc_basic_fx32_dma64_i: softmax_sysc_basic_fx32_dma64
     port map(
       conf_info(31 downto 0)    => conf_info_batch,
       clk                        => clk,
