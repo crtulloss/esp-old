@@ -129,10 +129,10 @@ THIRDPARTY_N = 0
 # bytes in the address space, even if a signle instance would take
 # less. This is to simplify (hence speedup) APB decode.
 # APB EXT ADDR most significant hex digit (i.e. digit 7) must be 0
-THIRDPARTY_APB_ADDR          = 0x00000000
-THIRDPARTY_APB_ADDR_SIZE     = 0x00040000
-THIRDPARTY_APB_EXT_ADDR      = 0x00400000
-THIRDPARTY_APB_EXT_ADDR_SIZE = 0x00100000
+THIRDPARTY_APB_ADDRESS          = 0x00000000
+THIRDPARTY_APB_ADDRESS_SIZE     = 0x00040000
+THIRDPARTY_APB_EXT_ADDRESS      = 0x00400000
+THIRDPARTY_APB_EXT_ADDRESS_SIZE = 0x00100000
 
 # Memory reserved for all third-party accelerators
 THIRDPARTY_MEM_RESERVED_ADDR = 0xB0000000
@@ -880,18 +880,18 @@ def print_mapping(fp, esp_config):
     else:
       n = THIRDPARTY_N
       # Compute base address
-      if THIRDPARTY_APB_EXT_ADDR == 0:
+      if THIRDPARTY_APB_EXT_ADDRESS == 0:
         # Use part of standard APB address space
-        address = THIRDPARTY_APB_ADDR + n * THIRDPARTY_APB_ADDR_SIZE
-        size = THIRDPARTY_APB_ADDR_SIZE
+        address = THIRDPARTY_APB_ADDRESS + n * THIRDPARTY_APB_ADDRESS_SIZE
+        size = THIRDPARTY_APB_ADDRESS_SIZE
         address_ext = 0
         size_ext = 0
       else:
         # Use extended APB address space (large number of registers)
         address = 0
         size = 0
-        address_ext = THIRDPARTY_APB_EXT_ADDR + n * THIRDPARTY_APB_EXT_ADDR_SIZE
-        size_ext = THIRDPARTY_APB_EXT_ADDR_SIZE
+        address_ext = THIRDPARTY_APB_EXT_ADDRESS + n * THIRDPARTY_APB_EXT_ADDRESS_SIZE
+        size_ext = THIRDPARTY_APB_EXT_ADDRESS_SIZE
 
       msk = 0xfff & ~((size >> 8) - 1)
       msk_ext = 0xfff & ~((size_ext >> 20) - 1)
@@ -1808,14 +1808,14 @@ def print_ariane_devtree(fp, esp_config):
     else:
       n = THIRDPARTY_N
       # Compute base address
-      if THIRDPARTY_APB_EXT_ADDR == 0:
+      if THIRDPARTY_APB_EXT_ADDRESS == 0:
         # Use part of standard APB address space
-        address = base + THIRDPARTY_APB_ADDR + n * THIRDPARTY_APB_ADDR_SIZE
-        size = THIRDPARTY_APB_ADDR_SIZE
+        address = base + THIRDPARTY_APB_ADDRESS + n * THIRDPARTY_APB_ADDRESS_SIZE
+        size = THIRDPARTY_APB_ADDRESS_SIZE
       else:
         # Use extended APB address space (large number of registers)
-        address = base + THIRDPARTY_APB_EXT_ADDR + n * THIRDPARTY_APB_EXT_ADDR_SIZE
-        size = THIRDPARTY_APB_EXT_ADDR_SIZE
+        address = base + THIRDPARTY_APB_EXT_ADDRESS + n * THIRDPARTY_APB_EXT_ADDRESS_SIZE
+        size = THIRDPARTY_APB_EXT_ADDRESS_SIZE
 
       # Increment count
       THIRDPARTY_N = n + 1;
@@ -1874,20 +1874,39 @@ def print_floorplan_constraints(fp, soc, esp_config):
       mem_tiles[mem_num] = i
       mem_num += 1
 
-  #4096 sets + 2 tiles
+  #4096 sets + 2 tiles or 8192 sets + 4 tiles
   if int((soc.llc_sets.get() * soc.llc_ways.get()) / (esp_config.nmem * 16)) == 2048:
     fp.write("create_pblock {pblock_mem_tile_0}\n")
     fp.write("add_cells_to_pblock [get_pblocks {pblock_mem_tile_0}] [get_cells -quiet [list {esp_1/tiles_gen[" + str(mem_tiles[0]) + "].mem_tile.tile_mem_i}]]\n")
-    fp.write("resize_pblock [get_pblocks {pblock_mem_tile_0}] -add {SLICE_X23Y0:SLICE_X206Y299}\n")
-    fp.write("resize_pblock [get_pblocks {pblock_mem_tile_0}] -add {DSP48E2_X0Y0:DSP48E2_X3Y119}\n")
-    fp.write("resize_pblock [get_pblocks {pblock_mem_tile_0}] -add {RAMB18_X1Y0:RAMB18_X6Y119}\n")
-    fp.write("resize_pblock [get_pblocks {pblock_mem_tile_0}] -add {RAMB36_X1Y0:RAMB36_X6Y59}\n")
+    fp.write("resize_pblock [get_pblocks {pblock_mem_tile_0}] -add {SLICE_X24Y91:SLICE_X152Y338}\n")
+    fp.write("resize_pblock [get_pblocks {pblock_mem_tile_0}] -add {DSP48E2_X0Y38:DSP48E2_X2Y133}\n")
+    fp.write("resize_pblock [get_pblocks {pblock_mem_tile_0}] -add {RAMB18_X1Y38:RAMB18_X4Y133}\n")
+    fp.write("resize_pblock [get_pblocks {pblock_mem_tile_0}] -add {RAMB36_X1Y19:RAMB36_X4Y66}\n")
     fp.write("create_pblock {pblock_mem_tile_1}\n")
     fp.write("add_cells_to_pblock [get_pblocks {pblock_mem_tile_1}] [get_cells -quiet [list {esp_1/tiles_gen[" + str(mem_tiles[1]) + "].mem_tile.tile_mem_i}]]\n")
-    fp.write("resize_pblock [get_pblocks {pblock_mem_tile_1}] -add {SLICE_X209Y0:SLICE_X358Y299}\n")
-    fp.write("resize_pblock [get_pblocks {pblock_mem_tile_1}] -add {DSP48E2_X5Y0:DSP48E2_X7Y119}\n")
-    fp.write("resize_pblock [get_pblocks {pblock_mem_tile_1}] -add {RAMB18_X7Y0:RAMB18_X13Y119}\n")
-    fp.write("resize_pblock [get_pblocks {pblock_mem_tile_1}] -add {RAMB36_X7Y0:RAMB36_X13Y59}\n")
+    fp.write("resize_pblock [get_pblocks {pblock_mem_tile_1}] -add {SLICE_X168Y96:SLICE_X295Y339}\n")
+    fp.write("resize_pblock [get_pblocks {pblock_mem_tile_1}] -add {DSP48E2_X3Y40:DSP48E2_X5Y135}\n")
+    fp.write("resize_pblock [get_pblocks {pblock_mem_tile_1}] -add {RAMB18_X5Y40:RAMB18_X8Y135}\n")
+    fp.write("resize_pblock [get_pblocks {pblock_mem_tile_1}] -add {RAMB36_X5Y20:RAMB36_X8Y67}\n")
+  if (esp_config.nmem == 4): 
+      fp.write("create_pblock {pblock_mem_tile_2}\n")
+      fp.write("add_cells_to_pblock [get_pblocks {pblock_mem_tile_2}] [get_cells -quiet [list {esp_1/tiles_gen[" + str(mem_tiles[2]) + "].mem_tile.tile_mem_i}]]\n")
+      fp.write("resize_pblock [get_pblocks {pblock_mem_tile_2}] -add {SLICE_X25Y350:SLICE_X153Y598}\n")
+      fp.write("resize_pblock [get_pblocks {pblock_mem_tile_2}] -add {DSP48E2_X0Y140:DSP48E2_X2Y237}\n")
+      fp.write("resize_pblock [get_pblocks {pblock_mem_tile_2}] -add {RAMB18_X1Y140:RAMB18_X4Y237}\n")
+      fp.write("resize_pblock [get_pblocks {pblock_mem_tile_2}] -add {RAMB36_X1Y70:RAMB36_X4Y118}\n")
+      fp.write("create_pblock {pblock_mem_tile_3}\n")
+      fp.write("add_cells_to_pblock [get_pblocks {pblock_mem_tile_3}] [get_cells -quiet [list {esp_1/tiles_gen[" + str(mem_tiles[3]) + "].mem_tile.tile_mem_i}]]\n")
+      fp.write("resize_pblock [get_pblocks {pblock_mem_tile_3}] -add {SLICE_X169Y594:SLICE_X293Y836}\n")
+      fp.write("resize_pblock [get_pblocks {pblock_mem_tile_3}] -add {DSP48E2_X3Y238:DSP48E2_X5Y333}\n")
+      fp.write("resize_pblock [get_pblocks {pblock_mem_tile_3}] -add {RAMB18_X5Y238:RAMB18_X8Y333}\n")
+      fp.write("resize_pblock [get_pblocks {pblock_mem_tile_3}] -add {RAMB36_X5Y119:RAMB36_X8Y166}\n")
+      fp.write("create_pblock pblock_gen_mig.ddrc3\n")
+      fp.write("add_cells_to_pblock [get_pblocks pblock_gen_mig.ddrc3] [get_cells -quiet [list gen_mig.ddrc3]]\n")
+      fp.write("resize_pblock [get_pblocks pblock_gen_mig.ddrc3] -add {SLICE_X263Y660:SLICE_X336Y839}\n")
+      fp.write("resize_pblock [get_pblocks pblock_gen_mig.ddrc3] -add {DSP48E2_X6Y264:DSP48E2_X7Y335}\n")
+      fp.write("resize_pblock [get_pblocks pblock_gen_mig.ddrc3] -add {RAMB18_X9Y264:RAMB18_X10Y335}\n")
+      fp.write("resize_pblock [get_pblocks pblock_gen_mig.ddrc3] -add {RAMB36_X9Y132:RAMB36_X10Y167}\n")
   #2048 sets + 2 tiles or 4096 sets + 4 tiles
   elif int((soc.llc_sets.get() * soc.llc_ways.get()) / (esp_config.nmem * 16)) == 1024:
     fp.write("create_pblock {pblock_mem_tile_0}\n")
