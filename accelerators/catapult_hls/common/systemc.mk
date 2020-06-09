@@ -19,7 +19,6 @@ endif
 INCDIR ?=
 INCDIR += -I../tb
 INCDIR += -I../inc
-INCDIR += -I../src
 INCDIR += -I../common
 INCDIR += -I$(SYSTEMC)/include
 #INCDIR += -I$(CATAPULT_PATH)/shared/include
@@ -61,7 +60,7 @@ VPATH += ../common
 #VPATH += $(ESP_ROOT)/accelerators/catapult_hls/common/syn-templates/core/systems
 
 
-SRCS :=
+SRCS ?=
 SRCS += $(foreach s, $(wildcard ../src/*.cpp) $(wildcard ../tb/*.cpp), $(shell basename $(s)))
 #SRCS += $(foreach s, $(wildcard $(ESP_ROOT)/accelerators/catapult_hls/common/syn-templates/core/systems/*.cpp), $(shell basename $(s)))
 
