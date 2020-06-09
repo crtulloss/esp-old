@@ -39,7 +39,7 @@ int sc_main(int argc, char *argv[]) {
 	rst.write(true);
 
     trace_hierarchy(testbench, trace_file_ptr);
-	
+
     sc_start();
 
     delete(testbench);

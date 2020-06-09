@@ -15,7 +15,7 @@ array set opt {
     rtlsim     0
     lsynth     0
     debug      0
-    uarch      0
+    uarch      2
 }
 
 source ./build_prj.tcl

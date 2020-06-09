@@ -72,6 +72,34 @@ begin  -- mapping
     );
   end generate impl_basic_fx32_dma64_gen;
 
+
+  impl_acchannel_fx32_dma64_gen: if hls_conf = HLSCFG_SOFTMAX_SYSC_ACCHANNEL_FX32_DMA64 generate
+    softmax_sysc_acchannel_fx32_dma64_i: softmax_sysc_acchannel_fx32_dma64
+    port map(
+      conf_info(31 downto 0)    => conf_info_batch,
+      clk                        => clk,
+      rst                        => acc_rst,
+      conf_done                  => conf_done,
+      dma_read_ctrl_val          => dma_read_ctrl_valid,
+      dma_read_ctrl_rdy          => dma_read_ctrl_ready,
+      dma_read_ctrl_msg(66 downto 64)  => dma_read_ctrl_data_size,
+      dma_read_ctrl_msg(63 downto 32)  => dma_read_ctrl_data_length,
+      dma_read_ctrl_msg(31 downto 0)   => dma_read_ctrl_data_index,
+      dma_write_ctrl_val         => dma_write_ctrl_valid,
+      dma_write_ctrl_rdy         => dma_write_ctrl_ready,
+      dma_write_ctrl_msg(66 downto 64) => dma_write_ctrl_data_size,
+      dma_write_ctrl_msg(63 downto 32) => dma_write_ctrl_data_length,
+      dma_write_ctrl_msg(31 downto 0)  => dma_write_ctrl_data_index,
+      dma_read_chnl_val          => dma_read_chnl_valid,
+      dma_read_chnl_rdy          => dma_read_chnl_ready,
+      dma_read_chnl_msg          => dma_read_chnl_data,
+      dma_write_chnl_val         => dma_write_chnl_valid,
+      dma_write_chnl_rdy         => dma_write_chnl_ready,
+      dma_write_chnl_msg         => dma_write_chnl_data,
+      acc_done                   => acc_done
+    );
+  end generate impl_acchannel_fx32_dma64_gen;
+
 end mapping;
 
 

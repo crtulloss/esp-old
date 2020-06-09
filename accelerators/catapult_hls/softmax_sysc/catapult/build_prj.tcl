@@ -6,7 +6,7 @@ set ACCELERATOR "softmax_sysc"
 switch $opt(uarch) {
     0 { set UARCH_LABEL "basic" }
     1 { set UARCH_LABEL "matchlib" }
-    2 { set UARCH_LABEL "acshared" }
+    2 { set UARCH_LABEL "acchannel" }
     default { set UARCH_LABEL "unknown" }
 }
 
