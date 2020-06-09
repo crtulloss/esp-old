@@ -1,8 +1,15 @@
 #
 # Accelerator
 #
-
 set ACCELERATOR "softmax_sysc"
+
+switch $opt(uarch) {
+    0 { set UARCH_LABEL "basic" }
+    1 { set UARCH_LABEL "matchlib" }
+    2 { set UARCH_LABEL "acshared" }
+    default { set UARCH_LABEL "unknown" }
+}
+
 set PLM_HEIGHT 128
 set PLM_WIDTH 32
 set PLM_SIZE [expr ${PLM_WIDTH}*${PLM_HEIGHT}]
@@ -99,15 +106,12 @@ directive set -TRANSACTION_DONE_SIGNAL true
 
 solution options set Flows/QuestaSIM/SCCOM_OPTS {-64 -g -x c++ -Wall -Wno-unused-label -Wno-unknown-pragmas -DCLOCK_PERIOD=12500}
 
-set uarch "basic"
-if {$opt(hier)} {
-    set uarch "hier"
-}
-
-if {$opt(plm_shrd)} {
-    solution options set /Input/CompilerFlags {-DHLS_CATAPULT -D__MNTR_AC_SHARED__ -DCLOCK_PERIOD=12500}
-} else {
+if {$opt(uarch) == 0} {
     solution options set /Input/CompilerFlags {-DHLS_CATAPULT -DCLOCK_PERIOD=12500}
+} elseif {$opt(uarch) == 1} {
+    solution options set /Input/CompilerFlags {-DHIERARCHICAL_BLOCKS -DHLS_CATAPULT -DCLOCK_PERIOD=12500}
+} elseif {$opt(uarch) == 2} {
+    solution options set /Input/CompilerFlags {-DHIERARCHICAL_BLOCKS -DHLS_CATAPULT -D__MNTR_AC_SHARED__ -DCLOCK_PERIOD=12500}
 }
 
 #
@@ -117,7 +121,7 @@ if {$opt(plm_shrd)} {
 solution options set /Input/SearchPath { \
     ../tb \
     ../inc \
-    ../src/$uarch \
+    ../src/$UARCH_LABEL \
     ../../common/syn-templates \
     ../../common/syn-templates/core \
     ../../common/syn-templates/core/accelerators \
@@ -126,11 +130,11 @@ solution options set /Input/SearchPath { \
     ../../common/syn-templates/utils/configs }
 
 # Add source files.
-solution file add ../src/$uarch/softmax.cpp -type C++
+solution file add ../src/$UARCH_LABEL/softmax.cpp -type C++
 solution file add ../tb/sc_main.cpp -type C++ -exclude true
 solution file add ../tb/system.cpp -type C++ -exclude true
-if {$opt(hier)} {
-    solution file set ../tb/main.cpp -args {-DHIERARCHICAL_BLOCKS}
+if {$opt(uarch) == 1 || $opt(uarch) == 2} {
+    solution file set ../tb/sc_main.cpp -args {-DHIERARCHICAL_BLOCKS}
 }
 
 
@@ -149,6 +153,11 @@ solution option set Output/PackageStaticFiles true
 # Add Prefix to library and generated sub-blocks
 solution option set Output/PrefixStaticFiles true
 solution options set Output/SubBlockNamePrefix "esp_acc_${ACCELERATOR}_"
+
+# TODO: EXPERIMENTAL!
+# Variable expansion does not work.
+#set OUTPUT_NAME ${ACCELERATOR}_${UARCH_LABEL}_fx32_dma64
+#solution options set Output Basename { extract $OUTPUT_NAME_V }
 
 # Do not modify names
 solution option set Output/DoNotModifyNames true
@@ -234,34 +243,49 @@ if {$opt(hsynth)} {
     # Top-Module I/O
 
     # Arrays
+    if {$opt(uarch) == 0} {
+        # nothing said here
+        puts "TBD"
+    } elseif {$opt(uarch) == 1} {
+        # nothing said here
+        puts "TBD"
+    } elseif {$opt(uarch) == 2} {
+        directive set /$ACCELERATOR/plm_in:cns -MAP_TO_MODULE Xilinx_RAMS.BLOCK_1R1W_RBW
+        directive set /$ACCELERATOR/plm_in -WORD_WIDTH 32
 
-    ###directive set /$ACCELERATOR/plm_in:cns -MAP_TO_MODULE Xilinx_RAMS.BLOCK_1R1W_RBW
-    ###directive set /$ACCELERATOR/plm_in -WORD_WIDTH 32
+        directive set /$ACCELERATOR/plm_out:cns -MAP_TO_MODULE Xilinx_RAMS.BLOCK_1R1W_RBW
+        directive set /$ACCELERATOR/plm_out -WORD_WIDTH 32
 
-    ###directive set /$ACCELERATOR/plm_out:cns -MAP_TO_MODULE Xilinx_RAMS.BLOCK_1R1W_RBW
-    ###directive set /$ACCELERATOR/plm_out -WORD_WIDTH 32
+        directive set /$ACCELERATOR/$ACCELERATOR:load/load/LOAD_BATCH_LOOP:plm_tmp.data:rsc -MAP_TO_MODULE Xilinx_RAMS.BLOCK_1R1W_RBW
+        directive set /$ACCELERATOR/$ACCELERATOR:load/load/LOAD_BATCH_LOOP:plm_tmp.data -WORD_WIDTH 32
+        directive set /$ACCELERATOR/$ACCELERATOR:load/load/LOAD_BATCH_LOOP:plm_tmp.data:rsc -GEN_EXTERNAL_ENABLE true
 
-    ###directive set /$ACCELERATOR/$ACCELERATOR:load_input/load_input/LOAD_BATCH_LOOP:plm_local.data:rsc -MAP_TO_MODULE Xilinx_RAMS.BLOCK_1R1W_RBW
-    ###directive set /$ACCELERATOR/$ACCELERATOR:load_input/load_input/LOAD_BATCH_LOOP:plm_local.data -WORD_WIDTH 32
-    ###directive set /$ACCELERATOR/$ACCELERATOR:load_input/load_input/LOAD_BATCH_LOOP:plm_local.data:rsc -GEN_EXTERNAL_ENABLE true
+        directive set /$ACCELERATOR/$ACCELERATOR:compute/compute/COMPUTE_BATCH_LOOP:plm_tmp_in.data:rsc -MAP_TO_MODULE Xilinx_RAMS.BLOCK_1R1W_RBW
+        directive set /$ACCELERATOR/$ACCELERATOR:compute/compute/COMPUTE_BATCH_LOOP:plm_tmp_in.data -WORD_WIDTH 32
+        directive set /$ACCELERATOR/$ACCELERATOR:compute/compute/COMPUTE_BATCH_LOOP:plm_tmp_out.data:rsc -MAP_TO_MODULE Xilinx_RAMS.BLOCK_1R1W_RBW
+        directive set /$ACCELERATOR/$ACCELERATOR:compute/compute/COMPUTE_BATCH_LOOP:plm_tmp_out.data -WORD_WIDTH 32
 
-    ###directive set /$ACCELERATOR/$ACCELERATOR:compute_kernel/compute_kernel/COMPUTE_BATCH_LOOP:plm_local_in.data:rsc -MAP_TO_MODULE Xilinx_RAMS.BLOCK_1R1W_RBW
-    ###directive set /$ACCELERATOR/$ACCELERATOR:compute_kernel/compute_kernel/COMPUTE_BATCH_LOOP:plm_local_in.data -WORD_WIDTH 32
-    ###directive set /$ACCELERATOR/$ACCELERATOR:compute_kernel/compute_kernel/COMPUTE_BATCH_LOOP:plm_local_out.data:rsc -MAP_TO_MODULE Xilinx_RAMS.BLOCK_1R1W_RBW
-    ###directive set /$ACCELERATOR/$ACCELERATOR:compute_kernel/compute_kernel/COMPUTE_BATCH_LOOP:plm_local_out.data -WORD_WIDTH 32
-
-    ###directive set /$ACCELERATOR/$ACCELERATOR:store_output/store_output/STORE_BATCH_LOOP:plm_local.data:rsc -MAP_TO_MODULE Xilinx_RAMS.BLOCK_1R1W_RBW
-    ###directive set /$ACCELERATOR/$ACCELERATOR:store_output/store_output/STORE_BATCH_LOOP:plm_local.data -WORD_WIDTH 32
-    ###directive set /$ACCELERATOR/$ACCELERATOR:store_output/store_output/STORE_BATCH_LOOP:plm_local.data:rsc -GEN_EXTERNAL_ENABLE true
-
-    ###directive set /$ACCELERATOR/$ACCELERATOR:compute_kernel/compute_kernel/COMPUTE_BATCH_LOOP -PIPELINE_INIT_INTERVAL 1
-    ###directive set /$ACCELERATOR/$ACCELERATOR:store_output/store_output/STORE_BATCH_LOOP -PIPELINE_INIT_INTERVAL 1
-    ###directive set /$ACCELERATOR/$ACCELERATOR:load_input/load_input/LOAD_BATCH_LOOP -PIPELINE_INIT_INTERVAL 1
-
-    directive set /$ACCELERATOR/run/BATCH_LOOP -PIPELINE_INIT_INTERVAL 1
-    directive set /$ACCELERATOR/run/BATCH_LOOP -PIPELINE_STALL_MODE flush
+        directive set /$ACCELERATOR/$ACCELERATOR:store/store/STORE_BATCH_LOOP:plm_tmp.data:rsc -MAP_TO_MODULE Xilinx_RAMS.BLOCK_1R1W_RBW
+        directive set /$ACCELERATOR/$ACCELERATOR:store/store/STORE_BATCH_LOOP:plm_tmp.data -WORD_WIDTH 32
+        directive set /$ACCELERATOR/$ACCELERATOR:store/store/STORE_BATCH_LOOP:plm_tmp.data:rsc -GEN_EXTERNAL_ENABLE true
+    }
 
     # Loops
+
+    if {$opt(uarch) == 0} {
+        directive set /$ACCELERATOR/run/BATCH_LOOP -PIPELINE_INIT_INTERVAL 1
+        directive set /$ACCELERATOR/run/BATCH_LOOP -PIPELINE_STALL_MODE flush
+    } elseif {$opt(uarch) == 1} {
+        # nothing said here
+        puts "TBD"
+    } elseif {$opt(uarch) == 2} {
+        directive set /$ACCELERATOR/$ACCELERATOR:load/load/LOAD_BATCH_LOOP -PIPELINE_INIT_INTERVAL 1
+        directive set /$ACCELERATOR/$ACCELERATOR:load/load/LOAD_BATCH_LOOP -PIPELINE_STALL_MODE flush
+        directive set /$ACCELERATOR/$ACCELERATOR:compute/compute/COMPUTE_BATCH_LOOP -PIPELINE_INIT_INTERVAL 1
+        directive set /$ACCELERATOR/$ACCELERATOR:compute/compute/COMPUTE_BATCH_LOOP -PIPELINE_STALL_MODE flush
+        directive set /$ACCELERATOR/$ACCELERATOR:store/store/STORE_BATCH_LOOP -PIPELINE_INIT_INTERVAL 1
+        directive set /$ACCELERATOR/$ACCELERATOR:store/store/STORE_BATCH_LOOP -PIPELINE_STALL_MODE flush
+    }
 
     # Loops performance tracing
 
@@ -280,10 +304,14 @@ if {$opt(hsynth)} {
 
     # Area vs Latency Goals
 
-    ###directive set /$ACCELERATOR/config_accelerator -DESIGN_GOAL latency
-    ###directive set /$ACCELERATOR/$ACCELERATOR:load_input/load_input -DESIGN_GOAL latency
-    ###directive set /$ACCELERATOR/$ACCELERATOR:compute_kernel/compute_kernel -DESIGN_GOAL latency
-    ###directive set /$ACCELERATOR/$ACCELERATOR:store_output/store_output -DESIGN_GOAL latency
+    if {$opt(uarch) == 0} {
+        directive set /$ACCELERATOR/run -DESIGN_GOAL latency
+    } elseif {$opt(uarch) == 1 || $opt(uarch) == 2} {
+        directive set /$ACCELERATOR/config -DESIGN_GOAL latency
+        directive set /$ACCELERATOR/$ACCELERATOR:load/load -DESIGN_GOAL latency
+        directive set /$ACCELERATOR/$ACCELERATOR:compute/compute -DESIGN_GOAL latency
+        directive set /$ACCELERATOR/$ACCELERATOR:store/store -DESIGN_GOAL latency
+    }
 
     if {$opt(debug) != 1} {
         go architect
@@ -299,8 +327,13 @@ if {$opt(hsynth)} {
         #
 
         #directive set ENABLE_PHYSICAL true
-
         go extract
+
+        # TODO: EXPERIMENTAL!
+        # - Rename the top entity.
+        # - Other tools/flows may no support it.
+        # - Flag -prefix overrides any previous Output/SubBlockNamePrefix option.
+        #solution netlist -replace -verilog -prefix "esp_acc_${ACCELERATOR}_" -name "${ACCELERATOR}_${UARCH_LABEL}_fx32_dma64"
 
         #
         #
@@ -322,10 +355,6 @@ if {$opt(hsynth)} {
 project save
 
 puts "***************************************************************"
-if {$opt(hier)} {
-    puts "uArch: Hierarchical blocks"
-} else {
-    puts "uArch: Single block"
-}
+puts "uArch: $UARCH_LABEL"
 puts "***************************************************************"
 puts "Done!"

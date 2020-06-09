@@ -1,9 +1,13 @@
 # Copyright (c) 2011-2019 Columbia University, System Level Design Group
 # SPDX-License-Identifier: Apache-2.0
 
-syn:
+help:
+	@echo "make <TAB> to list targets"
+.PHONY: help
+
+syn-gui:
 	catapult -product ultra -f ./build_prj_top.tcl &
-.PHONY: syn
+.PHONY: syn-gui
 
 syn-sh:
 	catapult -product ultra -shell -f ./build_prj_top.tcl

@@ -25,7 +25,7 @@ static unsigned DMA_WORD_PER_BEAT(unsigned _st)
 #define DEV_NAME "sld,softmax_cxx"
 
 /* <<--params-->> */
-const int32_t batch = 1;
+const int32_t batch = 4;
 
 static unsigned in_words_adj;
 static unsigned out_words_adj;
@@ -255,6 +255,45 @@ int main(int argc, char * argv[])
 		return 0;
 	}
 
+
+#if 1
+	// Allocate memory
+	gold = aligned_malloc(out_size);
+	mem = aligned_malloc(mem_size);
+#ifndef __riscv
+	printf("  memory buffer base-address = %p\n", mem);
+#else
+	print_uart("  memory buffer base-address = "); print_uart_addr((uintptr_t) mem); print_uart("\n");
+#endif
+		// Alocate and populate page table
+	ptable = aligned_malloc(NCHUNK(mem_size) * sizeof(unsigned *));
+	for (i = 0; i < NCHUNK(mem_size); i++)
+		ptable[i] = (unsigned *) &mem[i * (CHUNK_SIZE / sizeof(token_t))];
+#ifndef __riscv
+	printf("  ptable = %p\n", ptable);
+	printf("  nchunk = %lu\n", NCHUNK(mem_size));
+#else
+	print_uart("  ptable = "); print_uart_addr((uintptr_t) ptable); print_uart("\n");
+	print_uart("  nchunk = "); print_uart_int(NCHUNK(mem_size)); print_uart("\n");
+#endif
+
+#ifndef __riscv
+	printf("  Generate input...\n");
+#else
+	print_uart("  Generate input...\n");
+#endif
+
+    init_buf(mem, gold);
+
+#ifndef __riscv
+	printf("  ... input ready!\n");
+#else
+	print_uart("  ... input ready!\n");
+#endif
+
+	// Pass common configuration parameters
+#endif
+
 	for (n = 0; n < ndev; n++) {
 
 		dev = &espdevs[n];
@@ -277,7 +316,7 @@ int main(int argc, char * argv[])
 #endif
 			return 0;
 		}
-
+#if 0
 		// Allocate memory
 		gold = aligned_malloc(out_size);
 		mem = aligned_malloc(mem_size);
@@ -313,7 +352,7 @@ int main(int argc, char * argv[])
 #endif
 
 		// Pass common configuration parameters
-
+#endif
 		iowrite32(dev, SELECT_REG, ioread32(dev, DEVID_REG));
 		iowrite32(dev, COHERENCE_REG, ACC_COH_NONE);
 
