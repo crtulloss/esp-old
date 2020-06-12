@@ -855,7 +855,7 @@ begin  -- architecture rtl
             reg.asserts(AS_AHBM_STORE_NOT_GRANTED) := '1';
           end if;
 
-          ahbmo.hwdata <= reg.line(reg.word_cnt*BITS_PER_WORD-1 downto (reg.word_cnt-1)*BITS_PER_WORD);
+          ahbmo.hwdata <= fix_endian(reg.line(reg.word_cnt*BITS_PER_WORD-1 downto (reg.word_cnt-1)*BITS_PER_WORD));
 
           ahbmo.hbusreq                         <= '1';
           ahbmo.htrans                          <= HTRANS_SEQ;
