@@ -24,7 +24,7 @@ static unsigned DMA_WORD_PER_BEAT(unsigned _st)
 #define DEV_NAME "sld,softmax_sysc"
 
 /* <<--params-->> */
-const int32_t batch = 1;
+const int32_t batch = 4;
 
 static unsigned in_words_adj;
 static unsigned out_words_adj;

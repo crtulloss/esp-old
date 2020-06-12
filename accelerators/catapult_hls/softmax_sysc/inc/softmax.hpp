@@ -12,14 +12,14 @@
 #include "utils/esp_handshake.hpp"
 #include "core/systems/esp_dma_info.hpp"
 
-#include <ac_sync.h>
-
-#include <ac_channel.h>
-template <class T, unsigned S>
-struct plm_t {
-public:
-   T data[S];
-};
+//#include <ac_sync.h>
+//
+//#include <ac_channel.h>
+//template <class T, unsigned S>
+//struct plm_t {
+//public:
+//   T data[S];
+//};
 
 // NoC-/Accelerator-interface dimensions
 #define DMA_WIDTH 64
@@ -34,8 +34,8 @@ typedef ac_int<DMA_WIDTH, false> dma_data_t;
 #define BATCH_MAX 16
 
 // PLM typedefs
-typedef plm_t<FPDATA_IN, PLM_SIZE> plm_in_t;
-typedef plm_t<FPDATA_OUT, PLM_SIZE> plm_out_t;
+//typedef plm_t<FPDATA_IN, PLM_SIZE> plm_in_t;
+//typedef plm_t<FPDATA_OUT, PLM_SIZE> plm_out_t;
 
 SC_MODULE(softmax_sysc) {
 public:
@@ -129,6 +129,7 @@ public:
         SC_CTHREAD(store, this->clk.pos());
         this->reset_signal_is(this->rst, false);
         // set_stack_size(0x400000);
+
 #else
         SC_CTHREAD(run, clk.pos());
         reset_signal_is(rst, false);
@@ -191,11 +192,11 @@ public:
     // The accelerator is done
     inline void accelerator_done();
 
-    //
-    // Private local memories
-    //
-    ac_channel<plm_in_t> plm_in;
-    ac_channel<plm_out_t> plm_out;
+//    //
+//    // Private local memories
+//    //
+//    ac_channel<plm_in_t> plm_in;
+//    ac_channel<plm_out_t> plm_out;
 };
 
 #endif /* __SOFTMAX_HPP__ */

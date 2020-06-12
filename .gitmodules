@@ -37,6 +37,3 @@
 [submodule "accelerators/catapult_hls/common/matchlib"]
 	path = accelerators/catapult_hls/common/matchlib
 	url = git@github.com:NVlabs/matchlib.git
-[submodule "accelerators/catapult_hls/common/boost"]
-	path = accelerators/catapult_hls/common/boost
-	url = git@github.com:boostorg/boost.git

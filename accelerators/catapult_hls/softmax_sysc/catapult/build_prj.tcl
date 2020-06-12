@@ -118,6 +118,21 @@ if {$opt(uarch) == 0} {
 # Input
 #
 
+if {$opt(uarch) == 1} {
+solution options set /Input/SearchPath { \
+    ../tb \
+    ../inc \
+    ../inc/matchlib \
+    ../src/$UARCH_LABEL \
+    ../../common/matchlib/cmod/include \
+    ../../common/boost/include \
+    ../../common/syn-templates \
+    ../../common/syn-templates/core \
+    ../../common/syn-templates/core/accelerators \
+    ../../common/syn-templates/core/systems \
+    ../../common/syn-templates/utils \
+    ../../common/syn-templates/utils/configs }
+} else {
 solution options set /Input/SearchPath { \
     ../tb \
     ../inc \
@@ -128,6 +143,7 @@ solution options set /Input/SearchPath { \
     ../../common/syn-templates/core/systems \
     ../../common/syn-templates/utils \
     ../../common/syn-templates/utils/configs }
+}
 
 # Add source files.
 solution file add ../src/$UARCH_LABEL/softmax.cpp -type C++

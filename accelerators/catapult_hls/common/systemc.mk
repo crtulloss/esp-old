@@ -24,6 +24,8 @@ INCDIR += -I$(SYSTEMC)/include
 #INCDIR += -I$(CATAPULT_PATH)/shared/include
 INCDIR += -I$(MGC_HOME)/shared/include
 INCDIR += -I$(ESP_ROOT)/accelerators/catapult_hls/common/syn-templates
+INCDIR += -I$(ESP_ROOT)/accelerators/catapult_hls/common/matchlib/cmod/include
+INCDIR += -I$(BOOST_HOME)/include
 
 CXXFLAGS ?=
 CXXFLAGS += -g
@@ -58,7 +60,6 @@ VPATH += ../inc
 VPATH += ../src
 VPATH += ../common
 #VPATH += $(ESP_ROOT)/accelerators/catapult_hls/common/syn-templates/core/systems
-
 
 SRCS ?=
 SRCS += $(foreach s, $(wildcard ../src/*.cpp) $(wildcard ../tb/*.cpp), $(shell basename $(s)))
