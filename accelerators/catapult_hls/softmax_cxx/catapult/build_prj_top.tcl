@@ -1,16 +1,16 @@
 array set opt {
-    # The 'asic' flag enables either ASIC or FPGA targets:
-    # = 0 -> Vivado (FPGA)
-    # = 1 -> Mentor Design Compiler
-    # = 2 -> Cadence Encounter RTL Compiler
-    # = 3 -> Cadence Genus
-    #
-    asic       0
+    # The 'csim' flag enables C simulation.
+    # The 'hsynth' flag enables HLS.
+    # The 'rtlsim' flag enables RTL simulation.
+    # The 'lsynth' flag enables logic synthesis.
+    # The 'debug' flag stops Catapult HLS before the architect step.
+    # The 'hier' flag enables an implementation with hiearchical blocks.
     csim       1
     hsynth     1
     rtlsim     1
     lsynth     0
-    debug      1
+    debug      0
+    hier       0
 }
 
 source ./build_prj.tcl

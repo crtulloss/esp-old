@@ -34,3 +34,6 @@
 [submodule "accelerators/catapult_hls/common/syn-templates"]
 	path = accelerators/catapult_hls/common/syn-templates
 	url = https://github.com/sld-columbia/esp-accelerator-templates.git
+[submodule "accelerators/catapult_hls/common/matchlib"]
+	path = accelerators/catapult_hls/common/matchlib
+	url = git@github.com:NVlabs/matchlib.git

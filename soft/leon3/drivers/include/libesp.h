@@ -33,7 +33,7 @@
 // <<--esp-include-->>
 #include "zeppelin.h"
 #include "softmax_cxx.h"
-#include "softmax.h"
+#include "softmax_sysc.h"
 #include "FFTAccelerator.h"
 #include "AdderAccelerator.h"
 #include "fft.h"
@@ -52,7 +52,7 @@ enum esp_accelerator_type {
 	// <<--esp-enum-->>
 	zeppelin,
 	softmax_cxx,
-	softmax,
+	softmax_sysc,
 	fftaccelerator,
 	adderaccelerator,
 	fft,
@@ -70,7 +70,7 @@ union esp_accelerator_descriptor {
 	// <<--esp-descriptor-->>
 	struct zeppelin_access zeppelin_desc;
 	struct softmax_cxx_access softmax_cxx_desc;
-	struct softmax_access softmax_desc;
+	struct softmax_sysc_access softmax_sysc_desc;
 	struct fftaccelerator_access fftaccelerator_desc;
 	struct adderaccelerator_access adderaccelerator_desc;
 	struct fft_access fft_desc;

@@ -239,6 +239,13 @@ int main(int argc, char * argv[])
 #endif
 
 	ndev = probe(&espdevs, SLD_SOFTMAX_CXX, DEV_NAME);
+
+#ifndef __riscv
+	printf("Found %d devices: %s\n", ndev, DEV_NAME);
+#else
+	print_uart("Found "); print_uart_int(ndev); print_uart(" devices: sld,softmax_cxx\n");
+#endif
+
 	if (ndev == 0) {
 #ifndef __riscv
 		printf("softmax_cxx not found\n");
@@ -247,6 +254,45 @@ int main(int argc, char * argv[])
 #endif
 		return 0;
 	}
+
+
+#if 1
+	// Allocate memory
+	gold = aligned_malloc(out_size);
+	mem = aligned_malloc(mem_size);
+#ifndef __riscv
+	printf("  memory buffer base-address = %p\n", mem);
+#else
+	print_uart("  memory buffer base-address = "); print_uart_addr((uintptr_t) mem); print_uart("\n");
+#endif
+		// Alocate and populate page table
+	ptable = aligned_malloc(NCHUNK(mem_size) * sizeof(unsigned *));
+	for (i = 0; i < NCHUNK(mem_size); i++)
+		ptable[i] = (unsigned *) &mem[i * (CHUNK_SIZE / sizeof(token_t))];
+#ifndef __riscv
+	printf("  ptable = %p\n", ptable);
+	printf("  nchunk = %lu\n", NCHUNK(mem_size));
+#else
+	print_uart("  ptable = "); print_uart_addr((uintptr_t) ptable); print_uart("\n");
+	print_uart("  nchunk = "); print_uart_int(NCHUNK(mem_size)); print_uart("\n");
+#endif
+
+#ifndef __riscv
+	printf("  Generate input...\n");
+#else
+	print_uart("  Generate input...\n");
+#endif
+
+    init_buf(mem, gold);
+
+#ifndef __riscv
+	printf("  ... input ready!\n");
+#else
+	print_uart("  ... input ready!\n");
+#endif
+
+	// Pass common configuration parameters
+#endif
 
 	for (n = 0; n < ndev; n++) {
 
@@ -270,7 +316,7 @@ int main(int argc, char * argv[])
 #endif
 			return 0;
 		}
-
+#if 0
 		// Allocate memory
 		gold = aligned_malloc(out_size);
 		mem = aligned_malloc(mem_size);
@@ -306,7 +352,7 @@ int main(int argc, char * argv[])
 #endif
 
 		// Pass common configuration parameters
-
+#endif
 		iowrite32(dev, SELECT_REG, ioread32(dev, DEVID_REG));
 		iowrite32(dev, COHERENCE_REG, ACC_COH_NONE);
 

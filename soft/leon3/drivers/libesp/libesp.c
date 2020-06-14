@@ -29,8 +29,8 @@ void *accelerator_thread( void *ptr )
 	case softmax_cxx :
 		rc = ioctl(info->fd, SOFTMAX_CXX_IOC_ACCESS, info->desc.softmax_cxx_desc);
 		break;
-	case softmax :
-		rc = ioctl(info->fd, SOFTMAX_IOC_ACCESS, info->desc.softmax_desc);
+	case softmax_sysc :
+		rc = ioctl(info->fd, SOFTMAX_SYSC_IOC_ACCESS, info->desc.softmax_sysc_desc);
 		break;
 	case fftaccelerator :
 		rc = ioctl(info->fd, FFTACCELERATOR_IOC_ACCESS, info->desc.fftaccelerator_desc);
@@ -103,8 +103,8 @@ static void esp_config(esp_thread_info_t cfg[], unsigned nacc)
 		case softmax_cxx :
 			esp_prepare(&info->desc.softmax_cxx_desc.esp);
 			break;
-		case softmax :
-			esp_prepare(&info->desc.softmax_desc.esp);
+		case softmax_sysc :
+			esp_prepare(&info->desc.softmax_sysc_desc.esp);
 			break;
 		case fftaccelerator :
 			esp_prepare(&info->desc.fftaccelerator_desc.esp);

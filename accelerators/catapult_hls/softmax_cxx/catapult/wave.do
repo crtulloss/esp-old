@@ -27,7 +27,7 @@ add wave -noupdate -label dma_write_chnl_rsc_dat -radix hexadecimal /scverify_to
 add wave -noupdate -label dma_write_chnl_rsc_vld -radix hexadecimal /scverify_top/rtl/dma_write_chnl_rsc_vld
 add wave -noupdate -label dma_write_chnl_rsc_rdy -radix hexadecimal /scverify_top/rtl/dma_write_chnl_rsc_rdy
 add wave -noupdate -divider acc_done
-add wave -noupdate -label acc_done_sync_vld -radix hexadecimal /scverify_top/rtl/acc_done_sync_vld
+#add wave -noupdate -label acc_done_sync_vld -radix hexadecimal /scverify_top/rtl/acc_done_sync_vld
 add wave -noupdate -divider debug
 add wave -noupdate -label debug_rsc_dat -radix hexadecimal /scverify_top/rtl/debug_rsc_dat
 add wave -noupdate -divider misc
