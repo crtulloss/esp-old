@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <sld>
-  <accelerator name="softmax_sysc" desc="Accelerator SOFTMAX" data_size="4" device_id="050" hls_tool="stratus_hls">
+  <accelerator name="softmax_sysc" desc="Accelerator SOFTMAX [SystemC]" data_size="4" device_id="050" hls_tool="catapult_hls_sysc">
     <param name="batch" desc="batch" />
   </accelerator>
 </sld>
