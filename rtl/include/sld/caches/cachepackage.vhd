@@ -116,6 +116,8 @@ package cachepackage is
   constant HSIZE_HW : hsize_t := "001";
   constant HSIZE_W  : hsize_t := "010";
 
+  constant dma32_words : integer := ARCH_BITS / 32;
+
   -----------------------------------------------------------------------------
   -- Functions
   -----------------------------------------------------------------------------
@@ -123,6 +125,9 @@ package cachepackage is
     return word_t;
 
   function read_word (line : line_t; w_off : integer)
+    return word_t;
+
+  function read_word32 (line : line_t; w_off : integer; w32_off : integer)
     return word_t;
 
   function make_header (coh_msg     : coh_msg_t; mem_info : tile_mem_info_vector(0 to CFG_NMEM_TILE - 1);
@@ -277,6 +282,7 @@ package cachepackage is
       dma_tile_id   : dma_attribute_array;
       tile_cache_id : attribute_vector(0 to CFG_TILES_NUM - 1);
       tile_dma_id   : attribute_vector(0 to CFG_TILES_NUM - 1);
+      eth_dma_id    : integer;
       dma_y         : yx_vec(0 to 2**NLLC_MAX_LOG2 - 1);
       dma_x         : yx_vec(0 to 2**NLLC_MAX_LOG2 - 1);
       cache_y       : yx_vec(0 to 2**NL2_MAX_LOG2 - 1);
@@ -369,6 +375,19 @@ package body cachepackage is
 
   end function read_word;
   
+  function read_word32 (line : line_t; w_off : integer; w32_off : integer) return word_t is
+
+    variable word  : word_t;
+    
+  begin
+
+    word := (others => '0');
+    word(31 downto 0) := line((w_off * BITS_PER_WORD) + (w32_off * 32) + 32 - 1 downto (w_off * BITS_PER_WORD) + (w32_off * 32));
+
+    return word;
+
+  end function read_word32;
+
   function make_header (coh_msg     : coh_msg_t; mem_info : tile_mem_info_vector(0 to CFG_NMEM_TILE - 1);
                         mem_num     : integer; hprot : hprot_t; addr : line_addr_t;
                         local_x     : local_yx; local_y : local_yx;

@@ -415,6 +415,7 @@ begin
         dma_tile_id   => dma_tile_id,
         tile_cache_id => tile_cache_id,
         tile_dma_id   => tile_dma_id,
+        eth_dma_id    => tile_dma_id(io_tile_id),
         dma_y         => dma_y,
         dma_x         => dma_x,
         cache_y       => cache_y,
