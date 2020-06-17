@@ -58,6 +58,9 @@ bool thread_is_p2p(esp_thread_info_t *thread)
 {
      switch (thread->type) {
         // <<--esp-prepare-->>
+	case vitdodec :
+		return (thread->desc.vitdodec_desc.esp.p2p_store 
+			|| thread->desc.vitdodec_desc.esp.p2p_nsrcs);
          case fftaccelerator :
             return (thread->desc.fftaccelerator_desc.esp.p2p_store 
                     || thread->desc.fftaccelerator_desc.esp.p2p_nsrcs);
@@ -211,6 +214,9 @@ void *accelerator_thread_serial(void *ptr)
         gettime(&th_start);
         switch (info->type) {
         // <<--esp-ioctl-->>
+        case vitdodec :
+            rc = ioctl(info->fd, VITDODEC_IOC_ACCESS, info->desc.vitdodec_desc);
+            break;
         case fftaccelerator :
             rc = ioctl(info->fd, FFTACCELERATOR_IOC_ACCESS, info->desc.fftaccelerator_desc);
             break;
