@@ -23,9 +23,6 @@ void *accelerator_thread( void *ptr )
 	gettime(&th_start);
 	switch (info->type) {
 	// <<--esp-ioctl-->>
-	case zeppelin :
-		rc = ioctl(info->fd, ZEPPELIN_IOC_ACCESS, info->desc.zeppelin_desc);
-		break;
 	case softmax_cxx :
 		rc = ioctl(info->fd, SOFTMAX_CXX_IOC_ACCESS, info->desc.softmax_cxx_desc);
 		break;
@@ -97,9 +94,6 @@ static void esp_config(esp_thread_info_t cfg[], unsigned nacc)
 
 		switch (info->type) {
 		// <<--esp-prepare-->>
-		case zeppelin :
-			esp_prepare(&info->desc.zeppelin_desc.esp);
-			break;
 		case softmax_cxx :
 			esp_prepare(&info->desc.softmax_cxx_desc.esp);
 			break;

@@ -31,7 +31,6 @@
 #include <esp_accelerator.h>
 
 // <<--esp-include-->>
-#include "zeppelin.h"
 #include "softmax_cxx.h"
 #include "softmax_sysc.h"
 #include "FFTAccelerator.h"
@@ -50,7 +49,6 @@ unsigned DMA_WORD_PER_BEAT(unsigned _st);
 
 enum esp_accelerator_type {
 	// <<--esp-enum-->>
-	zeppelin,
 	softmax_cxx,
 	softmax_sysc,
 	fftaccelerator,
@@ -68,7 +66,6 @@ enum esp_accelerator_type {
 
 union esp_accelerator_descriptor {
 	// <<--esp-descriptor-->>
-	struct zeppelin_access zeppelin_desc;
 	struct softmax_cxx_access softmax_cxx_desc;
 	struct softmax_sysc_access softmax_sysc_desc;
 	struct fftaccelerator_access fftaccelerator_desc;
