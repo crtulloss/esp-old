@@ -11,7 +11,6 @@
 #define DRV_NAME	"softmax_sysc"
 
 /* <<--regs-->> */
-#define SOFTMAX_SYSC_SIZE_REG 0x44
 #define SOFTMAX_SYSC_BATCH_REG 0x40
 
 struct softmax_sysc_device {
@@ -22,7 +21,7 @@ static struct esp_driver softmax_sysc_driver;
 
 static struct of_device_id softmax_sysc_device_ids[] = {
 	{
-		.name = "SLD_SOFTMAX",
+		.name = "SLD_SOFTMAX_SYSC",
 	},
 	{
 		.name = "eb_050",
@@ -45,7 +44,6 @@ static void softmax_sysc_prep_xfer(struct esp_device *esp, void *arg)
 	struct softmax_sysc_access *a = arg;
 
 	/* <<--regs-config-->> */
-	iowrite32be(a->size, esp->iomem + SOFTMAX_SYSC_SIZE_REG);
 	iowrite32be(a->batch, esp->iomem + SOFTMAX_SYSC_BATCH_REG);
 	iowrite32be(a->src_offset, esp->iomem + SRC_OFFSET_REG);
 	iowrite32be(a->dst_offset, esp->iomem + DST_OFFSET_REG);
@@ -125,6 +123,6 @@ module_exit(softmax_sysc_exit)
 
 MODULE_DEVICE_TABLE(of, softmax_sysc_device_ids);
 
-MODULE_AUTHOR("Emilio G. Cota <cota@braap.org>");
+MODULE_AUTHOR("Giuseppe Di Guglielmo <giuseppe@cs.columbia.edu>");
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("softmax_sysc driver");

@@ -123,6 +123,6 @@ module_exit(softmax_cxx_exit)
 
 MODULE_DEVICE_TABLE(of, softmax_cxx_device_ids);
 
-MODULE_AUTHOR("Emilio G. Cota <cota@braap.org>");
+MODULE_AUTHOR("Giuseppe Di Guglielmo <giuseppe@cs.columbia.edu>");
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("softmax_cxx driver");
