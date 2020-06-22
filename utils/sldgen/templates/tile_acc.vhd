@@ -220,8 +220,6 @@ architecture rtl of tile_acc is
         noc6_output_port   : out noc_flit_type;
         noc6_data_void_out : out std_logic_vector(4 downto 0);
         noc6_stop_out      : out std_logic_vector(4 downto 0);
-
-        -- Monitor output. Can be left unconnected
         noc1_mon_noc_vec   : out monitor_noc_type;
         noc2_mon_noc_vec   : out monitor_noc_type;
         noc3_mon_noc_vec   : out monitor_noc_type;
@@ -232,7 +230,21 @@ architecture rtl of tile_acc is
 
   end component;
 
-  signal clk_feedthru : std_ulogic;
+  signal clk_feedthru   : std_ulogic;
+  signal apbi           : apb_slv_in_type;
+  signal apbo           : apb_slv_out_vector;
+  signal pready         : std_ulogic;
+  signal pready_noc     : std_ulogic;
+  signal mon_dvfs_int   : monitor_dvfs_type;
+  signal mon_cache_int  : monitor_cache_type;
+  signal mon_acc_int    : monitor_acc_type;
+  signal mon_noc        : monitor_noc_vector(1 to 6);
+  signal noc1_mon_noc_vec_int  : monitor_noc_type;
+  signal noc2_mon_noc_vec_int  : monitor_noc_type;
+  signal noc3_mon_noc_vec_int  : monitor_noc_type;
+  signal noc4_mon_noc_vec_int  : monitor_noc_type;
+  signal noc5_mon_noc_vec_int  : monitor_noc_type;
+  signal noc6_mon_noc_vec_int  : monitor_noc_type;
 
   signal coherence_req_wrreq        : std_ulogic;
   signal coherence_req_data_in      : noc_flit_type;
@@ -286,6 +298,8 @@ architecture rtl of tile_acc is
   constant this_pirq           : integer                            := tile_apb_irq(tile_id);
   constant this_irq_type       : integer                            := tile_irq_type(tile_id);
   constant this_scatter_gather : integer range 0 to 1               := tile_scatter_gather(tile_id);
+  constant this_csr_pindex     : integer                            := tile_csr_pindex(tile_id);
+  constant this_csr_pconfig    : apb_config_type                    := fixed_apbo_pconfig(this_csr_pindex);
   constant this_local_apb_mask : std_logic_vector(0 to NAPBSLV - 1) := local_apb_mask(tile_id);
   constant this_has_l2         : integer                            := tile_has_l2(tile_id);
   constant this_has_dvfs       : integer                            := tile_has_dvfs(tile_id);
@@ -538,12 +552,12 @@ begin
      noc6_output_port   => noc6_output_port,
      noc6_data_void_out => noc6_data_void_out_s,
      noc6_stop_out      => noc6_stop_out_s,
-     noc1_mon_noc_vec   => noc1_mon_noc_vec,
-     noc2_mon_noc_vec   => noc2_mon_noc_vec,
-     noc3_mon_noc_vec   => noc3_mon_noc_vec,
-     noc4_mon_noc_vec   => noc4_mon_noc_vec,
-     noc5_mon_noc_vec   => noc5_mon_noc_vec,
-     noc6_mon_noc_vec   => noc6_mon_noc_vec
+     noc1_mon_noc_vec   => noc1_mon_noc_vec_int,
+     noc2_mon_noc_vec   => noc2_mon_noc_vec_int,
+     noc3_mon_noc_vec   => noc3_mon_noc_vec_int,
+     noc4_mon_noc_vec   => noc4_mon_noc_vec_int,
+     noc5_mon_noc_vec   => noc5_mon_noc_vec_int,
+     noc6_mon_noc_vec   => noc6_mon_noc_vec_int
 
      );
 
@@ -556,6 +570,84 @@ begin
   -----------------------------------------------------------------------------
   -- Tile queues
   -----------------------------------------------------------------------------
+
+  -- Using only one apbo signal
+  no_apb : for i in 0 to NAPBSLV - 1 generate
+    local_apb : if i /= this_pindex and i /= this_csr_pindex generate
+      apbo(i)      <= apb_none;
+      apbo(i).pirq <= (others => '0');
+    end generate local_apb;
+  end generate no_apb;
+
+  -- Connect pready for APB3 accelerators
+  pready_gen: process (pready, apbi) is
+  begin  -- process pready_gen
+    if apbi.psel(this_pindex) = '1' then
+      pready_noc <= pready;
+    else
+      pready_noc <= '1';
+    end if;
+  end process pready_gen;
+
+  -- APB proxy
+  misc_noc2apb_1 : misc_noc2apb
+    generic map (
+      tech         => CFG_MEMTECH,
+      local_y      => this_local_y,
+      local_x      => this_local_x,
+      local_apb_en => this_local_apb_mask)
+    port map (
+      rst              => rst,
+      clk              => clk_feedthru,
+      apbi             => apbi,
+      apbo             => apbo,
+      pready           => pready_noc,
+      dvfs_transient   => mon_dvfs_int.transient,
+      apb_snd_wrreq    => apb_snd_wrreq,
+      apb_snd_data_in  => apb_snd_data_in,
+      apb_snd_full     => apb_snd_full,
+      apb_rcv_rdreq    => apb_rcv_rdreq,
+      apb_rcv_data_out => apb_rcv_data_out,
+      apb_rcv_empty    => apb_rcv_empty
+    );
+ 
+  --Monitors
+  mon_dvfs  <= mon_dvfs_int;
+  mon_cache <= mon_cache_int;
+  mon_acc   <= mon_acc_int; 
+  
+  noc1_mon_noc_vec <= noc1_mon_noc_vec_int;
+  noc2_mon_noc_vec <= noc2_mon_noc_vec_int;
+  noc3_mon_noc_vec <= noc3_mon_noc_vec_int;
+  noc4_mon_noc_vec <= noc4_mon_noc_vec_int;
+  noc5_mon_noc_vec <= noc5_mon_noc_vec_int;
+  noc6_mon_noc_vec <= noc6_mon_noc_vec_int;
+ 
+  mon_noc(1) <= noc1_mon_noc_vec_int;
+  mon_noc(2) <= noc2_mon_noc_vec_int;
+  mon_noc(3) <= noc3_mon_noc_vec_int;
+  mon_noc(4) <= noc4_mon_noc_vec_int;
+  mon_noc(5) <= noc5_mon_noc_vec_int;
+  mon_noc(6) <= noc6_mon_noc_vec_int;
+
+  -- Memory mapped registers
+  acc_tile_csr : esp_tile_csr
+    generic map(
+      pindex  => this_csr_pindex,
+      pconfig => this_csr_pconfig)
+    port map(
+      clk => clk_feedthru,
+      rstn => rst,
+      mon_ddr => monitor_ddr_none,
+      mon_mem => monitor_mem_none,
+      mon_noc => mon_noc,
+      mon_l2 => mon_cache_int,
+      mon_llc => monitor_cache_none,
+      mon_acc => mon_acc_int,
+      mon_dvfs => mon_dvfs_int,
+      apbi => apbi, 
+      apbo => apbo(this_csr_pindex)
+    );
 
   acc_tile_q_1 : acc_tile_q
     generic map (
@@ -635,6 +727,6 @@ begin
       noc6_in_data               => noc6_input_port,
       noc6_in_void               => noc6_acc_data_void_in,
       noc6_in_stop               => noc6_acc_stop_out);
-
+ 
 end;
 

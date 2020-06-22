@@ -220,8 +220,6 @@ architecture rtl of tile_slm is
       noc6_output_port   : out noc_flit_type;
       noc6_data_void_out : out std_logic_vector(4 downto 0);
       noc6_stop_out      : out std_logic_vector(4 downto 0);
-
-      -- Monitor output. Can be left unconnected
       noc1_mon_noc_vec   : out monitor_noc_type;
       noc2_mon_noc_vec   : out monitor_noc_type;
       noc3_mon_noc_vec   : out monitor_noc_type;
@@ -271,23 +269,48 @@ architecture rtl of tile_slm is
   signal remote_ahbm_snd_wrreq      : std_ulogic;
   signal remote_ahbm_snd_data_in    : noc_flit_type;
   signal remote_ahbm_snd_full       : std_ulogic;
+  signal apb_rcv_rdreq              : std_ulogic;
+  signal apb_rcv_data_out           : misc_noc_flit_type;
+  signal apb_rcv_empty              : std_ulogic;
+  signal apb_snd_wrreq              : std_ulogic;
+  signal apb_snd_data_in            : misc_noc_flit_type;
+  signal apb_snd_full               : std_ulogic;
+
 
   -- Bus
   signal ahbsi : ahb_slv_in_type;
   signal ahbso : ahb_slv_out_vector;
   signal ahbmi : ahb_mst_in_type;
   signal ahbmo : ahb_mst_out_vector;
+  signal apbi  : apb_slv_in_type;
+  signal apbo  : apb_slv_out_vector;
 
   signal ctrl_ahbsi : ahb_slv_in_type;
   signal ctrl_ahbso : ahb_slv_out_vector;
   signal ctrl_ahbmi : ahb_mst_in_type;
   signal ctrl_ahbmo : ahb_mst_out_vector;
+  signal ctrl_apbi  : apb_slv_in_type;
+  signal ctrl_apbo  : apb_slv_out_vector;
+
+  -- Mon
+  signal mon_mem_int  : monitor_mem_type;
+  signal mon_dvfs_int : monitor_dvfs_type;
+  signal mon_noc      : monitor_noc_vector(1 to 6);
+  signal noc1_mon_noc_vec_int  : monitor_noc_type;
+  signal noc2_mon_noc_vec_int  : monitor_noc_type;
+  signal noc3_mon_noc_vec_int  : monitor_noc_type;
+  signal noc4_mon_noc_vec_int  : monitor_noc_type;
+  signal noc5_mon_noc_vec_int  : monitor_noc_type;
+  signal noc6_mon_noc_vec_int  : monitor_noc_type;
 
   -- Tile parameters
   constant this_slm_id       : integer                            := tile_slm_id(tile_id);
   constant this_slm_hindex   : integer                            := slm_hindex(this_slm_id);
   constant this_slm_haddr    : integer                            := slm_haddr(this_slm_id);
   constant this_slm_hmask    : integer                            := slm_hmask(this_slm_id);
+  constant this_csr_pindex   : integer                            := tile_csr_pindex(tile_id);
+  constant this_csr_pconfig  : apb_config_type                    := fixed_apbo_pconfig(this_csr_pindex);
+  constant this_local_apb_en : std_logic_vector(0 to NAPBSLV - 1) := local_apb_mask(tile_id);
   constant this_local_ahb_en : std_logic_vector(0 to NAHBSLV - 1) := local_ahb_mask(tile_id);
   constant this_local_y      : local_yx                           := tile_y(tile_id);
   constant this_local_x      : local_yx                           := tile_x(tile_id);
@@ -493,12 +516,12 @@ begin
      noc6_output_port   => noc6_output_port,
      noc6_data_void_out => noc6_data_void_out_s,
      noc6_stop_out      => noc6_stop_out_s,
-     noc1_mon_noc_vec   => noc1_mon_noc_vec,
-     noc2_mon_noc_vec   => noc2_mon_noc_vec,
-     noc3_mon_noc_vec   => noc3_mon_noc_vec,
-     noc4_mon_noc_vec   => noc4_mon_noc_vec,
-     noc5_mon_noc_vec   => noc5_mon_noc_vec,
-     noc6_mon_noc_vec   => noc6_mon_noc_vec
+     noc1_mon_noc_vec   => noc1_mon_noc_vec_int,
+     noc2_mon_noc_vec   => noc2_mon_noc_vec_int,
+     noc3_mon_noc_vec   => noc3_mon_noc_vec_int,
+     noc4_mon_noc_vec   => noc4_mon_noc_vec_int,
+     noc5_mon_noc_vec   => noc5_mon_noc_vec_int,
+     noc6_mon_noc_vec   => noc6_mon_noc_vec_int
 
      );
 
@@ -528,6 +551,19 @@ begin
                  nahbm   => maxahbm, nahbs => maxahbs)
     port map (rst, clk, ctrl_ahbmi, ctrl_ahbmo, ctrl_ahbsi, ctrl_ahbso);
 
+  io_pandp_gen : process (ctrl_apbi, apbo)
+  begin  -- process assign_bus_ctrl_sig
+    apbi      <= ctrl_apbi;
+    ctrl_apbo <= apbo;
+
+    for i in 0 to NAPBSLV - 1 loop
+      if this_local_apb_en(i) = '1' then
+        ctrl_apbo(i).pconfig <= fixed_apbo_pconfig(i);
+      else
+        ctrl_apbo(i).pconfig <= pconfig_none;
+      end if;
+    end loop;  -- i
+  end process io_pandp_gen;
 
   -----------------------------------------------------------------------
   ---  Drive unused bus ports
@@ -567,27 +603,64 @@ begin
   -----------------------------------------------------------------------------
 
   -- DVFS monitor
-  mon_dvfs.vf        <= "1000";         --run at highest frequency always
-  mon_dvfs.transient <= '0';
-  mon_dvfs.clk       <= clk;
-  mon_dvfs.acc_idle  <= '0';
-  mon_dvfs.traffic   <= '0';
-  mon_dvfs.burst     <= '0';
+  mon_dvfs_int.vf        <= "1000";         --run at highest frequency always
+  mon_dvfs_int.transient <= '0';
+  mon_dvfs_int.clk       <= clk;
+  mon_dvfs_int.acc_idle  <= '0';
+  mon_dvfs_int.traffic   <= '0';
+  mon_dvfs_int.burst     <= '0';
+
+  mon_dvfs <= mon_dvfs_int;
 
   -- Memory access monitor
-  mon_mem.clk              <= clk;
-  mon_mem.coherent_req     <= '0';
-  mon_mem.coherent_fwd     <= '0';
-  mon_mem.coherent_rsp_rcv <= '0';
-  mon_mem.coherent_rsp_snd <= '0';
+  mon_mem_int.clk              <= clk;
+  mon_mem_int.coherent_req     <= '0';
+  mon_mem_int.coherent_fwd     <= '0';
+  mon_mem_int.coherent_rsp_rcv <= '0';
+  mon_mem_int.coherent_rsp_snd <= '0';
   -- we can allow Ethernet to use the SLM and Ethernet operates on the
   -- coherent DMA queues when LLC is enabled. Nevertheless, when using SLM,
   -- Ethernet data will not be cached, hence any activity on the coherent DMA
   -- queues is still reported as non-coherent DMA for this tile.
-  mon_mem.dma_req          <= dma_rcv_rdreq or cpu_dma_rcv_rdreq or coherent_dma_rcv_rdreq;
-  mon_mem.dma_rsp          <= dma_snd_wrreq or cpu_dma_snd_wrreq or coherent_dma_snd_wrreq;
-  mon_mem.coherent_dma_req <= '0';
-  mon_mem.coherent_dma_rsp <= '0';
+  mon_mem_int.dma_req          <= dma_rcv_rdreq or cpu_dma_rcv_rdreq or coherent_dma_rcv_rdreq;
+  mon_mem_int.dma_rsp          <= dma_snd_wrreq or cpu_dma_snd_wrreq or coherent_dma_snd_wrreq;
+  mon_mem_int.coherent_dma_req <= '0';
+  mon_mem_int.coherent_dma_rsp <= '0';
+  
+  mon_mem <= mon_mem_int;
+
+  noc1_mon_noc_vec <= noc1_mon_noc_vec_int;
+  noc2_mon_noc_vec <= noc2_mon_noc_vec_int;
+  noc3_mon_noc_vec <= noc3_mon_noc_vec_int;
+  noc4_mon_noc_vec <= noc4_mon_noc_vec_int;
+  noc5_mon_noc_vec <= noc5_mon_noc_vec_int;
+  noc6_mon_noc_vec <= noc6_mon_noc_vec_int;
+ 
+  mon_noc(1) <= noc1_mon_noc_vec_int;
+  mon_noc(2) <= noc2_mon_noc_vec_int;
+  mon_noc(3) <= noc3_mon_noc_vec_int;
+  mon_noc(4) <= noc4_mon_noc_vec_int;
+  mon_noc(5) <= noc5_mon_noc_vec_int;
+  mon_noc(6) <= noc6_mon_noc_vec_int;
+ 
+  -- Memory mapped registers
+  slm_tile_csr : esp_tile_csr
+    generic map(
+      pindex  => this_csr_pindex,
+      pconfig => this_csr_pconfig)
+    port map(
+      clk => clk,
+      rstn => rst,
+      mon_ddr => monitor_ddr_none,
+      mon_mem => mon_mem_int,
+      mon_noc => mon_noc,
+      mon_l2 => monitor_cache_none,
+      mon_llc => monitor_cache_none,
+      mon_acc => monitor_acc_none,
+      mon_dvfs => mon_dvfs_int,
+      apbi => apbi, 
+      apbo => apbo(this_csr_pindex)
+    );
 
   -----------------------------------------------------------------------------
   -- Proxies
@@ -683,6 +756,28 @@ begin
     remote_ahbs_snd_data_in  <= remote_ahbm_snd_data_in;
   end generate std_bus;
 
+
+  -- Handle APB requests for CSRs
+  misc_noc2apb_1 : misc_noc2apb
+    generic map (
+      tech         => CFG_FABTECH,
+      local_y      => this_local_y,
+      local_x      => this_local_x,
+      local_apb_en => this_local_apb_en)
+    port map (
+      rst              => rst,
+      clk              => clk,
+      apbi             => ctrl_apbi,
+      apbo             => ctrl_apbo,
+      pready           => '1',
+      dvfs_transient   => '0',
+      apb_snd_wrreq    => apb_snd_wrreq,
+      apb_snd_data_in  => apb_snd_data_in,
+      apb_snd_full     => apb_snd_full,
+      apb_rcv_rdreq    => apb_rcv_rdreq,
+      apb_rcv_data_out => apb_rcv_data_out,
+      apb_rcv_empty    => apb_rcv_empty);
+
   -----------------------------------------------------------------------------
   -- Tile queues
   -----------------------------------------------------------------------------
@@ -721,6 +816,12 @@ begin
       remote_ahbs_snd_wrreq      => remote_ahbs_snd_wrreq,
       remote_ahbs_snd_data_in    => remote_ahbs_snd_data_in,
       remote_ahbs_snd_full       => remote_ahbs_snd_full,
+      apb_snd_wrreq              => apb_snd_wrreq,
+      apb_snd_data_in            => apb_snd_data_in,
+      apb_snd_full               => apb_snd_full,
+      apb_rcv_rdreq              => apb_rcv_rdreq,
+      apb_rcv_data_out           => apb_rcv_data_out,
+      apb_rcv_empty              => apb_rcv_empty,
       noc1_out_data              => noc1_output_port,
       noc1_out_void              => noc1_mem_data_void_out,
       noc1_out_stop              => noc1_mem_stop_in,
@@ -757,4 +858,5 @@ begin
       noc6_in_data               => noc6_input_port,
       noc6_in_void               => noc6_mem_data_void_in,
       noc6_in_stop               => noc6_mem_stop_out);
+
 end;
