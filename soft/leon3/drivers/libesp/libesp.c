@@ -58,7 +58,13 @@ bool thread_is_p2p(esp_thread_info_t *thread)
 {
      switch (thread->type) {
         // <<--esp-prepare-->>
-         case fftaccelerator :
+        case softmax_cxx :
+            return (thread->desc.softmax_cxx_desc.esp.p2p_store 
+                    || thread->desc.softmax_cxx_desc.esp.p2p_nsrcs);
+        case softmax_sysc :
+            return (thread->desc.softmax_sysc_desc.esp.p2p_store 
+                    || thread->desc.softmax_sysc_desc.esp.p2p_nsrcs);
+        case fftaccelerator :
             return (thread->desc.fftaccelerator_desc.esp.p2p_store 
                     || thread->desc.fftaccelerator_desc.esp.p2p_nsrcs);
         case adderaccelerator :
@@ -214,6 +220,12 @@ void *accelerator_thread_serial(void *ptr)
         gettime(&th_start);
         switch (info->type) {
         // <<--esp-ioctl-->>
+        case softmax_cxx :
+            rc = ioctl(info->fd, SOFTMAX_CXX_IOC_ACCESS, info->desc.softmax_cxx_desc);
+            break;
+        case softmax_sysc :
+            rc = ioctl(info->fd, SOFTMAX_SYSC_IOC_ACCESS, info->desc.softmax_sysc_desc);
+            break;
         case fftaccelerator :
             rc = ioctl(info->fd, FFTACCELERATOR_IOC_ACCESS, info->desc.fftaccelerator_desc);
             break;
@@ -296,10 +308,10 @@ static void esp_config(esp_thread_info_t* cfg[], unsigned nthreads, unsigned *na
             switch (info->type) {
             // <<--esp-prepare-->>
             case softmax_cxx :
-                esp_prepare(&info->desc.softmax_cxx_desc.esp);
+                esp_prepare(&info->desc.softmax_cxx_desc.esp, handle, policy);
                 break;
             case softmax_sysc :
-			    esp_prepare(&info->desc.softmax_sysc_desc.esp);
+			    esp_prepare(&info->desc.softmax_sysc_desc.esp, handle, policy);
     			break;
             case fftaccelerator :
                 esp_prepare(&info->desc.fftaccelerator_desc.esp, handle, policy);
