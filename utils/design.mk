@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 ### Supported technology libraries ###
-ASICLIBS =
+ASICLIBS = gf12
 FPGALIBS = virtex7 virtexu virtexup
 
 
