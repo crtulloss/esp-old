@@ -22,10 +22,12 @@ CCS_MAIN(int argc, char **argv)
     (void) argc; /* silent warning */
     (void) argv; /* silent warning */
 
+#if 0
     ESP_REPORT_INFO(VON, "-----------------------------");
     ESP_REPORT_INFO(VON, "START - SHA1BYTE - monte carlo");
     errors += sha1_montecarlo();
     ESP_REPORT_INFO(VON, "END - SHA1BYTE - monte carlo");
+#endif
 
     ESP_REPORT_INFO(VON, "-----------------------------");
     ESP_REPORT_INFO(VON, "START - SHA1BYTE - short messages");
