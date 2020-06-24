@@ -76,10 +76,6 @@ signal srst          : std_logic;
 signal sys_clk_int   : std_logic_vector(0 to CFG_NMEM_TILE - 1);
 signal refclk_int    : std_logic_vector(CFG_TILES_NUM -1 downto 0);
 signal pllbypass_int : std_logic_vector(CFG_TILES_NUM - 1 downto 0);
-signal uart_rxd_int  : std_logic;       -- UART1_RX (u1i.rxd)
-signal uart_txd_int  : std_logic;       -- UART1_TX (u1o.txd)
-signal uart_ctsn_int : std_logic;       -- UART1_RTSN (u1i.ctsn)
-signal uart_rtsn_int : std_logic;       -- UART1_RTSN (u1o.rtsn)
 signal cpuerr_vec    : std_logic_vector(0 to CFG_NCPU_TILE-1);
 
 type monitor_noc_cast_vector is array (1 to nocs_num) of monitor_noc_vector(0 to CFG_TILES_NUM-1);
@@ -179,15 +175,6 @@ begin
   pllbypass_int <= pllbypass;
 
   cpuerr <= cpuerr_vec(0);
-
-  -----------------------------------------------------------------------------
-  -- UART pads
-  -----------------------------------------------------------------------------
-
-  uart_rxd_pad   : inpad  generic map (level => cmos, voltage => x18v, tech => CFG_PADTECH) port map (uart_rxd, uart_rxd_int);
-  uart_txd_pad   : outpad generic map (level => cmos, voltage => x18v, tech => CFG_PADTECH) port map (uart_txd, uart_txd_int);
-  uart_ctsn_pad : inpad  generic map (level => cmos, voltage => x18v, tech => CFG_PADTECH) port map (uart_ctsn, uart_ctsn_int);
-  uart_rtsn_pad : outpad generic map (level => cmos, voltage => x18v, tech => CFG_PADTECH) port map (uart_rtsn, uart_rtsn_int);
 
 
   -----------------------------------------------------------------------------
@@ -749,10 +736,10 @@ begin
 	dvi_apbo           => dvi_apbo,
 	dvi_ahbmi          => dvi_ahbmi,
 	dvi_ahbmo          => dvi_ahbmo,
-	uart_rxd           => uart_rxd_int,
-	uart_txd           => uart_txd_int,
-	uart_ctsn          => uart_ctsn_int,
-	uart_rtsn          => uart_rtsn_int,
+	uart_rxd           => uart_rxd,
+	uart_txd           => uart_txd,
+	uart_ctsn          => uart_ctsn,
+	uart_rtsn          => uart_rtsn,
 	--TODO: REMOVE THIS and use NoC proxies
 	irq                => irq,
 	timer_irq          => timer_irq,
