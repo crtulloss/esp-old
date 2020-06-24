@@ -804,6 +804,9 @@ endif
 
 ARIANE ?= $(ESP_ROOT)/third-party/ariane
 VERILOG_ARIANE += $(shell strings $(ESP_ROOT)/utils/ariane_verilog.txt)
+ifneq ($(filter $(TECHLIB),$(FPGALIBS)),)
+VERILOG_ARIANE += $(shell strings $(ESP_ROOT)/utils/ariane_verilog_fpga.txt)
+endif
 
 PKG_LIST  = $(shell (find $(ESP_ROOT)/rtl -name "*.txt" ))
 PKG_LIST += $(shell (find $(ESP_ROOT)/sim -name "*.txt" ))
@@ -822,7 +825,8 @@ VHDL_RTL_SRCS  += $(shell (find $(ESP_ROOT)/tech/$(TECHLIB) -name "*.vhd" ))
 VLOG_RTL_SRCS   = $(shell (find $(ESP_ROOT)/rtl/src -name "*.v" ))
 VLOG_RTL_SRCS  += $(shell (find $(ESP_ROOT)/tech/$(TECHLIB) -name "*.v" ))
 
-SVLOG_RTL_SRCS  = $(shell (find $(ESP_ROOT)/rtl/src -name "*.sv" ))
+SVLOG_RTL_SRCS   = $(shell (find $(ESP_ROOT)/rtl/src -name "*.sv" ))
+SVLOG_RTL_SRCS  += $(shell (find $(ESP_ROOT)/tech/$(TECHLIB) -name "*.sv" ))
 
 VHDL_SIM_PKGS  = $(shell (find $(ESP_ROOT)/sim/include -name "*.vhd" ))
 VHDL_SIM_SRCS  = $(shell (find $(ESP_ROOT)/sim/src -name "*.vhd" ))
