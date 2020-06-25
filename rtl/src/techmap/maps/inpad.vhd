@@ -45,6 +45,9 @@ begin
 -- pragma translate_on
 	;
   end generate;
+  gf12p : if (tech = gf12) generate
+    x0 : gf12_inpad port map (pad, o);
+  end generate;
   xcv : if (is_unisim(tech) = 1) generate
     x0 : unisim_inpad generic map (level, voltage) port map (pad, o);
   end generate;

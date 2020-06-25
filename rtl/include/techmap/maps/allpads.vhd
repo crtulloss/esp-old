@@ -30,6 +30,18 @@ use work.gencomp.all;
 
 package allpads is
 
+component gf12_inpad 
+  port (pad : in std_ulogic; o : out std_ulogic);
+end component; 
+
+component gf12_iopad 
+  port (pad : inout std_logic; i, en : in std_ulogic; o : out std_logic);
+end component;
+
+component gf12_outpad 
+  port (pad : out std_ulogic; i : in std_ulogic);
+end component;
+
 component apa3_clkpad 
   generic (level : integer := 0; voltage : integer := 0);
   port (pad : in std_ulogic; o : out std_ulogic);
