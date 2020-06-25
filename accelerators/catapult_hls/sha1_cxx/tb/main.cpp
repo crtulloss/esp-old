@@ -14,7 +14,11 @@ CCS_MAIN(int argc, char **argv)
 {
     ESP_REPORT_INFO(VON, "-----------------------------");
     ESP_REPORT_INFO(VON, "ESP - SHA1 [Catapult HLS C++]");
+#ifdef HIERARCHICAL_BLOCKS
+    ESP_REPORT_INFO(VON, "      Hierarchical blocks");
+#else
     ESP_REPORT_INFO(VON, "      Single block");
+#endif
     ESP_REPORT_INFO(VON, "-----------------------------");
 
     int errors = 0;

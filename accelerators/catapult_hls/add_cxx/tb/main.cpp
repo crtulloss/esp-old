@@ -15,7 +15,7 @@ void add_accelerator_tb(unsigned length, DATA_WORD *input1, DATA_WORD *input2, u
 }
 
 CCS_MAIN(int argv, char **argc) {
-    ESP_REPORT_INFO(VON, "--------------------------0------------");
+    ESP_REPORT_INFO(VON, "---------------------------------------");
     ESP_REPORT_INFO(VON, "ESP - AddAccelerator [Catapult HLS C++]");
     ESP_REPORT_INFO(VON, "      Single block");
     ESP_REPORT_INFO(VON, "---------------------------------------");
@@ -58,7 +58,7 @@ CCS_MAIN(int argv, char **argc) {
     ESP_REPORT_INFO(VON, "  - DATA width: %u", DATA_WIDTH);
     ESP_REPORT_INFO(VON, "  - memory in (words): %u", add_accelerator_length * ESP_TO_UINT32(conf_info_data.batch));
     ESP_REPORT_INFO(VON, "  - memory out (words): %u", add_accelerator_length * ESP_TO_UINT32(conf_info_data.batch));
-    ESP_REPORT_INFO(VON, "-----------------");
+    ESP_REPORT_INFO(VON, "---------------------------------------");
 
     // Pass inputs to the accelerator
     for (unsigned b = 0; b < add_accelerator_batch; b++) {
@@ -91,7 +91,7 @@ CCS_MAIN(int argv, char **argc) {
     }
 
     // Validation
-    ESP_REPORT_INFO(VON, "-----------------");
+    ESP_REPORT_INFO(VON, "---------------------------------------");
     for (unsigned b = 0; b < conf_info_data.batch; b++) {
         unsigned ret = 0;
         add_accelerator_tb(add_accelerator_length, inputs1 + (b * add_accelerator_length), inputs2 + (b * add_accelerator_length), gold_outputs + (b * add_accelerator_length), ret);
@@ -118,7 +118,7 @@ CCS_MAIN(int argv, char **argc) {
         rc = 0;
     }
     ESP_REPORT_INFO(VON, "  - errors %u / total %u", errors, add_accelerator_batch * add_accelerator_length);
-    ESP_REPORT_INFO(VON, "-----------------");
+    ESP_REPORT_INFO(VON, "---------------------------------------");
 
     CCS_RETURN(rc);
 }

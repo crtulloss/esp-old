@@ -89,18 +89,18 @@ int sha1_montecarlo(void)
             data_t outputs[PLM_OUT_SIZE * BATCH_MAX];
             data_t gold_outputs[PLM_OUT_SIZE * BATCH_MAX];
 
-            ESP_REPORT_INFO(VON, "Configuration:");
-            ESP_REPORT_INFO(VON, "  - batch: %u", ESP_TO_UINT32(conf_info_data.batch));
-            ESP_REPORT_INFO(VON, "  - in_bytes: %u", ESP_TO_UINT32(conf_info_data.in_bytes));
-            ESP_REPORT_INFO(VON, "Other info:");
-            ESP_REPORT_INFO(VON, "  - DMA width: %u", DMA_WIDTH);
-            ESP_REPORT_INFO(VON, "  - DMA size [2 = 32b, 3 = 64b]: %u", DMA_SIZE);
-            ESP_REPORT_INFO(VON, "  - PLM-IN size: %u", PLM_IN_SIZE);
-            ESP_REPORT_INFO(VON, "  - PLM-OUT size: %u", PLM_OUT_SIZE);
-            ESP_REPORT_INFO(VON, "  - DATA width: %u", DATA_WIDTH);
-            ESP_REPORT_INFO(VON, "  - memory in (words): %u", ESP_TO_UINT32(conf_info_data.in_bytes) * ESP_TO_UINT32(conf_info_data.batch));
-            ESP_REPORT_INFO(VON, "  - memory out (words): %u", ESP_TO_UINT32(conf_info_data.in_bytes) * ESP_TO_UINT32(conf_info_data.batch));
-            ESP_REPORT_INFO(VON, "---------------------------------------");
+            ESP_REPORT_INFO(VOFF, "Configuration:");
+            ESP_REPORT_INFO(VOFF, "  - batch: %u", ESP_TO_UINT32(conf_info_data.batch));
+            ESP_REPORT_INFO(VOFF, "  - in_bytes: %u", ESP_TO_UINT32(conf_info_data.in_bytes));
+            ESP_REPORT_INFO(VOFF, "Other info:");
+            ESP_REPORT_INFO(VOFF, "  - DMA width: %u", DMA_WIDTH);
+            ESP_REPORT_INFO(VOFF, "  - DMA size [2 = 32b, 3 = 64b]: %u", DMA_SIZE);
+            ESP_REPORT_INFO(VOFF, "  - PLM-IN size: %u", PLM_IN_SIZE);
+            ESP_REPORT_INFO(VOFF, "  - PLM-OUT size: %u", PLM_OUT_SIZE);
+            ESP_REPORT_INFO(VOFF, "  - DATA width: %u", DATA_WIDTH);
+            ESP_REPORT_INFO(VOFF, "  - memory in (words): %u", ESP_TO_UINT32(conf_info_data.in_bytes) * ESP_TO_UINT32(conf_info_data.batch));
+            ESP_REPORT_INFO(VOFF, "  - memory out (words): %u", ESP_TO_UINT32(conf_info_data.in_bytes) * ESP_TO_UINT32(conf_info_data.batch));
+            ESP_REPORT_INFO(VOFF, "---------------------------------------");
 
             // Pass inputs to the accelerator
             for (unsigned b = 0; b < sha1_batch; b++) {
@@ -250,11 +250,11 @@ int sha1_shortmsg(void)
 
     ESP_REPORT_INFO(VON, "Total tests: %u", cavp.tot_tests);
 
-    ESP_REPORT_INFO(VON, "---------------------------------------");
+    ESP_REPORT_INFO(VOFF, "---------------------------------------");
 
     for (unsigned t = 0; t < cavp.tot_tests; ++t)
     {
-        ESP_REPORT_INFO(VON, "Run test # %u", t);
+        ESP_REPORT_INFO(VOFF, "Run test # %u", t);
 
         const unsigned sha1_in_bytes = cavp.l[t] / 8;
         const unsigned sha1_batch = 1;
@@ -280,18 +280,18 @@ int sha1_shortmsg(void)
         data_t outputs[PLM_OUT_SIZE * BATCH_MAX];
         data_t gold_outputs[PLM_OUT_SIZE * BATCH_MAX];
 
-        ESP_REPORT_INFO(VON, "Configuration:");
-        ESP_REPORT_INFO(VON, "  - batch: %u", ESP_TO_UINT32(conf_info_data.batch));
-        ESP_REPORT_INFO(VON, "  - in_bytes: %u", ESP_TO_UINT32(conf_info_data.in_bytes));
-        ESP_REPORT_INFO(VON, "Other info:");
-        ESP_REPORT_INFO(VON, "  - DMA width: %u", DMA_WIDTH);
-        ESP_REPORT_INFO(VON, "  - DMA size [2 = 32b, 3 = 64b]: %u", DMA_SIZE);
-        ESP_REPORT_INFO(VON, "  - PLM-IN size: %u", PLM_IN_SIZE);
-        ESP_REPORT_INFO(VON, "  - PLM-OUT size: %u", PLM_OUT_SIZE);
-        ESP_REPORT_INFO(VON, "  - DATA width: %u", DATA_WIDTH);
-        ESP_REPORT_INFO(VON, "  - memory in (words): %u", ESP_TO_UINT32(conf_info_data.in_bytes) * ESP_TO_UINT32(conf_info_data.batch));
-        ESP_REPORT_INFO(VON, "  - memory out (words): %u", ESP_TO_UINT32(conf_info_data.in_bytes) * ESP_TO_UINT32(conf_info_data.batch));
-        ESP_REPORT_INFO(VON, "---------------------------------------");
+        ESP_REPORT_INFO(VOFF, "Configuration:");
+        ESP_REPORT_INFO(VOFF, "  - batch: %u", ESP_TO_UINT32(conf_info_data.batch));
+        ESP_REPORT_INFO(VOFF, "  - in_bytes: %u", ESP_TO_UINT32(conf_info_data.in_bytes));
+        ESP_REPORT_INFO(VOFF, "Other info:");
+        ESP_REPORT_INFO(VOFF, "  - DMA width: %u", DMA_WIDTH);
+        ESP_REPORT_INFO(VOFF, "  - DMA size [2 = 32b, 3 = 64b]: %u", DMA_SIZE);
+        ESP_REPORT_INFO(VOFF, "  - PLM-IN size: %u", PLM_IN_SIZE);
+        ESP_REPORT_INFO(VOFF, "  - PLM-OUT size: %u", PLM_OUT_SIZE);
+        ESP_REPORT_INFO(VOFF, "  - DATA width: %u", DATA_WIDTH);
+        ESP_REPORT_INFO(VOFF, "  - memory in (words): %u", ESP_TO_UINT32(conf_info_data.in_bytes) * ESP_TO_UINT32(conf_info_data.batch));
+        ESP_REPORT_INFO(VOFF, "  - memory out (words): %u", ESP_TO_UINT32(conf_info_data.in_bytes) * ESP_TO_UINT32(conf_info_data.batch));
+        ESP_REPORT_INFO(VOFF, "---------------------------------------");
 
         // Pass inputs to the accelerator
         for (unsigned b = 0; b < sha1_batch; b++) {
@@ -397,11 +397,11 @@ int sha1_longmsg(void)
 
     ESP_REPORT_INFO(VON, "Total tests: %u", cavp.tot_tests);
 
-    ESP_REPORT_INFO(VON, "---------------------------------------");
+    ESP_REPORT_INFO(VOFF, "---------------------------------------");
 
     for (unsigned t = 0; t < cavp.tot_tests; ++t)
     {
-        ESP_REPORT_INFO(VON, "Run test # %u", t);
+        ESP_REPORT_INFO(VOFF, "Run test # %u", t);
 
         const unsigned sha1_in_bytes = cavp.l[t] / 8;
         const unsigned sha1_batch = 1;
@@ -427,18 +427,18 @@ int sha1_longmsg(void)
         data_t outputs[PLM_OUT_SIZE * BATCH_MAX];
         data_t gold_outputs[PLM_OUT_SIZE * BATCH_MAX];
 
-        ESP_REPORT_INFO(VON, "Configuration:");
-        ESP_REPORT_INFO(VON, "  - batch: %u", ESP_TO_UINT32(conf_info_data.batch));
-        ESP_REPORT_INFO(VON, "  - in_bytes: %u", ESP_TO_UINT32(conf_info_data.in_bytes));
-        ESP_REPORT_INFO(VON, "Other info:");
-        ESP_REPORT_INFO(VON, "  - DMA width: %u", DMA_WIDTH);
-        ESP_REPORT_INFO(VON, "  - DMA size [2 = 32b, 3 = 64b]: %u", DMA_SIZE);
-        ESP_REPORT_INFO(VON, "  - PLM-IN size: %u", PLM_IN_SIZE);
-        ESP_REPORT_INFO(VON, "  - PLM-OUT size: %u", PLM_OUT_SIZE);
-        ESP_REPORT_INFO(VON, "  - DATA width: %u", DATA_WIDTH);
-        ESP_REPORT_INFO(VON, "  - memory in (words): %u", ESP_TO_UINT32(conf_info_data.in_bytes) * ESP_TO_UINT32(conf_info_data.batch));
-        ESP_REPORT_INFO(VON, "  - memory out (words): %u", ESP_TO_UINT32(conf_info_data.in_bytes) * ESP_TO_UINT32(conf_info_data.batch));
-        ESP_REPORT_INFO(VON, "---------------------------------------");
+        ESP_REPORT_INFO(VOFF, "Configuration:");
+        ESP_REPORT_INFO(VOFF, "  - batch: %u", ESP_TO_UINT32(conf_info_data.batch));
+        ESP_REPORT_INFO(VOFF, "  - in_bytes: %u", ESP_TO_UINT32(conf_info_data.in_bytes));
+        ESP_REPORT_INFO(VOFF, "Other info:");
+        ESP_REPORT_INFO(VOFF, "  - DMA width: %u", DMA_WIDTH);
+        ESP_REPORT_INFO(VOFF, "  - DMA size [2 = 32b, 3 = 64b]: %u", DMA_SIZE);
+        ESP_REPORT_INFO(VOFF, "  - PLM-IN size: %u", PLM_IN_SIZE);
+        ESP_REPORT_INFO(VOFF, "  - PLM-OUT size: %u", PLM_OUT_SIZE);
+        ESP_REPORT_INFO(VOFF, "  - DATA width: %u", DATA_WIDTH);
+        ESP_REPORT_INFO(VOFF, "  - memory in (words): %u", ESP_TO_UINT32(conf_info_data.in_bytes) * ESP_TO_UINT32(conf_info_data.batch));
+        ESP_REPORT_INFO(VOFF, "  - memory out (words): %u", ESP_TO_UINT32(conf_info_data.in_bytes) * ESP_TO_UINT32(conf_info_data.batch));
+        ESP_REPORT_INFO(VOFF, "---------------------------------------");
 
         // Pass inputs to the accelerator
         for (unsigned b = 0; b < sha1_batch; b++) {

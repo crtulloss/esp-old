@@ -140,6 +140,7 @@ void sha1_block_data_compute(uint32_t mem,
     D = h[3];
     E = h[4];
 
+BLOCK_DATA_COMPUTE_LOOP:
     for (unsigned j = 0; j < UNROLL_FACTOR * 16; j += 16)
     {
         #pragma HLS unroll
@@ -269,6 +270,7 @@ void sha1_block_data_load(uint32_t p,
                           uint32_t XX[UNROLL_FACTOR * 16],
                           uint8_t in[SHA1_MAX_BLOCK_SIZE])
 {
+BLOCK_DATA_LOAD:
 #ifdef C_SIMULATION
     for (unsigned i = 0; i < mem * 64; i += 4)
 #else /* ! C_SIMULATION */
@@ -290,6 +292,7 @@ void sha1_block_data_order(uint32_t h[5],
 {
     #pragma HLS function_instantiate variable=in_bytes
 
+BLOCK_DATA_ORDER_LOOP:
     for (uint32_t p = 0; p < in_bytes; p += UNROLL_FACTOR)
     {
         /* Considering an input of 65536 bytes. */
@@ -322,6 +325,7 @@ void sha1_update(uint32_t h[5],
 
     if (in_bytes != 0)
     {
+UPDATE_LOOP:
         for (unsigned i = 0; i < in_bytes; ++i)
         {
             /* Considering an input of 65536 bytes. */
@@ -348,6 +352,7 @@ void sha1_final(uint32_t h[5],
     {
         if (num < SHA_CBLOCK)
         {
+FINAL_1_LOOP:
             for (unsigned k = 0; k < SHA_CBLOCK - num; ++k)
             {
                 /* Considering an input of 65536 bytes. */
@@ -361,7 +366,7 @@ void sha1_final(uint32_t h[5],
         sha1_block_data_order(h, 1, data);
         num = 0;
     }
-
+FINAL_2_LOOP:
     for (unsigned k = 0; k < SHA_CBLOCK - 8 - num; ++k)
     {
         /* Considering an input of 65536 bytes. */
@@ -383,6 +388,7 @@ void sha1_final(uint32_t h[5],
 
     sha1_block_data_order(h, 1, data);
 
+FINAL_3_LOOP:
     for (unsigned k = 0; k < SHA1_DIGEST_LENGTH; k += 4)
     {
         /* Considering an output of 20 bytes. */
@@ -419,7 +425,7 @@ void sha1_core(
 }
 
 
-#pragma hls_design top
+//#pragma hls_design top
 #ifdef C_SIMULATION
 void sha1_cxx(
 #else

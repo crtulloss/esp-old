@@ -67,7 +67,8 @@ SRCS += $(foreach s, $(wildcard ../src/*.cpp) $(wildcard ../tb/*.cpp), $(shell b
 
 OBJS := $(SRCS:.cpp=.o)
 
-HDRS := $(wildcard ../inc/*.hpp) $(wildcard ../tb/*.hpp)
+HDRS ?=
+HDRS += $(wildcard ../inc/*.hpp) $(wildcard ../tb/*.hpp)
 
 
 all: $(TARGET)
