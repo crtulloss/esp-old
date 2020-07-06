@@ -189,9 +189,9 @@ architecture rtl of esp_tile_csr is
   
 
   counters : process (clk, rstn)
-    variable accelerator_mem_count : std_logic_vector(2*REGISTER_WIDTH-1 downto 0) := (others => '0');
-    variable accelerator_tot_count : std_logic_vector(2*REGISTER_WIDTH-1 downto 0) := (others => '0');
-    variable accelerator_tlb_count : std_logic_vector(REGISTER_WIDTH-1 downto 0) := (others => '0');
+    variable accelerator_mem_count : std_logic_vector(2*REGISTER_WIDTH-1 downto 0);
+    variable accelerator_tot_count : std_logic_vector(2*REGISTER_WIDTH-1 downto 0);
+    variable accelerator_tlb_count : std_logic_vector(REGISTER_WIDTH-1 downto 0);
   begin
     if rstn = '0' then
       for R in 0 to MONITOR_REG_COUNT-1 loop

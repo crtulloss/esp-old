@@ -511,7 +511,9 @@ begin
 
 
     cpu_tile: if tile_type(i) = 1 generate
+-- pragma translate_off
       assert tile_cpu_id(i) /= -1 report "Undefined CPU ID for CPU tile" severity error;
+-- pragma translate_on
       tile_cpu_i: tile_cpu
 
       generic map (
@@ -616,7 +618,9 @@ begin
 
 
     accelerator_tile: if tile_type(i) = 2 generate
+-- pragma translate_off
       assert tile_device(i) /= 0 report "Undefined device ID for accelerator tile" severity error;
+-- pragma translate_on
       tile_acc_i: tile_acc
       generic map (
         tile_id  => i,

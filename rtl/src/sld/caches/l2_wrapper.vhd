@@ -181,8 +181,8 @@ architecture rtl of l2_wrapper is
     req_memorized => '0',
     asserts       => (others => '0'));
 
-  signal ahbs_reg      : ahbs_reg_type := AHBS_REG_DEFAULT;
-  signal ahbs_reg_next : ahbs_reg_type := AHBS_REG_DEFAULT;
+  signal ahbs_reg      : ahbs_reg_type;
+  signal ahbs_reg_next : ahbs_reg_type;
 
   -----------------------------------------------------------------------------
   -- AHB master FSM signals
@@ -202,8 +202,8 @@ architecture rtl of l2_wrapper is
     state   => idle,
     asserts => (others => '0'));
 
-  signal ahbm_reg      : ahbm_reg_type := AHBM_REG_DEFAULT;
-  signal ahbm_reg_next : ahbm_reg_type := AHBM_REG_DEFAULT;
+  signal ahbm_reg      : ahbm_reg_type;
+  signal ahbm_reg_next : ahbm_reg_type;
 
   -- FIFO for invalidation addresses
   signal inv_fifo_rdreq        : std_ulogic;
@@ -236,8 +236,8 @@ architecture rtl of l2_wrapper is
     word_cnt => 0,
     asserts  => (others => '0'));
 
-  signal req_reg      : req_reg_type := REQ_REG_DEFAULT;
-  signal req_reg_next : req_reg_type := REQ_REG_DEFAULT;
+  signal req_reg      : req_reg_type;
+  signal req_reg_next : req_reg_type;
 
   -------------------------------------------------------------------------------
   -- FSM: Response to NoC
@@ -261,8 +261,8 @@ architecture rtl of l2_wrapper is
     word_cnt => 0,
     asserts  => (others => '0'));
 
-  signal rsp_out_reg      : rsp_out_reg_type := RSP_OUT_REG_DEFAULT;
-  signal rsp_out_reg_next : rsp_out_reg_type := RSP_OUT_REG_DEFAULT;
+  signal rsp_out_reg      : rsp_out_reg_type;
+  signal rsp_out_reg_next : rsp_out_reg_type;
 
   -------------------------------------------------------------------------------
   -- FSM: Forward from  NoC
@@ -283,8 +283,8 @@ architecture rtl of l2_wrapper is
     req_id  => (others => '0'),
     asserts => (others => '0'));
 
-  signal fwd_in_reg      : fwd_in_reg_type := FWD_IN_REG_DEFAULT;
-  signal fwd_in_reg_next : fwd_in_reg_type := FWD_IN_REG_DEFAULT;
+  signal fwd_in_reg      : fwd_in_reg_type;
+  signal fwd_in_reg_next : fwd_in_reg_type;
 
   -------------------------------------------------------------------------------
   -- FSM: Response from  NoC
@@ -311,8 +311,8 @@ architecture rtl of l2_wrapper is
     word_cnt   => 0,
     asserts    => (others => '0'));
 
-  signal rsp_in_reg      : rsp_in_reg_type := RSP_IN_REG_DEFAULT;
-  signal rsp_in_reg_next : rsp_in_reg_type := RSP_IN_REG_DEFAULT;
+  signal rsp_in_reg      : rsp_in_reg_type;
+  signal rsp_in_reg_next : rsp_in_reg_type;
 
   -----------------------------------------------------------------------------
   -- Read allocate
@@ -326,8 +326,8 @@ architecture rtl of l2_wrapper is
     addr => (others => '0'),
     line => (others => '0'));
 
-  signal load_alloc_reg      : load_alloc_reg_type := LOAD_ALLOC_REG_DEFAULT;
-  signal load_alloc_reg_next : load_alloc_reg_type := LOAD_ALLOC_REG_DEFAULT;
+  signal load_alloc_reg      : load_alloc_reg_type;
+  signal load_alloc_reg_next : load_alloc_reg_type;
 
 
   -------------------------------------------------------------------------------

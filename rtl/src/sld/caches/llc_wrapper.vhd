@@ -245,8 +245,8 @@ architecture rtl of llc_wrapper is
     addr    => (others => '0'),
     asserts => (others => '0'));
 
-  signal fwd_out_reg      : fwd_out_reg_type := FWD_OUT_REG_DEFAULT;
-  signal fwd_out_reg_next : fwd_out_reg_type := FWD_OUT_REG_DEFAULT;
+  signal fwd_out_reg      : fwd_out_reg_type;
+  signal fwd_out_reg_next : fwd_out_reg_type;
 
   -------------------------------------------------------------------------------
   -- FSM: Response to NoC
@@ -420,8 +420,8 @@ architecture rtl of llc_wrapper is
     tile_id  => 0,
     asserts  => (others => '0'));
 
-  signal rsp_in_reg      : rsp_in_reg_type := RSP_IN_REG_DEFAULT;
-  signal rsp_in_reg_next : rsp_in_reg_type := RSP_IN_REG_DEFAULT;
+  signal rsp_in_reg      : rsp_in_reg_type;
+  signal rsp_in_reg_next : rsp_in_reg_type;
 
   -------------------------------------------------------------------------------
   -- Others
