@@ -824,12 +824,16 @@ VHDL_RTL_SRCS  = $(shell (find $(ESP_ROOT)/rtl/src -name "*.vhd" | grep -v "sld/
 endif
 VHDL_RTL_SRCS  += $(shell (find $(ESP_ROOT)/tech/$(TECHLIB)/ -name "*.vhd" ))
 
-VLOG_RTL_SRCS   = $(shell (find $(ESP_ROOT)/rtl/src -name "*.v" ))
-VLOG_RTL_SRCS  += $(shell (find $(ESP_ROOT)/tech/$(TECHLIB)/ -name "*.v" ))
+
+VLOG_RTL_SRCS      = $(shell (find $(ESP_ROOT)/rtl/src -name "*.v" ))
+VLOG_RTL_SRCS     += $(shell (find $(ESP_ROOT)/tech/$(TECHLIB)/ -name "*.v" ))
+
+RTL_TECH_FOLDERS   = $(filter-out $(ESP_ROOT)/tech/$(TECHLIB)/verilog/, $(shell ls -d $(ESP_ROOT)/tech/$(TECHLIB)/*/))
+VLOG_SYN_RTL_SRCS  = $(shell (find $(ESP_ROOT)/rtl/src -name "*.v" ))
+VLOG_SYN_RTL_SRCS += $(foreach f, $(RTL_TECH_FOLDERS), $(shell (find $(f) -name "*.v")))
 
 SVLOG_RTL_SRCS   = $(shell (find $(ESP_ROOT)/rtl/src -name "*.sv" ))
 SVLOG_RTL_SRCS  += $(shell (find $(ESP_ROOT)/tech/$(TECHLIB)/ -name "*.sv" ))
-
 
 VHDL_SIM_PKGS  = $(shell (find $(ESP_ROOT)/sim/include -name "*.vhd" ))
 VHDL_SIM_SRCS  = $(shell (find $(ESP_ROOT)/sim/src -name "*.vhd" ))
@@ -839,6 +843,12 @@ VHDL_PKGS = $(THIRDPARTY_VHDL_PKGS) $(VHDL_RTL_PKGS) $(VHDL_SIM_PKGS) $(TOP_VHDL
 VHDL_SRCS = $(THIRDPARTY_VHDL) $(VHDL_RTL_SRCS) $(VHDL_SIM_SRCS) $(TOP_VHDL_RTL_SRCS) $(TOP_VHDL_SIM_SRCS)
 VLOG_SRCS = $(THIRDPARTY_VLOG) $(VLOG_RTL_SRCS) $(VLOG_SIM_SRCS) $(TOP_VLOG_RTL_SRCS) $(TOP_VLOG_SIM_SRCS)
 SVLOG_SRCS = $(THIRDPARTY_SVLOG) $(SVLOG_RTL_SRCS)
+
+VHDL_SYN_PKGS = $(THIRDPARTY_VHDL_PKGS) $(VHDL_RTL_PKGS) $(TOP_VHDL_RTL_PKGS)
+VHDL_SYN_SRCS = $(THIRDPARTY_VHDL) $(VHDL_RTL_SRCS) $(TOP_VHDL_RTL_SRCS)
+VLOG_SYN_SRCS = $(THIRDPARTY_VLOG) $(VLOG_SYN_RTL_SRCS) $(TOP_VLOG_RTL_SRCS)
+SVLOG_SYN_SRCS = $(THIRDPARTY_SVLOG) $(SVLOG_RTL_SRCS)
+
 
 DAT_SRCS = $(shell (find $(ESP_ROOT)/tech/$(TECHLIB)/ -name "*.dat" ))
 
@@ -1619,13 +1629,14 @@ GENUS_ARIANE_VLOGOPT = -define WT_DCACHE=1
 genus:
 	$(QUIET_MKDIR)mkdir -p genus
 
+
 genus/srcs.tcl: genus check_all_rtl_srcs.old
 	$(QUIET_MAKE)echo "### Compile Ariane source files ###" > $@; \
 	rtl=$(ESP_ROOT)/socs/common/ariane_soc_pkg.sv; \
 	echo "$(GENUS_SVLOG) $(GENUS_ARIANE_VLOGOPT) $$rtl" >> $@; \
 	for ver in $(VERILOG_ARIANE); do \
 		rtl=$(ARIANE)/$$ver; \
-		echo "$(GENUS_SVLOG) $(GENUS_ARIANE_VLOGOPT) $$rtl" >> $@; \
+		[[ $$rtl =~ .+trace  ]] || echo "$(GENUS_SVLOG) $(GENUS_ARIANE_VLOGOPT) $$rtl" >> $@; \
 	done; \
 	echo "### Compile VHDL packages ###" >> $@; \
 	for rtl in $(THIRDPARTY_VHDL_PKGS); do \
@@ -1641,12 +1652,6 @@ genus/srcs.tcl: genus check_all_rtl_srcs.old
 				rtl=$(ESP_ROOT)/rtl/include/$$lib/$$dir/$$vhd; \
 				echo "$(GENUS_VHDL) $$rtl" >> $@; \
 			done; \
-			if test -d $(ESP_ROOT)/sim/include/$$lib/$$dir/; then \
-				for vhd in $$(cat $(ESP_ROOT)/sim/include/$$lib/$$dir/pkgs.txt); do \
-					rtl=$(ESP_ROOT)/sim/include/$$lib/$$dir/$$vhd; \
-					echo "$(GENUS_VHDL) $$rtl" >> $@; \
-				done; \
-			fi; \
 		done; \
 	done; \
 	for vhd in $(TOP_VHDL_RTL_PKGS); do \
@@ -1654,15 +1659,15 @@ genus/srcs.tcl: genus check_all_rtl_srcs.old
 		echo "$(GENUS_VHDL) $$rtl" >> $@; \
 	done; \
 	echo "### Compile VHDL source files ###" >> $@; \
-		for rtl in $(VHDL_SRCS); do \
-			echo "$(GENUS_VHDL) $$rtl" >> $@; \
+		for rtl in $(VHDL_SYN_SRCS); do \
+			[[ $$rtl =~ techmap/unisim  ]] || echo "$(GENUS_VHDL) $$rtl" >> $@; \
 		done; \
 	echo "### Compile Verilog source files ###" >> $@; \
-		for rtl in $(VLOG_SRCS); do \
-			echo "$(GENUS_VLOG) $$rtl" >> $@; \
+		for rtl in $(VLOG_SYN_SRCS); do \
+			[[ $$rtl =~ techmap/unisim  ]] || echo "$(GENUS_VLOG) $$rtl" >> $@; \
 		done; \
 	echo "### Compile SystemVerilog source files ###" >> $@; \
-		for rtl in $(SVLOG_SRCS); do \
+		for rtl in $(SVLOG_SYN_SRCS); do \
 			echo "$(GENUS_SVLOG) $$rtl" >> $@; \
 		done; \
 
