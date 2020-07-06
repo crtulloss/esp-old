@@ -1630,6 +1630,10 @@ genus:
 	$(QUIET_MKDIR)mkdir -p genus
 
 
+genus/incdir.tcl: genus
+	$(QUIET_MAKE) \
+	echo "set log_syn(hdl_search_path) \"$(THIRDPARTY_INCDIR) $(ESP_CACHES_INCDIR) ${ARIANE}/src/common_cells/include\"" > $@
+
 genus/srcs.tcl: genus check_all_rtl_srcs.old
 	$(QUIET_MAKE)echo "### Compile Ariane source files ###" > $@; \
 	rtl=$(ESP_ROOT)/socs/common/ariane_soc_pkg.sv; \
@@ -1671,7 +1675,7 @@ genus/srcs.tcl: genus check_all_rtl_srcs.old
 			echo "$(GENUS_SVLOG) $$rtl" >> $@; \
 		done; \
 
-genus/$(DESIGN): genus genus/srcs.tcl
+genus/$(DESIGN): genus genus/srcs.tcl genus/incdir.tcl
 
 genus-setup: check_all_rtl_srcs genus/$(DESIGN)
 
