@@ -567,9 +567,8 @@ begin
     if (split = 0) or (defmst = '0') then hgrant(nhmaster) := '1'; end if;
 
     -- latch active master and slave
-    v.hmaster := nhmaster;
     if hready = '1' then
-      v.hmasterd := r.hmaster;
+      v.hmaster := nhmaster; v.hmasterd := r.hmaster;
       v.hsize := msto(r.hmaster).hsize;
       v.hslave := nslave; v.defslv := defslv;
       v.hmasterlockd := r.hmasterlock;
@@ -583,7 +582,7 @@ begin
       elsif (msto(r.hmaster).htrans = HTRANS_SEQ) then
         if (fixbrst = 1) then v.beat := r.beat + 1; end if;
       end if;
-      if (split /= 0) then v.defmst := defmst; else v.defmst := '0'; end if;
+      if (split /= 0) then v.defmst := defmst; end if;
     end if;
 
     --assign new hmasterlock, v.hmaster is used because if hready
@@ -651,6 +650,15 @@ begin
     vslvi.testoen := testoen;
     vslvi.testin  := testen & (scanen and testen) & testsig;
 
+    -- reset operation
+    if (not RESET_ALL) and (rst = '0') then
+      v.hmaster := RES_r.hmaster; v.hmasterlock := RES_r.hmasterlock;
+      vsplit := (others => '0');
+      v.htrans := RES_r.htrans;  v.defslv := RES_r.defslv;
+      v.hslave := RES_r.hslave; v.cfgsel := RES_r.cfgsel;
+      v.defmst := RES_r.defmst; v.ldefmst := RES_r.ldefmst;
+    end if;
+
     -- drive master inputs
     msti.hgrant  <= hgrant;
     msti.hready  <= hready;
@@ -687,12 +695,12 @@ begin
   reg0 : process(clk)
   begin
     if rising_edge(clk) then
+      r <= rin;
       if RESET_ALL and rst = '0' then
         r <= RES_r;
-      else
-        r <= rin;
       end if;
     end if;
+    if (split = 0) then r.defmst <= '0'; end if;
   end process;
 
   splitreg : if SPLIT /= 0 generate
