@@ -1151,7 +1151,7 @@ begin
   end generate dvfs_no_master_or_no_dvfs;
 
   --Monitors
-  mon_dvfs_int.acc_idle <= irqo_int.pwd;
+  mon_dvfs_int.acc_idle <= irqo_int.pwd when GLOB_CPU_ARCH = leon3 else '0';
   mon_dvfs_int.traffic  <= '0';
   mon_dvfs_int.burst    <= '0';
 
