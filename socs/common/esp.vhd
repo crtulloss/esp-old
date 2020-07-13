@@ -34,6 +34,13 @@ entity esp is
     sys_clk         : in    std_logic_vector(0 to CFG_NMEM_TILE - 1);
     refclk          : in    std_logic;
     pllbypass       : in    std_logic_vector(CFG_TILES_NUM - 1 downto 0);
+
+    tdi             : in    std_logic;
+    tdo             : out   std_logic;
+    tms             : in    std_logic;
+    tclk            : in    std_logic;
+    next_in         : out   std_logic;
+    
     uart_rxd        : in    std_logic;  -- UART1_RX (u1i.rxd)
     uart_txd        : out   std_logic;  -- UART1_TX (u1o.txd)
     uart_ctsn       : in    std_logic;  -- UART1_RTSN (u1i.ctsn)
@@ -65,6 +72,9 @@ end;
 architecture rtl of esp is
 
 
+signal tdi_int,tms_int,tclk_int,tdo_int,next_in_int :std_logic;
+    
+  
 constant nocs_num : integer := 6;
 
 signal clk_tile : std_logic_vector(CFG_TILES_NUM-1 downto 0);
@@ -413,6 +423,13 @@ begin
   end generate meshgen_y;
 
 
+  tdi_int<=tdi;
+  tms_int<=tms;
+  tclk_int<=tclk;
+  tdo<=tdo_int;
+  next_in<=next_in_int;
+  
+
   -----------------------------------------------------------------------------
   -- TILES
   -----------------------------------------------------------------------------
@@ -531,6 +548,14 @@ begin
         irq                => irq((tile_cpu_id(i) + 1) * 2 - 1 downto tile_cpu_id(i) * 2),
         timer_irq          => timer_irq(tile_cpu_id(i)),
         ipi                => ipi(tile_cpu_id(i)),
+
+        tdi                => tdi_int,
+        tdo                => tdo_int,
+        tms                => tms_int,
+        tclk               => tclk_int,
+        next_in            => next_in_int,
+
+
         -- NOC
         sys_clk_int        => sys_clk_int(0),
         noc1_data_n_in     => noc1_data_n_in(i),

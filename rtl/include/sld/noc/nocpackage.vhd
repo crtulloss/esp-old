@@ -171,6 +171,8 @@ package nocpackage is
       data_out    : out std_logic_vector(width-1 downto 0));
   end component;
 
+
+  
   component inferred_async_fifo
     generic (
       g_data_width : natural := NOC_FLIT_SIZE;

@@ -39,6 +39,13 @@ entity top is
     reset           : in    std_ulogic;
     sys_clk_p       : in    std_ulogic;  -- 200 MHz clock
     sys_clk_n       : in    std_ulogic;  -- 200 MHz clock
+
+    tdi             : in    std_logic;
+    tdo             : out   std_logic;
+    tms             : in    std_logic;
+    tclk            : in    std_logic;
+    next_in         : out   std_logic;
+    
     ddr3_dq         : inout std_logic_vector(63 downto 0);
     ddr3_dqs_p      : inout std_logic_vector(7 downto 0);
     ddr3_dqs_n      : inout std_logic_vector(7 downto 0);
@@ -519,6 +526,13 @@ begin
       rst           => chip_rst,
       sys_clk       => sys_clk(0 to CFG_NMEM_TILE - 1),
       refclk        => chip_refclk,
+
+      tdi           => tdi,
+      tdo           => tdo,
+      tms           => tms,
+      tclk          => tclk,
+      next_in       => next_in,
+      
       pllbypass      => chip_pllbypass,
       uart_rxd       => uart_rxd_int,
       uart_txd       => uart_txd_int,

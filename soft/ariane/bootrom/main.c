@@ -10,6 +10,9 @@ int main()
 		"la a1, _dtb;"
 		"jr s0");
 
+	
+	
+	
 	while (1)
 	{
 		// do nothing
