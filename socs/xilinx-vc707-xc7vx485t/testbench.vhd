@@ -133,8 +133,8 @@ architecture behav of testbench is
   signal switch : std_logic_vector(4 downto 0);
   signal led    : std_logic_vector(6 downto 0);
 
-  signal testin: std_logic_vector(71 downto 0);
-  signal source : std_logic_vector(2 downto 0);
+  signal testin: std_logic_vector(74 downto 0);
+  signal source : std_logic_vector(5 downto 0);
   signal waittime,instr_n: integer;
    
 
@@ -159,6 +159,9 @@ begin
     file text_file1 : text open read_mode is "/home/gabriele/epochs2/esp/socs/xilinx-vc707-xc7vx485t/stim1.txt";
     file text_file2 : text open read_mode is "/home/gabriele/epochs2/esp/socs/xilinx-vc707-xc7vx485t/stim2.txt";
     file text_file3 : text open read_mode is "/home/gabriele/epochs2/esp/socs/xilinx-vc707-xc7vx485t/stim3.txt";
+    file text_file4 : text open read_mode is "/home/gabriele/epochs2/esp/socs/xilinx-vc707-xc7vx485t/stim4.txt";
+    file text_file5 : text open read_mode is "/home/gabriele/epochs2/esp/socs/xilinx-vc707-xc7vx485t/stim5.txt";
+    file text_file6 : text open read_mode is "/home/gabriele/epochs2/esp/socs/xilinx-vc707-xc7vx485t/stim6.txt";
     file out_file : text open write_mode is "test_out.txt";
     variable text_line :line ;
     variable out_line :line;
@@ -166,8 +169,8 @@ begin
     variable char : character;
     variable instr_no : integer;
     variable wait_time : integer;
-    variable instruction : bit_vector(71 downto 0);
-    variable instr_out   : bit_vector(69 downto 0);
+    variable instruction : bit_vector(74 downto 0);
+    
 
   begin
 
@@ -180,7 +183,7 @@ begin
     waittime<=wait_time;
     testin<=To_StdLogicVector(instruction);
     wait until next_in='1';
-    for i in 0 to 71  loop
+    for i in 0 to 74  loop
       tdi<=testin(i);
       wait for 40 ns;
     end loop;
@@ -193,7 +196,7 @@ begin
     instr_n<=instr_no;
     waittime<=wait_time;
     testin<=To_StdLogicVector(instruction);
-    for i in 0 to 71  loop
+    for i in 0 to 74  loop
       tdi<=testin(i);
       wait for 40 ns;
     end loop;
@@ -207,12 +210,54 @@ begin
     instr_n<=instr_no;
     waittime<=wait_time;
     testin<=To_StdLogicVector(instruction);
-
-    for i in 0 to 70  loop
+    for i in 0 to 74  loop
       tdi<=testin(i);
       wait for 40 ns;
     end loop;
-    tdi<=testin(71);
+
+    wait for 40 ns;
+
+    readline(text_file4, text_line);
+    read(text_line, instr_no,ok);
+    read(text_line, wait_time,ok);
+    read(text_line,instruction,ok);
+    instr_n<=instr_no;
+    waittime<=wait_time;
+    testin<=To_StdLogicVector(instruction);
+    for i in 0 to 74  loop
+      tdi<=testin(i);
+      wait for 40 ns;
+    end loop;
+
+    wait for 40 ns;
+
+    readline(text_file5, text_line);
+    read(text_line, instr_no,ok);
+    read(text_line, wait_time,ok);
+    read(text_line,instruction,ok);
+    instr_n<=instr_no;
+    waittime<=wait_time;
+    testin<=To_StdLogicVector(instruction);
+    for i in 0 to 74  loop
+      tdi<=testin(i);
+      wait for 40 ns;
+    end loop;
+
+    wait for 40 ns;
+    
+    readline(text_file6, text_line);
+    read(text_line, instr_no,ok);
+    read(text_line, wait_time,ok);
+    read(text_line,instruction,ok);
+    instr_n<=instr_no;
+    waittime<=wait_time;
+    testin<=To_StdLogicVector(instruction);
+
+    for i in 0 to 74  loop
+      tdi<=testin(i);
+      wait for 40 ns;
+    end loop;
+    tdi<=testin(74);
 
 
     wait until tdo='1';
@@ -225,16 +270,16 @@ begin
       wait for 40 ns;
     end loop;
 
-    for i in 0 to 2 loop
+    for i in 0 to 5 loop
       write(out_line,to_bit(tdo));
-      source(2-i)<=tdo;
+      source(5-i)<=tdo;
       wait for 40 ns;
     end loop;
 
     writeline(out_file,out_line);
 
 
-    while not ((endfile(text_file1)) and endfile(text_file2) and endfile(text_file3)) loop
+    while not ((endfile(text_file1)) and endfile(text_file2) and endfile(text_file3) and endfile(text_file4) and endfile(text_file5) and endfile(text_file6)) loop
 
 
       wait until next_in='1';
@@ -242,9 +287,13 @@ begin
       assert next_in='0' report "while loop entered"  severity note;
 
       case source is
-        when "100" => readline(text_file1, text_line);
-        when "010" => readline(text_file2, text_line);
-        when "001" => readline(text_file3, text_line);
+        when "100000" => readline(text_file1, text_line);
+        when "010000" => readline(text_file2, text_line);
+        when "001000" => readline(text_file3, text_line);
+        when "000100" => readline(text_file4, text_line);
+        when "000010" => readline(text_file5, text_line);
+        when "000001" => readline(text_file6, text_line);
+
         when others=> null;
       end case;
 
@@ -256,7 +305,7 @@ begin
       waittime<=wait_time;
       testin<=To_StdLogicVector(instruction);
 
-      for i in 0 to 71  loop
+      for i in 0 to 74  loop
         tdi<=testin(i);
         wait for 40 ns;
       end loop;
@@ -275,20 +324,20 @@ begin
           wait for 40 ns;
         end loop;
 
-        for i in 0 to 2 loop
+        for i in 0 to 5 loop
           write(out_line,to_bit(tdo));
-          source(2-i)<=tdo;
+          source(5-i)<=tdo;
           wait for 40 ns;
         end loop;
 
         writeline(out_file,out_line);
 
       else
-        wait for 50 ns;            --one clock cycle
+        wait for 40 ns;            --one clock cycle
 
         if tdo='1' then
 
-          assert tdo='0' report "------------------if5 entered"  severity note;
+          assert tdo='0' report "------------------if3 entered"  severity note;
 
           wait until tdo='0';
           wait for 2 ns;
@@ -298,9 +347,9 @@ begin
             wait for 40 ns;
           end loop;
 
-          for i in 0 to 2 loop
+          for i in 0 to 5 loop
             write(out_line,to_bit(tdo));
-            source(2-i)<=tdo;
+            source(5-i)<=tdo;
             wait for 40 ns;
           end loop;
 
@@ -308,16 +357,68 @@ begin
           writeline(out_file,out_line);
 
         else
+          wait for 40 ns;            --one clock cycle
 
-          assert tdo='1' report "////// writein entered" severity note;
+          if tdo='1' then
 
-          wait for 40 ns;
+            assert tdo='0' report "------------------if4 entered"  severity note;
 
-          for i in 0 to 2 loop
-            source(2-i)<=tdo;
-            wait for 40 ns;
-          end loop;
+            wait until tdo='0';
+            wait for 2 ns;
 
+            for i in 0 to 66 loop
+              write(out_line,to_bit(tdo));
+              wait for 40 ns;
+            end loop;
+
+            for i in 0 to 5 loop
+              write(out_line,to_bit(tdo));
+              source(5-i)<=tdo;
+              wait for 40 ns;
+            end loop;
+
+            assert tdo='1' report "write5"  severity note;
+            writeline(out_file,out_line);
+
+          else
+            
+            wait for 40 ns;            --one clock cycle
+            
+            if tdo='1' then
+
+              assert tdo='0' report "------------------if5 entered"  severity note;
+
+              wait until tdo='0';
+              wait for 2 ns;
+
+              for i in 0 to 66 loop
+                write(out_line,to_bit(tdo));
+                wait for 40 ns;
+              end loop;
+
+              for i in 0 to 5 loop
+                write(out_line,to_bit(tdo));
+                source(5-i)<=tdo;
+                wait for 40 ns;
+              end loop;
+
+              assert tdo='1' report "write5"  severity note;
+              writeline(out_file,out_line);
+ 
+            else
+
+            
+              assert tdo='1' report "////// writein entered" severity note;
+
+              wait for 40 ns;
+
+              for i in 0 to 5 loop
+                source(5-i)<=tdo;
+                wait for 40 ns;
+              end loop;
+
+            end if;
+          end if;
         end if;
       end if;
     end loop;

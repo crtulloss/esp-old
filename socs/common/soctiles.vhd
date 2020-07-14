@@ -29,6 +29,13 @@ package soctiles is
       rst                : in  std_logic;
       sys_clk            : in    std_logic_vector(0 to CFG_NMEM_TILE - 1);
       refclk             : in  std_logic;
+
+      tdi                : in std_logic;
+      tdo                : out std_logic;
+      tms                : in std_logic;
+      tclk               : in std_logic;
+      next_in            : out std_logic;
+
       pllbypass          : in  std_logic_vector(CFG_TILES_NUM - 1 downto 0);
       uart_rxd           : in  std_logic;
       uart_txd           : out std_logic;
@@ -72,6 +79,12 @@ package soctiles is
       irq                : in  std_logic_vector(1 downto 0);
       timer_irq          : in  std_ulogic;
       ipi                : in  std_ulogic;
+      -- jtag signals
+      tdi                : in  std_logic;
+      tdo                : out std_logic;
+      tms                : in  std_logic;
+      tclk               : in  std_logic;
+      next_in            : out std_logic;
       -- NOC
       sys_clk_int        : in  std_logic;
       noc1_data_n_in     : in  noc_flit_type;

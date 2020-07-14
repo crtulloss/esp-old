@@ -11,7 +11,7 @@ use ieee.std_logic_1164.all;
          en_out   : in std_logic;
          en_comp  : in std_logic;    
          test_comp: out std_logic_vector(DIM-1 downto 0);  
-         data_out : out std_logic_vector(DIM-6 downto 0);  
+         data_out : out std_logic_vector(DIM-9 downto 0);  
          op       : out std_logic; 
          done     : out std_logic);
    end sipo;
@@ -45,7 +45,7 @@ use ieee.std_logic_1164.all;
     process(en_out,q)
       begin
           if (en_out='1') then     
-              data_out<=q(DIM-1 downto 5);         
+              data_out<=q(DIM-1 downto 8);         
           else  
               data_out<=(others=>'0');
           end if;

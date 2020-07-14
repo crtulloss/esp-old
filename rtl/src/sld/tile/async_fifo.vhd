@@ -9,7 +9,7 @@
 -- Author     : Tomasz Wlostowski
 -- Company    : CERN BE-CO-HT
 -- Created    : 2011-01-25
--- Last update: 2020-07-10
+-- Last update: 2020-07-14
 -- Platform   :
 -- Standard   : VHDL'93
 -------------------------------------------------------------------------------
@@ -85,6 +85,9 @@ architecture syn of async_fifo is
   type   t_mem_type is array (0 to g_size-1) of std_logic_vector(g_data_width-1 downto 0);
   signal mem : t_mem_type;
 
+  constant ZERO : std_logic_vector(g_data_width-2 downto 0) := std_logic_vector(to_unsigned(0,g_data_width-1 ));
+  
+  
   signal rcb, wcb                          : t_counter_block;
 
   attribute ASYNC_REG : string;
@@ -109,7 +112,7 @@ begin  -- syn
   begin
     if rising_edge(empty_int) then
       for i in 0 to g_size-1 loop
-        mem(i)<=(others=>'X');
+        mem(i)<=ZERO & '1';
       end loop;
       
     elsif rising_edge(clk_wr_i) then

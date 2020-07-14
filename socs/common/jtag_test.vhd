@@ -103,74 +103,39 @@ end;
 
 
 architecture rtl of jtag_test is
-  type jtag_state_type is (rti,rti1,inject1,inject2,inject3,extract, inject_instruction, read_and_check, writein,extr_source,waitfirstvoid,waitforvoid,waitforvoid1,waitforvoid2);
+
+  type jtag_state_type is (rti,rti1,inject1,inject2,inject3,inject4,inject5,inject6,extract, inject_instruction, read_and_check, writein,extr_source,waitfirstvoid,waitforvoid1,waitforvoid3,waitforvoid4,waitforvoid5,waitforvoid_fin);
 
   signal jtag_current, jtag_next : jtag_state_type;
 
-  --JTAG control signals
-  signal tdo_data,tdo_data0,sipo_clear,add_clear,sel,add_en_in,sipo_en_in,sipo_en_out,en_sipo_comp,add_en_out,test_running,piso_load,piso_load0,piso_en,piso_en0,piso_done,piso_done0,instr_done :std_logic;
-  signal sipo_en_in1,sipo_en_in2,sipo_en_in3,sipo_en_out1,sipo_en_out2,sipo_en_out3 : std_logic;
-  signal sipo_en_in1_in,sipo_en_in2_in,sipo_en_in3_in,sipo_en_in1_sec,sipo_en_in2_sec,sipo_en_in3_sec: std_logic;
-  signal flag_in,flag,flag2 :std_logic;
-
-  --JTAG status signal
-  signal add_done,sipo_done,sipo_done1,sipo_done2,sipo_done3,void_flag,op,op1,op2,op3: std_logic;
-  signal addr: std_logic_vector(2 downto 0);
-
-  signal tdi1,tdi2,tdi3,tail: std_logic;
-  signal sipo_clear1,sipo_clear2,sipo_clear3 :std_logic;
-
-  --syncronizing_signals
-  signal test2_in_sync: std_logic_vector(NOC_FLIT_SIZE downto 0);
-
-
-  --reset synchronizers:
-  signal rst_sync5: std_logic;
-
-  --Tile testing signals
-
-  signal stop_in                : std_logic;
-
-  signal test2_void_in,test5_void_in,test3_void_in  : std_logic;
-
+  signal demux_sel:std_logic_vector(5 downto 0);
+  signal compare_reg:std_logic_vector(5 downto 0);
+  signal tdo_data,tdo_data0,sipo_clear,sel,sipo_en_in,sipo_en_out,sipo_done,en_sipo_comp,piso_load,piso_load0,piso_en,piso_en0,piso_done,piso_done0,instr_done :std_logic;
+  signal sipo_en_i,sipo_en_o,sipo_en_ii,sipo_en_is,op_i,sipo_done_i,sipo_clear_i,tdi_i: std_logic_vector (5 downto 0);
+ 
+  --signals for logic JTAG->CPU (NoC planes 2,3,5,6)
 
   signal rd_i2,rd_i3,rd_i5,rd_i6: std_logic;
   signal fwd_wr_full_o2,fwd_wr_full_o3,fwd_wr_full_o5,fwd_wr_full_o6: std_logic;
   signal fwd_rd_empty_o2,fwd_rd_empty_o3,fwd_rd_empty_o5,fwd_rd_empty_o6:std_logic;
   
+  type test_vect is array(0 to 5) of std_logic_vector(NOC_FLIT_SIZE downto 0);
 
+  signal test_in,test_in_sync: test_vect;
 
+  signal sipo_comp                                     : std_logic_vector(NOC_FLIT_SIZE+6 downto 0);
+  type t_comp is array (0 to 5) of std_logic_vector(NOC_FLIT_SIZE+8 downto 0);
+  signal sipo_comp_i            : t_comp;
 
-
-  signal A,B,C                  : std_logic_vector(NOC_FLIT_SIZE downto 0);
-  signal sipo_in,sipo1_in       : std_logic;
-
-  signal add_in                 : std_logic_vector(2 downto 0);
-  signal test_in                : std_logic_vector(NOC_FLIT_SIZE downto 0);
-  signal test_sel_in            : std_logic_vector(2 downto 0);
-  signal test2_in               : std_logic_vector(66 downto 0);
-  signal test3_in               : std_logic_vector(NOC_FLIT_SIZE downto 0);
-  signal test5_in               : std_logic_vector(NOC_FLIT_SIZE downto 0);
-  signal test6_in               : std_logic_vector(NOC_FLIT_SIZE downto 0);
-  signal test5_in_sync          : std_logic_vector(34 downto 0);
-  signal test3_in_sync          : std_logic_vector(NOC_FLIT_SIZE downto 0);
-  signal test6_in_sync          : std_logic_vector(NOC_FLIT_SIZE downto 0);
-
-  signal test5_in_bis           :std_logic_vector(NOC_FLIT_SIZE-1 downto 0);
-  signal A_in                      : std_logic_vector(NOC_FLIT_SIZE+4 downto 0);
-
-
-  
-  --
-  signal sipo_comp                                     : std_logic_vector(NOC_FLIT_SIZE+3 downto 0);
-  signal sipo_comp1,sipo_comp2,sipo_comp3              :std_logic_vector(NOC_FLIT_SIZE+5 downto 0);
-  signal test_compare           :std_logic_vector(NOC_FLIT_SIZE+3 downto 0);
-  signal test_compare0          :std_logic_vector(2 downto 0);
+  signal test_compare           :std_logic_vector(NOC_FLIT_SIZE+6 downto 0);
+  signal source_compare          :std_logic_vector(5 downto 0);
   signal test_out               :std_logic_vector(NOC_FLIT_SIZE downto 0);
-  signal piso_in                  : std_logic_vector(NOC_FLIT_SIZE+3 downto 0);
-  signal demux_sel,test_sel_out,mux_test_sel_out,compare_reg,write_reg :std_logic_vector(2 downto 0);
+  signal piso_in                  : std_logic_vector(NOC_FLIT_SIZE+6 downto 0);
 
+  --signals for logic CPU->JTAG (NoC planes 1,3,4,5)
   
+  signal A,B,C,D                  : std_logic_vector(NOC_FLIT_SIZE downto 0);
+    
   signal test1_out,t1_out              :noc_flit_type;
   
   signal test1_cpu_data_void_in,t1_cpu_data_void_in:std_ulogic;
@@ -187,13 +152,7 @@ architecture rtl of jtag_test is
   
   signal test5_cpu_data_void_in,t5_cpu_data_void_in :std_ulogic;
 
-  signal noc1_stop_out_test      : std_ulogic;
-  signal noc2_stop_out_test      : std_ulogic:='0';
-  signal noc3_stop_out_test      : std_ulogic;
-  signal noc4_stop_out_test      : std_ulogic:='0';
-  signal noc5_stop_out_test      : std_ulogic;
-  signal noc6_stop_out_test      : std_ulogic:='0';
-
+  signal noc_stop_out_test: std_logic_vector(5 downto 0);
 
 
   signal noc1_in_ext,noc3_in_ext,noc4_in_ext                     : std_logic_vector(NOC_FLIT_SIZE downto 0);
@@ -227,7 +186,7 @@ begin
    end if;
 end process CU_REG;
 
-NSL : process(tail,jtag_current,tms,sipo_done,flag,sipo_done1,sipo_done2,sipo_done3,addr,piso_done,piso_done0,op,void_flag,test5_in,test3_in,tonoc1_cpu_data_void_in,tonoc5_cpu_data_void_in,noc5_in_port_sync,noc1_in_port_sync,sipo_comp1,sipo_comp2,sipo_comp3) 
+NSL : process(jtag_current,tms,sipo_done,sipo_done_i,piso_done,piso_done0,tonoc1_cpu_data_void_in,tonoc5_cpu_data_void_in,noc5_in_port_sync,noc1_in_port_sync,noc4_in_port_sync,noc3_in_port_sync) 
 begin 
    jtag_next <= jtag_current;
    case jtag_current is
@@ -235,68 +194,74 @@ begin
                                   
                                   jtag_next<=inject1;
                                 end if;
-                                noc1_stop_out_test<='1';
-                                noc3_stop_out_test<='1';
-                                noc5_stop_out_test<='1';
-                                write_reg<="000";
-                                flag2<='0';
-                                
-                                --flag_in<='1';
-                                stop_in<='1';
+                                noc_stop_out_test<=(others=>'1');
+                                       
                                 sel<='0';
                                 piso_en<='0';
                                 instr_done<='0';
-                                demux_sel<="000";
+                                demux_sel<="000000";
 
                                 
                                 
-     when inject1 =>            demux_sel<="100";
+     when inject1 =>            demux_sel<="100000";
                                 sel<='1';
                                 instr_done<='1';
-                                sipo_en_in1_in<='1';
-                                if sipo_done1='1' then
+                                sipo_en_ii(0)<='1';
+                                if sipo_done_i(0)='1' then
                                   jtag_next<=inject2;
-                                  sipo_en_in1_in<='0';
+                                  sipo_en_ii(0)<='0';
                                 end if ;
-     when inject2 =>            sipo_en_in2_in<='1';
-                                demux_sel<="010";
-                                if sipo_done2='1' then
+     when inject2 =>            sipo_en_ii(1)<='1';
+                                demux_sel<="010000";
+                                if sipo_done_i(1)='1' then
                                   jtag_next<=inject3;
-                                  sipo_en_in2_in<='0';
+                                  sipo_en_ii(1)<='0';
                                 end if ;
-     when inject3 =>            sipo_en_in3_in<='1';
-                                demux_sel<="001";
+     when inject3 =>            sipo_en_ii(2)<='1';
+                                demux_sel<="001000";
+                                if sipo_done_i(2)='1' then
+                                  jtag_next<=inject4;
+                                  sipo_en_ii(2)<='0';
+                                end if ;
+     when inject4 =>            sipo_en_ii(3)<='1';
+                                demux_sel<="000100";
+                                if sipo_done_i(3)='1' then
+                                  jtag_next<=inject5;
+                                  sipo_en_ii(3)<='0';
+                                end if ;
+     when inject5 =>            sipo_en_ii(4)<='1';
+                                demux_sel<="000010";
+                                if sipo_done_i(4)='1' then
+                                  jtag_next<=inject6;
+                                  sipo_en_ii(4)<='0';
+                                end if ;
+
+
+     when inject6 =>            sipo_en_ii(5)<='1';
+                                demux_sel<="000001";
                                 
-                                if sipo_done3='1' then
-                                  flag2<='1';
+                                if sipo_done_i(5)='1' then
                                   jtag_next<=waitfirstvoid;
-                                  sipo_en_in3_in<='0';
-                                  noc5_stop_out_test<='0';
+                                  sipo_en_ii(5)<='0';
+                                  noc_stop_out_test(4)<='0';
                                   if noc5_in_port_sync(0)='0' then
-                                    compare_reg<="001";
-                                    
-                                 --   piso_load<='1';
+                                    compare_reg<="000010";
                                   end if ;
-                                  
                                 end if ;
-     
+
+                              
      when rti1 =>               instr_done<='0';
-                                test_running<='0';
                                 sipo_clear<='1';
-                                stop_in<='1';
+                                
                                 piso_en<='0';
                                 
                                 piso_load<='0';
 
                                 piso_en0<='0';
-                                flag_in<='0';
                                 en_sipo_comp<='0';
 
 
                                 sipo_en_out<='0';
-                                test2_void_in<='1';
-                                test3_void_in<='1';
-                                test5_void_in<='1';
                                 if tms= '1' then 
                                 jtag_next<=inject_instruction;                      
                                 end if;
@@ -305,52 +270,31 @@ begin
      when inject_instruction => instr_done<='1';
                                 sipo_clear<='0';
                                 sipo_en_in<='1';   
-                                test_running<='1';
                                 sel<='1';
                                 demux_sel<=compare_reg;
                                 if sipo_done='1' then
                                   sipo_en_in<='0';
-                                  jtag_next<=waitforvoid;
-                                --  noc1_stop_out_test<='0';
+                                  jtag_next<=waitforvoid1;
+                                
                                 end if;
-                                  
-
-   --  
---				  if tail='0' and op<='1' then  --sbagliato                    
-  --                                  jtag_next<=writein;
-     
                                                                                     
      when writein =>            sipo_en_out<='1';
                                 en_sipo_comp<='1';
-                                if sipo_comp3(1)='1' then
-                                  compare_reg<="001";
-                                  
-                                elsif sipo_comp2(1)='1' then
-                                  compare_reg<="010";
-                                elsif sipo_comp1(1)='1' then
-                                  compare_reg<="100";
+                                if sipo_comp_i(4)(1)='1' then
+                                  compare_reg<="000010";
+                                elsif sipo_comp_i(5)(1)='1' then
+                                  compare_reg<="000001";                                  
+                                elsif sipo_comp_i(2)(1)='1' then
+                                  compare_reg<="001000";
+                                elsif sipo_comp_i(1)(1)='1' then
+                                  compare_reg<="010000";
                                 end if;
                                 piso_load0<='1';
-                               -- noc1_stop_out_test<='1';
-                               -- noc2_stop_out_test<='1';
-                               -- noc3_stop_out_test<='1';
-                               -- noc4_stop_out_test<='1';
-                               -- noc5_stop_out_test<='1';
-
-
-
-                                
-                                if addr="010" then
-                                  test3_void_in<=test3_in_sync(0);
-                            --      tail<=test1_in(65);
-                                elsif addr="001" then
-                                  test5_void_in<=test5_in_sync(0);
-                                  --      tail<=test3_in(65);
+                                       
                                   
-                                end if;
+                                
                                 jtag_next<=extr_source; 
                                 
-                 --               en_sipo_comp<='1';
      when extr_source =>        sipo_en_out<='0';
                                 piso_load0<='0';
                                 piso_en0<='1';
@@ -361,99 +305,77 @@ begin
        
      when waitfirstvoid =>      instr_done<='0';
                                 
-                                if noc5_in_port_sync(0)='0' then --if tonoc5_cpu_data_void_in='0'
-                                                                  --then   ---
-                                  jtag_next<=read_and_check;
-                                  --compare_reg<=test_sel_out;
-                                  --piso_load<='0';       --- --- 
-                                  noc5_stop_out_test<='1';
+                                if noc5_in_port_sync(0)='0' then 
+                                                                 
+                                  jtag_next<=read_and_check; 
+                                  noc_stop_out_test(4)<='1';
                                 end if;
                                   
 
 
                                 
-     when waitforvoid =>     -- noc1_stop_out_test<='0';
-                             -- noc2_stop_out_test<='0';
-                             --   noc3_stop_out_test<='0';
-                             --   noc4_stop_onut_test<='0';
-                             --   noc5_stop_out_test<='0';
-                             --   noc6_stop_out_test<='0';
-       --set stop_in='0',
+     when waitforvoid1 =>   
                                 instr_done<='0';
-                               -- stop_in<='0';
-
-                                
-                               -- en_sipo_comp<='1';
-                               -- if void_flag='1' then
-                               --   piso_load<='1';
-                               --   compare_reg<=test_sel_out;
-                               --   jtag_next<=read_and_check;
-                               -- elsif flag='0'then 
-                               --   jtag_next<=writein;
-                                -- end if;
-                                noc1_stop_out_test<='0';
+                                noc_stop_out_test(0)<='0';
                                 if noc1_in_port_sync(0)='0' then
-                                  compare_reg<="100";
-                                  
-                                 -- piso_load<='1';  --- ---   
-                               --   flag_in<='1';
+                                  compare_reg<="100000";
                                 end if;
                                                                               
-                                jtag_next<=waitforvoid1;
-     when waitforvoid1 =>       --noc1_stop_out_test<='0';
-                                if noc1_in_port_sync(0)='0' then
+                                jtag_next<=waitforvoid3;
+     when waitforvoid3 =>       if noc1_in_port_sync(0)='0' then
                                   jtag_next<=read_and_check;
-                                  noc1_stop_out_test<='1';
-                                  
-                                  
-                                --  piso_load<='1';
+                                  noc_stop_out_test(0)<='1';
                                 else
-                                  jtag_next<=waitforvoid2;
-                                  noc1_stop_out_test<='1';
-                                  noc5_stop_out_test<='0';
-                                  if noc5_in_port_sync(0)='0'then
-                                    compare_reg<="001";
-                              --      piso_load<='1'; --- ---
-                              --      flag_in<='1';
+                                  jtag_next<=waitforvoid4;
+                                  noc_stop_out_test(0)<='1';
+                                  noc_stop_out_test(2)<='0';
+                                  if noc3_in_port_sync(0)='0'then
+                                    compare_reg<="001000";
                                   end if ;
                                 end if;
-     when waitforvoid2 =>      -- if tonoc5_cpu_data_void_incpu_data_void_in='0' then
+     when waitforvoid4 =>       if noc3_in_port_sync(0)='0' then
+                                  jtag_next<=read_and_check;
+                                  noc_stop_out_test(2)<='1';
+                                else
+                                  jtag_next<=waitforvoid5;
+                                  noc_stop_out_test(2)<='1';
+                                  noc_stop_out_test(3)<='0';
+                                  if noc4_in_port_sync(0)='0'then
+                                    compare_reg<="000100";
+                                  end if ;
+                                end if;
+     when waitforvoid5 =>       
+                                if noc4_in_port_sync(0)='0' then
+                                  jtag_next<=read_and_check;
+                                  noc_stop_out_test(3)<='1';
+                                  
+                                 else
+                                  jtag_next<=waitforvoid_fin;
+                                  noc_stop_out_test(3)<='1';
+                                  noc_stop_out_test(4)<='0';
+                                  if noc5_in_port_sync(0)='0'then
+                                    compare_reg<="000010";
+                                  end if ;
+                                end if;
 
+
+
+
+
+     when waitforvoid_fin =>      
                                 if noc5_in_port_sync(0)='0' then  
                                     jtag_next<=read_and_check;
                                   else
                                     jtag_next<=writein;
                                   end if;
-                                  
-                                 -- compare_reg<=test_sel_out;
-                               --   piso_load<='0';  --- ---
-                                  noc5_stop_out_test<='1';
-                                --end if;
-                                --noc1_stop_out_test<='1';
+                                    noc_stop_out_test(4)<='1';
                                                          
-     when read_and_check =>    -- noc1_stop_out_test<='1';
-                               -- noc2_stop_out_test<='1';
-                               -- noc3_stop_out_test<='1';
-                               -- noc4_stop_out_test<='1';
-                                noc5_stop_out_test<='1';
-                               -- noc6_stop_out_test<='1';
+     when read_and_check =>     noc_stop_out_test(4)<='1';
                                 en_sipo_comp<='1';
-                                --      piso_load<='0';    --- ---
-                                stop_in<='1';
-                                flag_in<='0';
-                                --if test_done then
-                                --  jtag_next<=rti;
-                                --else
                                 piso_load<=not(test_out(0));
                                 jtag_next<=extract;
                                 
-     when extract =>            --noc1_stop_out_test<='1';
-                                --noc2_stop_out_test<='1';
-                                --noc3_stop_out_test<='1';
-                                --noc4_stop_out_test<='1';
-                                --noc5_stop_out_test<='1';
-                                --noc6_stop_out_test<='1';
-                                flag2<='0';
+     when extract =>           
                                 piso_load<='0';
                                 en_sipo_comp<='0';
                                 piso_en<='1';
@@ -468,7 +390,7 @@ end process NSL;
 
 
 
-process(tms,noc1_stop_out_s4,noc2_stop_out_s4,noc3_stop_out_s4,noc4_stop_out_s4,noc5_stop_out_s4,noc6_stop_out_s4,noc1_stop_out_test,noc2_stop_out_test,noc3_stop_out_test,noc4_stop_out_test,noc5_stop_out_test,noc6_stop_out_test)
+process(tms,noc1_stop_out_s4,noc2_stop_out_s4,noc3_stop_out_s4,noc4_stop_out_s4,noc5_stop_out_s4,noc6_stop_out_s4,noc_stop_out_test)
 begin
   if tms='0' then
     noc1_cpu_stop_out<=noc1_stop_out_s4;
@@ -478,51 +400,35 @@ begin
     noc5_cpu_stop_out<=noc5_stop_out_s4;
     noc6_cpu_stop_out<=noc6_stop_out_s4;
   else
-    noc1_cpu_stop_out<=noc1_stop_out_test;
-    noc2_cpu_stop_out<=noc2_stop_out_test;
-    noc3_cpu_stop_out<=noc3_stop_out_test;
-    noc4_cpu_stop_out<=noc4_stop_out_test;
-    noc5_cpu_stop_out<=noc5_stop_out_test;
-    noc6_cpu_stop_out<=noc6_stop_out_test;
+    noc1_cpu_stop_out<=noc_stop_out_test(0);
+    noc2_cpu_stop_out<=noc_stop_out_test(1);
+    noc3_cpu_stop_out<=noc_stop_out_test(2);
+    noc4_cpu_stop_out<=noc_stop_out_test(3);
+    noc5_cpu_stop_out<=noc_stop_out_test(4);
+    noc6_cpu_stop_out<=noc_stop_out_test(5);
   end if;
 end process;
 
-addr<=compare_reg;
-
-flag<=flag_in;
-
---sipo_done<=sipo_done1 or sipo_done2 or sipo_done3;
-
-process(addr)
-begin
-  case addr is
-    when "100" => tail<=test2_in(65);
-    when "010" => tail<=test3_in(65);
-    when "001" => tail<=test5_in(33);
-    when others=> tail<='0';
-  end case;
-end process;
 
 
-process(sipo_en_in1_in,sipo_en_in2_in,sipo_en_in3_in,sipo_en_in1_sec,sipo_en_in2_sec,sipo_en_in3_sec,jtag_current)
+process(sipo_en_is,sipo_en_ii,jtag_current)
 begin
   if jtag_current=inject_instruction then
-    sipo_en_in1<=sipo_en_in1_sec;
-    sipo_en_in2<=sipo_en_in2_sec;
-    sipo_en_in3<=sipo_en_in3_sec;
+    sipo_en_i<=sipo_en_is;
   else
-    sipo_en_in1<=sipo_en_in1_in;
-    sipo_en_in2<=sipo_en_in2_in;
-    sipo_en_in3<=sipo_en_in3_in;
+    sipo_en_i<=sipo_en_ii;
   end if ;
 end process;
 
-process(compare_reg,sipo_done1,sipo_done2,sipo_done3)
+process(compare_reg,sipo_done_i)
 begin
   case compare_reg is
-    when "001" => sipo_done<=sipo_done3;
-    when "010" => sipo_done<=sipo_done2;
-    when "100" => sipo_done<=sipo_done1;
+    when "100000" => sipo_done<=sipo_done_i(0);
+    when "010000" => sipo_done<=sipo_done_i(1);
+    when "001000" => sipo_done<=sipo_done_i(2);
+    when "000100" => sipo_done<=sipo_done_i(3);
+    when "000010" => sipo_done<=sipo_done_i(4);
+    when "000001" => sipo_done<=sipo_done_i(5);
     when others => null;
   end case;
 
@@ -535,37 +441,38 @@ process(sipo_en_in,compare_reg)
 begin
   if sipo_en_in='1' then
     case compare_reg is
-      when "001" =>     sipo_en_in3_sec<='1';
-                     ---   sipo_done<=sipo_done3;
-      when "010" =>     sipo_en_in2_sec<='1';
-                     --   sipo_done<=sipo_done2;
-      when "100" =>     sipo_en_in1_sec<='1';
-                     --   sipo_done<=sipo_done1;
+      when "100000" =>     sipo_en_is(0)<='1';     
+      when "010000" =>     sipo_en_is(1)<='1';
+      when "001000" =>     sipo_en_is(2)<='1';              
+      when "000100" =>     sipo_en_is(3)<='1';
+      when "000010" =>     sipo_en_is(4)<='1';
+      when "000001" =>     sipo_en_is(5)<='1';
       when others =>    null;
     end case;
   else
-    sipo_en_in1_sec<='0';
-    sipo_en_in2_sec<='0';
-    sipo_en_in3_sec<='0';
+    sipo_en_is<=(others=>'0');
   end if ;
 end process;
 
-op<=op1 or op2 or op3;
 
 process(sipo_en_out,compare_reg)
 begin
   if sipo_en_out='1' then
-    if compare_reg="100" then
-      sipo_en_out1<='1';
-    elsif compare_reg="010" then
-      sipo_en_out2<='1';
-    elsif compare_reg="001" then
-      sipo_en_out3<='1';
+    if compare_reg="100000" then
+      sipo_en_o(0)<='1';
+    elsif compare_reg="010000" then
+      sipo_en_o(1)<='1';
+    elsif compare_reg="001000" then
+      sipo_en_o(2)<='1';
+    elsif compare_reg="000100" then
+      sipo_en_o(3)<='1';
+    elsif compare_reg="000010" then
+      sipo_en_o(4)<='1';
+    elsif compare_reg="000010" then
+      sipo_en_o(5)<='1';
     end if;
   else
-    sipo_en_out1<='0';
-    sipo_en_out2<='0';
-    sipo_en_out3<='0';
+    sipo_en_o<=(others=>'0');
   end if;
 end process;
     
@@ -573,78 +480,53 @@ process(sipo_clear,compare_reg)
 begin
   if sipo_clear='1' then
     case compare_reg is
-      when "100" =>     sipo_clear1<='1';
-      when "010" =>     sipo_clear2<='1';
-      when "001" =>     sipo_clear3<='1';
+      when "100000" =>     sipo_clear_i(0)<='1';
+      when "010000" =>     sipo_clear_i(1)<='1';
+      when "001000" =>     sipo_clear_i(2)<='1';
+      when "000100" =>     sipo_clear_i(3)<='1';
+      when "000010" =>     sipo_clear_i(4)<='1';
+      when "000001" =>     sipo_clear_i(5)<='1';
+
       when others =>    null;
     end case;
   else
-    sipo_clear1<='0';
-    sipo_clear2<='0';
-    sipo_clear3<='0';
+    sipo_clear_i<=(others=>'0');
   end if ;
 end process;  
 
+  GEN_SIPO: for i in 0 to 5 generate
 
-sipo_1: sipo
- generic map (DIM=>NOC_FLIT_SIZE+6)
- port map (
-   clk          =>tclk,
-   clear        =>sipo_clear1,
-   en_in        =>sipo_en_in1,
-   en_out       =>sipo_en_out1,
-   en_comp      =>en_sipo_comp,
-   serial_in    =>tdi1,
-   test_comp    =>sipo_comp1,
-   data_out     =>test2_in,
-   op           =>op1,
-   done         =>sipo_done1);
-
-sipo_2: sipo
- generic map (DIM=>NOC_FLIT_SIZE+6)
- port map (
-   clk          =>tclk,
-   clear        =>sipo_clear2,
-   en_in        =>sipo_en_in2,
-   en_out       =>sipo_en_out2,
-   en_comp      =>en_sipo_comp,
-   serial_in    =>tdi2,
-   test_comp    =>sipo_comp2,
-   data_out     =>test3_in,
-   op           =>op2,
-   done         =>sipo_done2);
+    sipo_i: sipo
+      generic map (DIM=>NOC_FLIT_SIZE+9)
+      port map (
+        clk          =>tclk,
+        clear        =>sipo_clear_i(i),
+        en_in        =>sipo_en_i(i),
+        en_out       =>sipo_en_o(i),
+        en_comp      =>en_sipo_comp,
+        serial_in    =>tdi_i(i),
+        test_comp    =>sipo_comp_i(i),
+        data_out     =>test_in(i),
+        op           =>op_i(i),
+        done         =>sipo_done_i(i));
 
 
-sipo_3: sipo
- generic map (DIM=>NOC_FLIT_SIZE+6)
- port map (
-   clk          =>tclk,
-   clear        =>sipo_clear3,
-   en_in        =>sipo_en_in3,
-   en_out       =>sipo_en_out3,
-   en_comp      =>en_sipo_comp,
-   serial_in    =>tdi3,
-   test_comp    =>sipo_comp3,
-   data_out     =>test5_in,
-   op           =>op3,
-   done         =>sipo_done3);
+  end generate GEN_SIPO;
 
 
-demux_1to3_1: demux_1to3
+demux_1to6_1: demux_1to6
 port map(
   data_in =>tdi,
-  sel     =>demux_sel, --
-  out1   =>tdi1,
-  out2   =>tdi2,
-  out3   =>tdi3);
+  sel     =>demux_sel,
+  out1   =>tdi_i(0),
+  out2   =>tdi_i(1),
+  out3   =>tdi_i(2),
+  out4   =>tdi_i(3),
+  out5   =>tdi_i(4),
+  out6   =>tdi_i(5));
 
-test5_in_bis<=test5_in(NOC_FLIT_SIZE downto 1);
-  
---testing muxs
 
---A_in<=test1_in(66 downto 1);
-
---from NoC pplane 2
+--from NoC plane 2
 
 rd_i2<=not(noc2_cpu_stop_in);
 
@@ -656,11 +538,11 @@ async_fifo_0: async_fifo
     rst_n_i    => rst,
     clk_wr_i   => tclk,
     we_i       => sipo_en_out,
-    d_i        => test2_in(NOC_FLIT_SIZE downto 0),
+    d_i        => test_in(1),
     wr_full_o  => fwd_wr_full_o2,
     clk_rd_i   => refclk,
     rd_i       => rd_i2,
-    q_o        => test2_in_sync,
+    q_o        => test_in_sync(1),
     rd_empty_o => fwd_rd_empty_o2);
 
 
@@ -669,7 +551,7 @@ mux_2to1_1:mux_2to1
   generic map(sz=>NOC_FLIT_SIZE)
   port map(
     sel=>sel,
-    A=>test2_in_sync(NOC_FLIT_SIZE downto 1),
+    A=>test_in_sync(1)(NOC_FLIT_SIZE downto 1),
     B=>noc2_output_port,
     X=>test2_output_port);
 
@@ -693,11 +575,11 @@ async_fifo_1: async_fifo
     rst_n_i    => rst,
     clk_wr_i   => tclk,
     we_i       => sipo_en_out,
-    d_i        => test3_in(NOC_FLIT_SIZE downto 0),
+    d_i        => test_in(2),
     wr_full_o  => fwd_wr_full_o3,
     clk_rd_i   => refclk,
     rd_i       => rd_i3,
-    q_o        => test3_in_sync,
+    q_o        => test_in_sync(2),
     rd_empty_o => fwd_rd_empty_o3);
 
 
@@ -706,7 +588,7 @@ mux_2to1_2:mux_2to1
   generic map(sz=>NOC_FLIT_SIZE)
   port map(
     sel=>sel,
-    A=>test3_in_sync(NOC_FLIT_SIZE downto 1),
+    A=>test_in_sync(2)(NOC_FLIT_SIZE downto 1),
     B=>noc3_output_port,
     X=>test3_output_port);
 
@@ -729,11 +611,11 @@ async_fifo_2:async_fifo
     rst_n_i    => rst,
     clk_wr_i   => tclk,
     we_i       => sipo_en_out,
-    d_i        => test5_in(34 downto 0),
+    d_i        => test_in(4)(34 downto 0),
     wr_full_o  => fwd_wr_full_o5,
     clk_rd_i   => refclk,
     rd_i       => rd_i5,
-    q_o        => test5_in_sync,
+    q_o        => test_in_sync(4)(34 downto 0),
     rd_empty_o => fwd_rd_empty_o5);
 
 
@@ -741,7 +623,7 @@ mux_2to1_3:mux_2to1
   generic map(sz=>MISC_NOC_FLIT_SIZE)
   port map(
     sel=>sel,
-    A=>test5_in_sync(34 downto 1),
+    A=>test_in_sync(4)(34 downto 1),
     B=>noc5_output_port,
     X=>test5_output_port);
 
@@ -765,11 +647,11 @@ async_fifo_3: async_fifo
     rst_n_i    => rst,
     clk_wr_i   => tclk,
     we_i       => sipo_en_out,
-    d_i        => test6_in(NOC_FLIT_SIZE downto 0),
+    d_i        => test_in(5),
     wr_full_o  => fwd_wr_full_o6,
     clk_rd_i   => refclk,
     rd_i       => rd_i6,
-    q_o        => test6_in_sync,
+    q_o        => test_in_sync(5),
     rd_empty_o => fwd_rd_empty_o6);
 
 
@@ -778,7 +660,7 @@ mux_2to1_4:mux_2to1
   generic map(sz=>NOC_FLIT_SIZE)
   port map(
     sel=>sel,
-    A=>test6_in_sync(NOC_FLIT_SIZE downto 1),
+    A=>test_in_sync(5)(NOC_FLIT_SIZE downto 1),
     B=>noc3_output_port,
     X=>test6_output_port);
 
@@ -790,45 +672,15 @@ mux2to1_4:mux2to1
     X=>test6_cpu_data_void_out);
 
 
-
-  void_flag<=((not(tonoc5_cpu_data_void_in)) or  (not(tonoc3_cpu_data_void_in)) or (not(tonoc1_cpu_data_void_in)));
-
---set_stop :process(stop_in)
---begin
---  if stop_in='0' then
---    noc1_stop_out_test<='0';
---    noc3_stop_out_test<='0';
---    noc5_stop_out_test<='0';
---  else
---    noc1_stop_out_test<='1';
---    noc3_stop_out_test<='1';
---    noc5_stop_out_test<='1';
---  end if ;
---end process set_stop;
-
-
-
-  testselout: process(sipo_comp,void_flag,tonoc5_cpu_data_void_in,tonoc3_cpu_data_void_in,tonoc1_cpu_data_void_in)
-  begin
-      if (tonoc5_cpu_data_void_in='0') then 
-        test_sel_out<="001";
-      elsif (tonoc1_cpu_data_void_in='0') then
-        test_sel_out<="100";
-      elsif (tonoc3_cpu_data_void_in='0') then
-       test_sel_out<="010";        
-      else
-        test_sel_out<="000";
-      end if;
-    
-    
-  end process testselout;
-
-  process(compare_reg,sipo_comp1,sipo_comp2,sipo_comp3)
+  process(compare_reg,sipo_comp_i)
   begin
     case compare_reg is
-      when "100" => sipo_comp<=sipo_comp1(NOC_FLIT_SIZE+5 downto 2);
-      when "010" => sipo_comp<=sipo_comp2(NOC_FLIT_SIZE+5 downto 2);
-      when "001" => sipo_comp<=sipo_comp3(NOC_FLIT_SIZE+5 downto 2);
+      when "100000" => sipo_comp<=sipo_comp_i(0)(NOC_FLIT_SIZE+8 downto 2);
+      when "010000" => sipo_comp<=sipo_comp_i(1)(NOC_FLIT_SIZE+8 downto 2);
+      when "001000" => sipo_comp<=sipo_comp_i(2)(NOC_FLIT_SIZE+8 downto 2);
+      when "000100" => sipo_comp<=sipo_comp_i(3)(NOC_FLIT_SIZE+8 downto 2);
+      when "000010" => sipo_comp<=sipo_comp_i(4)(NOC_FLIT_SIZE+8 downto 2);
+      when "000001" => sipo_comp<=sipo_comp_i(5)(NOC_FLIT_SIZE+8 downto 2);
       when others => sipo_comp<=(others=>'0');
     end case;
   end process;
@@ -849,14 +701,12 @@ mux2to1_4:mux2to1
       end if;
     end if;
   end process tdoout;
-                                                                                                                                   
 
 
 --to NoC plane 1
   
-  --rst_sync5<= (flag2 and rst and not(fwd_rd_empty_o5out) and not(we_in5_out)) or we_in5_out;
-  rd_i1_out<=not(noc1_stop_out_test);
-  noc1_in_ext<=t1_out & t1_cpu_data_void_in ; --noc1_in_port & tonoc1_cpu_data_void_in;
+  rd_i1_out<=not(noc_stop_out_test(0));
+  noc1_in_ext<=t1_out & t1_cpu_data_void_in ; 
   we_in1_out<=not(tonoc1_cpu_data_void_in);
 
   test1_out<=noc1_in_port_sync(NOC_FLIT_SIZE downto 1);
@@ -896,9 +746,8 @@ demux2to1_1:demux1to2
 
 --to Noc plane 3
 
-  --rst_sync5<= (flag2 and rst and not(fwd_rd_empty_o5out) and not(we_in5_out)) or we_in5_out;
-  rd_i3_out<=not(noc3_stop_out_test);
-  noc3_in_ext<=t3_out & t3_cpu_data_void_in ; --noc1_in_port & tonoc1_cpu_data_void_in;
+  rd_i3_out<=not(noc_stop_out_test(2));
+  noc3_in_ext<=t3_out & t3_cpu_data_void_in ;
   we_in3_out<=not(tonoc3_cpu_data_void_in);
 
   test3_out<=noc3_in_port_sync(NOC_FLIT_SIZE downto 1);
@@ -940,9 +789,8 @@ demux2to1_2:demux1to2
 
 -- to NoC plane 4
 
-  --rst_sync5<= (flag2 and rst and not(fwd_rd_empty_o5out) and not(we_in5_out)) or we_in5_out;
-  rd_i4_out<=not(noc4_stop_out_test);
-  noc4_in_ext<=t4_out & t4_cpu_data_void_in ; --noc1_in_port & tonoc1_cpu_data_void_in;
+  rd_i4_out<=not(noc_stop_out_test(3));
+  noc4_in_ext<=t4_out & t4_cpu_data_void_in ;
   we_in4_out<=not(tonoc4_cpu_data_void_in);
 
   test4_out<=noc4_in_port_sync(NOC_FLIT_SIZE downto 1);
@@ -983,10 +831,8 @@ demux2to1_3:demux1to2
 
 --to NoC plane 5
 
-
-  --rst_sync5<= (flag2 and rst and not(fwd_rd_empty_o5out) and not(we_in5_out)) or we_in5_out;
-  rd_i5_out<=not(noc5_stop_out_test);
-  noc5_in_ext<=t5_out & t5_cpu_data_void_in ; --noc1_in_port & tonoc1_cpu_data_void_in;
+  rd_i5_out<=not(noc_stop_out_test(4));
+  noc5_in_ext<=t5_out & t5_cpu_data_void_in ;
   we_in5_out<=not(tonoc5_cpu_data_void_in);
 
   test5_out<=noc5_in_port_sync(MISC_NOC_FLIT_SIZE downto 1);
@@ -1030,36 +876,38 @@ demux2to1_4:demux1to2
 
   A<=test1_out & test1_cpu_data_void_in;
   B<=test3_out & test3_cpu_data_void_in;
-  C<=noc_flit_pad & test5_out & test5_cpu_data_void_in;
+  C<=test4_out & test4_cpu_data_void_in;
+  D<=noc_flit_pad & test5_out & test5_cpu_data_void_in;
 
   
-mux_3to1_1:mux_3to1
+mux_4to1_1:mux_4to1
   generic map(sz=>NOC_FLIT_SIZE+1)
   port map(
     sel=>compare_reg,
     A=>A,
     B=>B,
     C=>C,
+    D=>D,
     X=>test_out);
 
   piso_in<=test_out & compare_reg;
 
 
 piso_0:piso
- generic map(sz=>3 )
+ generic map(sz=>6 )
  port map(
    clk=>tclk,
    load=> piso_load0,
    A=>compare_reg,
    shift_en=>piso_en0,
-   B=>test_compare0,
+   B=>source_compare,
    Y=>tdo_data0,
    done=>piso_done0);
   
   
   
 piso_1:piso
- generic map(sz=>NOC_FLIT_SIZE+4 )
+ generic map(sz=>NOC_FLIT_SIZE+7 )
  port map(
    clk=>tclk,
    load=> piso_load,
