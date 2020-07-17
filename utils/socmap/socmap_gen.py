@@ -13,7 +13,7 @@ from thirdparty import *
 # <mklinuximg>/include/ambapp.h
 # <esp>/rtl/include/grlib/amba/amba.vhd
 # <esp>/soft/leon3/include/esp_probe.h
-NAPBS = 32
+NAPBS = 128
 NAHBS = 16
 # Physical interrupt lines
 IRQ_LINES = 32
@@ -29,7 +29,7 @@ NSLM_MAX = 16
 # <esp>/systemc/common/caches/cache_consts.h
 # <esp>/rtl/include/sld/caches/cachepackage.vhd
 NFULL_COHERENT_MAX = 16
-NLLC_COHERENT_MAX = 16
+NLLC_COHERENT_MAX = 64
 # The NoC routers are using 3 bits for both Y and X coordinates.
 # The 34-bits header can host up to 5 bits if necessary.
 # <esp>/rtl/[include|src]/sld/noc/*.vhd
@@ -50,8 +50,9 @@ NTILE_MAX = 64
 # 14 - Ethernet MAC controller
 # 15 - Ethernet SGMII PHY controller
 # 16-19 - LLC cache controller (must change with NMEM_MAX)
-# 20-(NAPBS-1) - Accelerators
-NACC_MAX = NAPBS - 2 * NCPU_MAX - NMEM_MAX - 8
+# 20-83 - Distributed monitors (equal to the number of tiles NTILE_MAX)
+# 84-(NAPBS-1) - Accelerators
+NACC_MAX = NAPBS - 2 * NCPU_MAX - NMEM_MAX - NTILE_MAX - 8
 
 
 # Default device mapping
@@ -108,8 +109,15 @@ LLC_CACHE_PIRQ = 4
 # Last-level cache I/O-bus slave indices (more indices can be reserved if necessary)
 LLC_CACHE_PINDEX = [16, 17, 18, 19]
 
+# ESP Tile CSRs APB indices
+CSR_PINDEX = list(range(20, 20 + NTILE_MAX))
+
+# I/O memory area offset for CSRs
+CSR_APB_ADDR = 0x900
+CSR_APB_ADDR_MSK = 0xffe
+
 # First I/O-bus index for accelerators
-SLD_APB_PINDEX = 20
+SLD_APB_PINDEX = 20 + NTILE_MAX
 
 # I/O memory area offset for accelerators (address bits 19-8)
 SLD_APB_ADDR = 0x100
@@ -865,6 +873,22 @@ def print_mapping(fp, esp_config):
     fp.write("      2 => (others => '0')),\n")
   fp.write("    others => pconfig_none);\n\n")
 
+
+  #
+  fp.write("  -- ESP Tiles CSRs\n")
+  csr_apb_size = (~CSR_APB_ADDR_MSK & 0xfff) + 1
+  for i in range(0, esp_config.ntiles):
+    address_str = format(CSR_APB_ADDR + i * csr_apb_size, "03X")
+    msk_str = format(CSR_APB_ADDR_MSK, "03X")
+    fp.write("  constant csr_t_" + str(i) + "_pindex : integer range 0 to NAPBSLV - 1 := " + str(CSR_PINDEX[i]) + ";\n")
+    fp.write("  constant csr_t_" + str(i) + "_paddr : integer range 0 to 4095 := 16#" + address_str + "#;\n")
+    fp.write("  constant csr_t_" + str(i) + "_pmask : integer range 0 to 4095 := 16#" + msk_str + "#;\n")
+    fp.write("  constant csr_t_" + str(i) + "_pconfig : apb_config_type := (\n")
+    fp.write("  0 => ahb_device_reg (VENDOR_SLD, SLD_TILE_CSR, 0, 0, 0),\n")
+    fp.write("  1 => apb_iobar(16#" + address_str + "#, 16#" + msk_str  + "#),\n")
+    fp.write("  2 => (others => '0'));\n\n")
+
+
   #
   fp.write("  -- Accelerators\n")
   fp.write("  constant accelerators_num : integer := " + str(esp_config.nacc) + ";\n\n")
@@ -878,7 +902,7 @@ def print_mapping(fp, esp_config):
     fp.write("  -- " + acc.uppercase_name + "\n")
 
     if acc.vendor == "sld":
-      address = SLD_APB_ADDR + acc.idx
+      address = SLD_APB_ADDR + acc.id
       address_ext = 0
       msk = SLD_APB_ADDR_MSK
       msk_ext = 0
@@ -952,6 +976,8 @@ def print_mapping(fp, esp_config):
     fp.write("    14 => eth0_pconfig,\n")
     if esp_config.has_sgmii:
       fp.write("    15 => sgmii0_pconfig,\n")
+  for i in range(0, esp_config.ntiles):
+    fp.write("    " + str(CSR_PINDEX[i]) + " => csr_t_" + str(i) + "_pconfig,\n")
   for i in range(0, esp_config.nacc):
     acc = esp_config.accelerators[i]
     fp.write("    " + str(acc.idx) + " => " + str(acc.lowercase_name) + "_" + str(acc.id) + "_pconfig,\n")
@@ -1084,6 +1110,13 @@ def print_mapping(fp, esp_config):
     if t.mem_id != -1:
       fp.write("    " + str(i) + " => " + str(t.mem_id) + ",\n")
   fp.write("    others => -1);\n\n")
+
+  #
+  fp.write("  -- Get CSR pindex from tile ID\n")
+  fp.write("  constant tile_csr_pindex : attribute_vector(0 to CFG_TILES_NUM - 1) := (\n")
+  for i in range(0, esp_config.ntiles):
+    fp.write("    " + str(i) + " => " + str(CSR_PINDEX[i]) + ",\n")
+  fp.write("    others => 0);\n\n")
 
   #
   fp.write("  -- Get accelerator ID from tile ID\n")
@@ -1315,6 +1348,9 @@ def print_mapping(fp, esp_config):
     fp.write("    14 => io_tile_id,\n")
     if esp_config.has_sgmii:
       fp.write("    15 => io_tile_id,\n")
+  # 20-83 - ESP Tile CSRs
+  for i in range(0, esp_config.ntiles):
+    fp.write("    " + str(CSR_PINDEX[i]) + " => " + str(i) + ",\n")
   # 20-(NAPBSLV - 1) - Accelerators
   for i in range(0, esp_config.ntiles):
     t =  esp_config.tiles[i]
@@ -1507,6 +1543,9 @@ def print_tiles(fp, esp_config):
         llc = esp_config.llcs[j]
         if llc.idx != -1:
           fp.write("      " + str(llc.idx) + " => '1',\n")
+      for j in range(0, esp_config.ntiles):
+        if i != j or t.type != "misc":
+          fp.write("      " + str(CSR_PINDEX[j]) + " => '1',\n")
       for j in range(0, esp_config.nacc):
         acc = esp_config.accelerators[j]
         fp.write("      " + str(acc.idx) + " => '1',\n")
@@ -1514,20 +1553,16 @@ def print_tiles(fp, esp_config):
   fp.write("    others => (others => '0'));\n\n")
 
   #
-  fp.write("  -- Flag I/O-bus slaves that are local to each tile\n")
-  for i in range(0, esp_config.nacc):
-    acc = esp_config.accelerators[i]
-    fp.write("  constant " + acc.lowercase_name + "_"+ str(acc.id) + "_apb_mask : std_logic_vector(0 to NAPBSLV - 1) := (\n")
-    fp.write("    " + str(acc.idx) + " => '1',\n")
-    fp.write("    others => '0');\n")
-
   fp.write("  constant local_apb_mask : tile_apb_enable_array := (\n")
   for i in range(0, esp_config.ntiles):
     t = esp_config.tiles[i]
     if t.type == "acc":
       acc = t.acc
-      fp.write("    " + str(i) + " => " + acc.lowercase_name + "_" + str(acc.id) + "_apb_mask,\n")
-    if t.type == "misc":
+      fp.write("    " + str(i) + " => (\n")
+      fp.write("      " + str(CSR_PINDEX[i]) + " => '1',\n") # ESP Tile CSRs
+      fp.write("      " + str(acc.idx) + " => '1',\n") # Accelerator
+      fp.write("      others => '0'),\n")
+    elif t.type == "misc":
       fp.write("    " + str(i) + " => (\n")
       fp.write("      1  => '1',\n") # UART
       fp.write("      2  => '1',\n") # IRQ
@@ -1536,18 +1571,25 @@ def print_tiles(fp, esp_config):
       fp.write("      13 => to_std_logic(CFG_SVGA_ENABLE),\n"),
       fp.write("      14 => to_std_logic(CFG_GRETH),\n")
       fp.write("      15 => to_std_logic(CFG_SGMII * CFG_GRETH),\n")
+      fp.write("      " + str(CSR_PINDEX[i]) + " => '1',\n") # ESP Tile CSRs
       fp.write("      others => '0'),\n")
-    if t.type == "mem":
+    elif t.type == "mem":
       fp.write("    " + str(i) + " => (\n")
       if esp_config.coherence:
         fp.write("      " + str(t.llc.idx) + " => '1',\n")
+      fp.write("      " + str(CSR_PINDEX[i]) + " => '1',\n") # ESP Tile CSRs
       fp.write("      others => '0'),\n")
-    if t.type == "cpu":
+    elif t.type == "cpu":
       fp.write("    " + str(i) + " => (\n")
       if t.has_pll != 0:
         fp.write("      " + str(t.dvfs.idx) + " => '1',\n")
       if t.has_l2 != 0:
         fp.write("      " + str(t.l2.idx) + " => '1',\n")
+      fp.write("      " + str(CSR_PINDEX[i]) + " => '1',\n") # ESP Tile CSRs
+      fp.write("      others => '0'),\n")
+    else:
+      fp.write("    " + str(i) + " => (\n")
+      fp.write("      " + str(CSR_PINDEX[i]) + " => '1',\n") # ESP Tile CSRs
       fp.write("      others => '0'),\n")
   fp.write("    others => (others => '0'));\n\n")
 
@@ -1829,7 +1871,7 @@ def print_ariane_devtree(fp, esp_config):
     acc = esp_config.accelerators[i]
     base = AHB2APB_HADDR[esp_config.cpu_arch] << 20
     if acc.vendor == "sld":
-      address = base + ((SLD_APB_ADDR + acc.idx) << 8)
+      address = base + ((SLD_APB_ADDR + acc.id) << 8)
       size = 0x100
     else:
       n = THIRDPARTY_N

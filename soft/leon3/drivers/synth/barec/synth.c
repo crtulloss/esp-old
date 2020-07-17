@@ -38,14 +38,14 @@
 #define SYNTH_RD_DATA_REG 0x78
 
 // Accelerator-specific buffe size
-#define IN_SIZE 524288
-#define LD_ST_RATIO 1
+#define IN_SIZE 1024
+#define LD_ST_RATIO 2
 #define ACCESS_FACTOR 0
 #define OUT_SIZE ((IN_SIZE / LD_ST_RATIO) >> ACCESS_FACTOR)
 #define SYNTH_BUF_SIZE ((IN_SIZE + OUT_SIZE) * sizeof(unsigned))
 #define OUT_DATA 0x12345678
 #define IN_DATA 0x89abcdef
-#define IN_PLACE 1
+#define IN_PLACE 0
 /* Size of the contiguous chunks for scatter/gather */
 #define CHUNK_SHIFT 20
 #define CHUNK_SIZE BIT(CHUNK_SHIFT)
@@ -71,18 +71,19 @@ int main(int argc, char * argv[])
 	}
 
 	for (trial = 0; trial < TRIALS; trial++) {
-#ifndef __riscv
-		for (coherence = ACC_COH_NONE; coherence <= ACC_COH_RECALL; coherence++) {
-#else
+/* #ifndef __riscv */
+/* 		for (coherence = ACC_COH_NONE; coherence <= ACC_COH_RECALL; coherence++) */
+/* 		{ */
+/* #else */
 		{
 			/* TODO: Restore full test once ESP caches are integrated */
 			coherence = ACC_COH_NONE;
-#endif
+/* #endif */
 			struct esp_device *dev;
 			unsigned **ptable;
 			unsigned *mem;
 			int scatter_gather = 1;
-			for (n = 0; n < ndev; n++) {
+			for (n = 0; n < ndev; n++){
 				dev = &espdevs[n];
 				int i;
 				printf("******************** %s.%d ********************\n", DEV_NAME, n);
@@ -90,7 +91,6 @@ int main(int argc, char * argv[])
 				// Check if scatter-gather DMA is disabled
 				if (ioread32(dev, PT_NCHUNK_MAX_REG) == 0) {
 					printf("  -> scatter-gather DMA is disabled; revert to contiguous buffer.\n");
-
 					scatter_gather = 0;
 				} else {
 					printf("  -> scatter-gather DMA is enabled.\n");
@@ -115,7 +115,6 @@ int main(int argc, char * argv[])
 					ptable = aligned_malloc(NCHUNK * sizeof(unsigned *));
 					for (i = 0; i < NCHUNK; i++)
 						ptable[i] = (unsigned *) &mem[i * (CHUNK_SIZE / sizeof(unsigned))];
-
 					printf("  ptable = %p\n", ptable);
 					printf("  nchunk = %lu\n", NCHUNK);
 				}
@@ -147,7 +146,7 @@ int main(int argc, char * argv[])
 				iowrite32(dev, SYNTH_IRREGULAR_SEED_REG, 0);
 				iowrite32(dev, SYNTH_REUSE_FACTOR_REG, 8);
 				iowrite32(dev, SYNTH_LD_ST_RATIO_REG, LD_ST_RATIO);
-				iowrite32(dev, SYNTH_STRIDE_LEN_REG, 4);
+				iowrite32(dev, SYNTH_STRIDE_LEN_REG, 256);
 				iowrite32(dev, SYNTH_OUT_SIZE_REG, OUT_SIZE);
 				iowrite32(dev, SYNTH_IN_PLACE_REG, IN_PLACE);
 				iowrite32(dev, SYNTH_WR_DATA_REG, OUT_DATA);
@@ -162,7 +161,7 @@ int main(int argc, char * argv[])
 				unsigned done = 0;
 
 				while (!done) {
-					dev = &espdevs[0];
+					dev = &espdevs[n];
 					done = ioread32(dev, STATUS_REG);
 					done &= STATUS_MASK_DONE;
 				}
@@ -170,8 +169,10 @@ int main(int argc, char * argv[])
 				iowrite32(dev, CMD_REG, 0x0);
 				printf("  Validating...\n");
 
+
 				uint32_t start = IN_PLACE ? 0 : IN_SIZE;
 				uint32_t errors = 0;
+
 				for (i = start; i < start + OUT_SIZE; i++){
 					if (i == start + OUT_SIZE - 1 && mem[i] != 0){
 						errors += mem[i];
@@ -180,10 +181,14 @@ int main(int argc, char * argv[])
 					else if (i != start + OUT_SIZE - 1 && mem[i] != OUT_DATA)
 						errors++;
 				}
+
 				printf(" %d errors \n", errors);
+
 				printf("  Done\n");
 
+
 				// Validation
+
 				if (scatter_gather)
 					aligned_free(ptable);
 				aligned_free(mem);
