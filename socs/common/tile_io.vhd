@@ -407,7 +407,7 @@ architecture rtl of tile_io is
   type intr_ack_fsm is (idle, send_packet);
   signal intr_ack_state, intr_ack_state_next : intr_ack_fsm := idle;
   signal header, header_next : std_logic_vector(MISC_NOC_FLIT_SIZE - 1 downto 0);
-  
+
   -- Tile parameters
   constant this_local_y           : local_yx                           := tile_y(io_tile_id);
   constant this_local_x           : local_yx                           := tile_x(io_tile_id);
@@ -482,86 +482,7 @@ architecture rtl of tile_io is
   signal noc5_output_port       : misc_noc_flit_type;
   signal noc6_output_port       : noc_flit_type;
 
-  attribute mark_debug : string;
 
-  -- attribute mark_debug of irqi : signal is "true";
-  -- attribute mark_debug of irqo : signal is "true";
-  -- attribute mark_debug of irqi_fifo_overflow : signal is "true";
-  -- attribute mark_debug of noc_pirq : signal is "true";
-  -- attribute mark_debug of plic_pready : signal is "true";
-  -- attribute mark_debug of plic_pslverr : signal is "true";
-  attribute mark_debug of irq_sources : signal is "true";
-  
-  -- attribute mark_debug of ahbs_rcv_rdreq : signal is "true";
-  -- attribute mark_debug of ahbs_rcv_data_out : signal is "true";
-  -- attribute mark_debug of ahbs_rcv_empty : signal is "true";
-  -- attribute mark_debug of ahbs_snd_wrreq : signal is "true";
-  -- attribute mark_debug of ahbs_snd_data_in : signal is "true";
-  -- attribute mark_debug of ahbs_snd_full : signal is "true";
-  -- attribute mark_debug of ahbm_rcv_rdreq : signal is "true";
-  -- attribute mark_debug of ahbm_rcv_data_out : signal is "true";
-  -- attribute mark_debug of ahbm_rcv_empty : signal is "true";
-  -- attribute mark_debug of ahbm_snd_wrreq : signal is "true";
-  -- attribute mark_debug of ahbm_snd_data_in : signal is "true";
-  -- attribute mark_debug of ahbm_snd_full : signal is "true";
-  -- attribute mark_debug of remote_ahbs_rcv_rdreq : signal is "true";
-  -- attribute mark_debug of remote_ahbs_rcv_data_out : signal is "true";
-  -- attribute mark_debug of remote_ahbs_rcv_empty : signal is "true";
-  -- attribute mark_debug of remote_ahbs_snd_wrreq : signal is "true";
-  -- attribute mark_debug of remote_ahbs_snd_data_in : signal is "true";
-  -- attribute mark_debug of remote_ahbs_snd_full : signal is "true";
-  -- attribute mark_debug of dma_rcv_rdreq : signal is "true";
-  -- attribute mark_debug of dma_rcv_data_out : signal is "true";
-  -- attribute mark_debug of dma_rcv_empty : signal is "true";
-  -- attribute mark_debug of dma_snd_wrreq : signal is "true";
-  -- attribute mark_debug of dma_snd_data_in : signal is "true";
-  -- attribute mark_debug of dma_snd_full : signal is "true";
-  -- attribute mark_debug of dma_snd_atleast_4slots : signal is "true";
-  -- attribute mark_debug of dma_snd_exactly_3slots : signal is "true";
-  -- attribute mark_debug of coherent_dma_rcv_rdreq : signal is "true";
-  -- attribute mark_debug of coherent_dma_rcv_data_out : signal is "true";
-  -- attribute mark_debug of coherent_dma_rcv_empty : signal is "true";
-  -- attribute mark_debug of coherent_dma_snd_wrreq : signal is "true";
-  -- attribute mark_debug of coherent_dma_snd_data_in : signal is "true";
-  -- attribute mark_debug of coherent_dma_snd_full : signal is "true";
-  attribute mark_debug of apb_rcv_rdreq : signal is "true";
-  attribute mark_debug of apb_rcv_data_out : signal is "true";
-  attribute mark_debug of apb_rcv_empty : signal is "true";
-  attribute mark_debug of apb_snd_wrreq : signal is "true";
-  attribute mark_debug of apb_snd_data_in : signal is "true";
-  attribute mark_debug of apb_snd_full : signal is "true";
-  -- attribute mark_debug of remote_apb_rcv_rdreq : signal is "true";
-  -- attribute mark_debug of remote_apb_rcv_data_out : signal is "true";
-  -- attribute mark_debug of remote_apb_rcv_empty : signal is "true";
-  -- attribute mark_debug of remote_apb_snd_wrreq : signal is "true";
-  -- attribute mark_debug of remote_apb_snd_data_in : signal is "true";
-  -- attribute mark_debug of remote_apb_snd_full : signal is "true";
-  -- attribute mark_debug of local_apb_rcv_rdreq : signal is "true";
-  -- attribute mark_debug of local_apb_rcv_data_out : signal is "true";
-  -- attribute mark_debug of local_apb_rcv_empty : signal is "true";
-  -- attribute mark_debug of local_remote_apb_snd_wrreq : signal is "true";
-  -- attribute mark_debug of local_remote_apb_snd_data_in : signal is "true";
-  -- attribute mark_debug of local_remote_apb_snd_full : signal is "true";
-  -- attribute mark_debug of irq_ack_rdreq : signal is "true";
-  -- attribute mark_debug of irq_ack_data_out : signal is "true";
-  -- attribute mark_debug of irq_ack_empty : signal is "true";
-  -- attribute mark_debug of irq_wrreq : signal is "true";
-  -- attribute mark_debug of irq_data_in : signal is "true";
-  -- attribute mark_debug of irq_full : signal is "true";
-  attribute mark_debug of interrupt_rdreq : signal is "true";
-  attribute mark_debug of interrupt_data_out : signal is "true";
-  attribute mark_debug of interrupt_empty : signal is "true";
-  attribute mark_debug of interrupt_ack_wrreq : signal is "true";
-  attribute mark_debug of interrupt_ack_data_in : signal is "true";
-  attribute mark_debug of interrupt_ack_full : signal is "true";
-  attribute mark_debug of noc_apbi_wirq : signal is "true";
-  -- attribute mark_debug of noc_apbo : signal is "true";
-
-  attribute mark_debug of intr_ack_state : signal is "true";
-  attribute mark_debug of intr_ack_state_next : signal is "true";
-  attribute mark_debug of header : signal is "true";
-  attribute mark_debug of header_next : signal is "true";
-  
 begin
 
  -----------------------------------------------------------------------------

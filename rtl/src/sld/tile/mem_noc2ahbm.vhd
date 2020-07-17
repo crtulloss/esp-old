@@ -203,13 +203,13 @@ architecture rtl of mem_noc2ahbm is
   signal rsp_reg : noc_flit_type;
 
   attribute mark_debug : string;
-  attribute mark_debug of coherence_req_data_out : signal is "true";
-  attribute mark_debug of coherence_req_rdreq : signal is "true";
-  attribute mark_debug of coherence_rsp_snd_wrreq : signal is"true";
-  attribute mark_debug of coherence_rsp_snd_data_in : signal is"true";
-  attribute mark_debug of r : signal is"true";
-  attribute mark_debug of ahbmi : signal is"true";
-  attribute mark_debug of ahbmo : signal is"true";
+  -- attribute mark_debug of coherence_req_data_out : signal is "true";
+  -- attribute mark_debug of coherence_req_rdreq : signal is "true";
+  -- attribute mark_debug of coherence_rsp_snd_wrreq : signal is"true";
+  -- attribute mark_debug of coherence_rsp_snd_data_in : signal is"true";
+  -- attribute mark_debug of r : signal is"true";
+  -- attribute mark_debug of ahbmi : signal is"true";
+  -- attribute mark_debug of ahbmo : signal is"true";
 
 begin  -- rtl
 
