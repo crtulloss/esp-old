@@ -1624,7 +1624,6 @@ vivado-distclean: vivado-clean
 GENUS_VLOG = read_hdl -language v2001
 GENUS_SVLOG = read_hdl -language sv
 GENUS_VHDL = read_hdl -language vhdl
-GENUS_ARIANE_VLOGOPT = -define WT_DCACHE=1
 
 genus:
 	$(QUIET_MKDIR)mkdir -p genus
@@ -1672,7 +1671,7 @@ genus/srcs.tcl: genus check_all_rtl_srcs.old
 		done; \
 	echo "### Compile SystemVerilog source files ###" >> $@; \
 		for rtl in $(SVLOG_SYN_SRCS); do \
-			echo "$(GENUS_SVLOG) $$rtl" >> $@; \
+			echo "$(GENUS_SVLOG) $(GENUS_SVLOGOPT) $$rtl" >> $@; \
 		done; \
 
 genus/$(DESIGN): genus genus/srcs.tcl genus/incdir.tcl

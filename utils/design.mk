@@ -94,6 +94,11 @@ XMSIMOPT  += -input xmsim.in
 NCCOMOPT  +=
 NCLOGOPT  +=
 NCSIMOPT  += -input ncsim.in
+ifneq ($(filter $(TECHLIB),$(FPGALIBS)),)
+VLOGOPT  += +define+UNISIM
+XMLOGOPT += -DEFINE UNISIM
+NCLOGOPT += -DEFINE UNISIM
+endif
 
 
 # Include unisim verilog librayr
@@ -145,6 +150,14 @@ VSIMOPT += -suppress 8617
 VSIMOPT += -suppress 151
 VSIMOPT += -suppress 143
 VSIMOPT += +notimingchecks
+
+
+### ASIC synthesis common options ###
+
+# Genus compile flags #
+GENUS_ARIANE_VLOGOPT = -define WT_DCACHE=1
+GENUS_SVLOGOPT +=
+
 
 # Toplevel
 VSIMOPT += $(SIMTOP) $(EXTRA_SIMTOP)
