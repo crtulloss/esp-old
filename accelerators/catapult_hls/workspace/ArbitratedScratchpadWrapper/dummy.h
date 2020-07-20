@@ -6,7 +6,7 @@
 #include "data_types.h"
 #include "handshake.h"
 
-#include "scratchpad_wrapper.h"
+#include "arbitrated_scratchpad_wrapper.h"
 
 SC_MODULE (Dummy) {
 

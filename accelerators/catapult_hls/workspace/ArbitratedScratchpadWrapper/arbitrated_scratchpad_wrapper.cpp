@@ -1,4 +1,4 @@
-#include <scratchpad_wrapper.h>
+#include "arbitrated_scratchpad_wrapper.h"
 
 #include "utils.h"
 

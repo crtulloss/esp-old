@@ -1,5 +1,5 @@
-#ifndef __SCRATCHPAD_WRAPPER_H__
-#define __SCRATCHPAD_WRAPPER_H__
+#ifndef __ARBITRATED_SCRATCHPAD_WRAPPER_H__
+#define __ARBITRATED_SCRATCHPAD_WRAPPER_H__
 
 #include "data_types.h"
 
