@@ -24,7 +24,11 @@ for (i = 0; i < BURST_COUNT; i++)
         write_data_to_testbench(data)
 ```
 
+![dut](doc/dut.png)
+
 The processes operate in bursts (`BURST_COUNT` bursts in total) of size `BURST_SIZE`; `process_1` reads `BURST_SIZE` words from the testbench and write them to a module either `ArbitratedScratchpadWrapper` or `ArbitratedScratchpadDPWrapper`; these modules wrap the MatchLib arbitrated scrathpad; once `process_1` completes a burst it syncs with the `process_2`; finally, `process_2` reads those words back from the memory wrapper and send them back to the testbench for validation.
+
+![scratchpad_wrapper](scratchpad_wrapper.png)
 
 
 To replicate the experiments:
