@@ -26,7 +26,7 @@ for (i = 0; i < BURST_COUNT; i++)
 
 To replicate the experiments:
 
-``
+```
 ./get_boost_1_68_0.sh
 ```
 
