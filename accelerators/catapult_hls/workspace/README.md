@@ -1,6 +1,6 @@
-# MatchLib Arbitrated Scratchpads for Shared Memories
+# MatchLib Arbitrated Scratchpads for SystemC Shared Memories
 
-The designs `ArbitratedScratchpadWrapper` and `ArbitratedScratchpadDPWrapper` use the [MatchLib memory components](https://nvlabs.github.io/matchlib/group___arbitrated_scratchpad.html) `ArbitratedScratchpad` and `ArbitratedScratchpadDP`, respectively.
+We provide two example of designs, `ArbitratedScratchpadWrapper` and `ArbitratedScratchpadDPWrapper`, that use the [MatchLib memory components](https://nvlabs.github.io/matchlib/group___arbitrated_scratchpad.html) `ArbitratedScratchpad` and `ArbitratedScratchpadDP` to model shared memories.
 
 The designs share memories among SystemC processes and are paradigmactic of the load-compute-store-process structure in ESP accelerators, but simpler.
 
