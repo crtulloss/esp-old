@@ -14,7 +14,7 @@ We provide two example designs, `ArbitratedScratchpadWrapper` and `ArbitratedScr
 
 The designs share memories among SystemC processes and are paradigmactic of the load-compute-store-process structure in ESP accelerators, but simpler.
 
-In both the designs, the top module `DUT` has two processes that behave ad producer-consumer as shown in the following pseudo code and image.
+In both the designs, the top module `DUT` has two processes that behave as producer and consumer, as shown in the following pseudo code and image.
 
 The processes operate in bursts (`BURST_COUNT` bursts in total) of size `BURST_SIZE`; `process_1` reads `BURST_SIZE` words from the testbench and writes them to a memory module, either a `ArbitratedScratchpadWrapper` or a `ArbitratedScratchpadDPWrapper`; these modules wrap the MatchLib arbitrated scrathpads (either single or dual ports); once `process_1` completes a burst, it syncs with the `process_2`; finally, `process_2` reads the data words back from the memory module and sends them to the testbench for validation.
 
