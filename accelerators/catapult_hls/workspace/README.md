@@ -1,10 +1,10 @@
 # Usage of MatchLib Arbitrated Scratchpads
 
-The designs `ArbitratedScratchpadWrapper` and `ArbitratedScratchpadDPWrapper` use the [MatchLib memory components](https://nvlabs.github.io/matchlib/group___arbitrated_scratchpad.html) `ArbitratedScratchpad` and `ArbitratedScratchpadDP` respectively.
+The designs `ArbitratedScratchpadWrapper` and `ArbitratedScratchpadDPWrapper` in this directory use the [MatchLib memory components](https://nvlabs.github.io/matchlib/group___arbitrated_scratchpad.html) `ArbitratedScratchpad` and `ArbitratedScratchpadDP`, respectively.
 
-The designs are paradigmactic of the load-compute-store structure of an ESP accelerator but simpler.
+The designs have share memories among SystemC processes and are paradigmactic of the load-compute-store-process structure in ESP accelerators, but simpler.
 
-In both the cases (`ArbitratedScratchpadWrapper` and `ArbitratedScratchpadDPWrapper`), the design top module has two processes that behave like in the following pseudo-code and image:
+In both the designs, the top module has two processes that behave like in the following pseudo-code and image:
 
 ```
 process_1:
