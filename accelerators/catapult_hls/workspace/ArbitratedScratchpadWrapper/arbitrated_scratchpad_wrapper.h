@@ -26,11 +26,11 @@ SC_MODULE (ScratchpadWrapper) {
     sc_in_clk clk;
     sc_in <bool> rst;
 
-    // Data req/resp ports.
+    // Data req/rsp ports.
     Connections::In<req_t> req_port_01;
-    Connections::Out<rsp_t> resp_port_01;
+    Connections::Out<rsp_t> rsp_port_01;
     Connections::In<req_t> req_port_02;
-    Connections::Out<rsp_t> resp_port_02;
+    Connections::Out<rsp_t> rsp_port_02;
 
     // Constructor.
     SC_HAS_PROCESS(ScratchpadWrapper);
@@ -39,13 +39,13 @@ SC_MODULE (ScratchpadWrapper) {
         clk("clk"),
         rst("rst"),
         req_port_01("req_port_01"),
-        resp_port_01("resp_port_01"),
+        rsp_port_01("rsp_port_01"),
         req_port_02("req_port_02"),
-        resp_port_02("resp_port_02"),
+        rsp_port_02("rsp_port_02"),
         req_wrapper_01("req_wrapper_01"),
-        resp_wrapper_01("resp_wrapper_01"),
+        rsp_wrapper_01("rsp_wrapper_01"),
         req_wrapper_02("req_wrapper_02"),
-        resp_wrapper_02("resp_wrapper_02")
+        rsp_wrapper_02("rsp_wrapper_02")
     {
         SC_CTHREAD(wrapper, clk.pos());
         reset_signal_is(rst, false);
@@ -59,10 +59,10 @@ SC_MODULE (ScratchpadWrapper) {
 
     // Internal connections.
     Connections::Combinational<req_t> req_wrapper_01;
-    Connections::Combinational<rsp_t> resp_wrapper_01;
+    Connections::Combinational<rsp_t> rsp_wrapper_01;
 
     Connections::Combinational<req_t> req_wrapper_02;
-    Connections::Combinational<rsp_t> resp_wrapper_02;
+    Connections::Combinational<rsp_t> rsp_wrapper_02;
 
     // Memory element(s).
     //static const int N = SCRATCHPAD_BANKS;

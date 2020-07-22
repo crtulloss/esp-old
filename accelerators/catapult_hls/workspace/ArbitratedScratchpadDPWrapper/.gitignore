@@ -1,6 +1,6 @@
 sim_test
 *vhd
-Catapult*.ccs
-Catapult*
+Catapult.ccs
+Catapult
 design_checker_constraints.tcl
 design_checker_pre_build.tcl

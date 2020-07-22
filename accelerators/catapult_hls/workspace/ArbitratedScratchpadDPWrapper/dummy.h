@@ -6,7 +6,7 @@
 #include "data_types.h"
 #include "handshake.h"
 
-#include "arbitrated_scratchpad_wrapper.h"
+#include "arbitrated_scratchpad_dp_wrapper.h"
 
 SC_MODULE (Dummy) {
 
@@ -40,7 +40,6 @@ SC_MODULE (Dummy) {
         scratchpad_wrapper.rsp_port_01(rsp_port_01);
         scratchpad_wrapper.req_port_02(req_port_02);
         scratchpad_wrapper.rsp_port_02(rsp_port_02);
-
         SC_CTHREAD(producer, clk.pos());
         reset_signal_is(rst, false);
 

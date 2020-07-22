@@ -12,7 +12,7 @@ set CLK_NAME clk
 set CLK_PERIOD 2
 set SRC_DIR "./"
 
-set DESIGN_FILES [list dummy.cpp  arbitrated_scratchpad_wrapper.cpp]
+set DESIGN_FILES [list dummy.cpp  arbitrated_scratchpad_dp_wrapper.cpp]
 set TB_FILES [list main.cpp stimuli.cpp  testbench.cpp]
 
 solution options set Input/TargetPlatform x86_64
@@ -27,7 +27,9 @@ foreach tb_file $TB_FILES {
 options set Input/CompilerFlags "-DSC_INCLUDE_DYNAMIC_PROCESSES -DCONNECTIONS_ACCURATE_SIM -DCATAPULT_COMPILE -DHLS_CATAPULT"
 go analyze
 solution library add mgc_sample-065nm-dw_beh_dc -- -rtlsyntool DesignCompiler -vendor Sample -technology 065nm -Designware Yes
-solution library add ram_sample-065nm-singleport_beh_dc
+#solution library add ram_sample-065nm-singleport_beh_dc
+solution library add ram_sample-065nm-dualport_beh_dc
+#solution library add ccs_sample_mem
 
 directive set GATE_REGISTERS false
 

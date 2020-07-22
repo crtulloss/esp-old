@@ -27,10 +27,10 @@ PRODUCER_INNER_LOOP:
 
             // Write a data word to the ASW.
             req_t req;
-            req.type.val = CLITYPE_T::STORE;
-            req.valids[0] = true;
-            req.addr[0] = addr;
-            req.data[0] = data;
+            req.type = REQ_STORE;
+            req.valids = true;
+            req.addr = addr;
+            req.data = data;
 
             req_port_01.Push(req);
 
@@ -72,16 +72,17 @@ CONSUMER_INNER_LOOP:
 
             // Read a data word to the ASW.
             req_t req;
-            req.type.val = CLITYPE_T::LOAD;
-            req.valids[0] = true;
-            req.addr[0] = addr;
-            req.data[0] = 0xdeadbeef;
+            req.type = REQ_LOAD;
+            req.valids = true;
+            req.addr = addr;
+            req.data = 0xdeadbeef;
 
             REPORT_TIME(VOFF, sc_time_stamp(), "Consumer has requested data from PLM");
             req_port_02.Push(req);
+            REPORT_TIME(VOFF, sc_time_stamp(), "Consumer is waiting for data from PLM");
             rsp_t rsp = rsp_port_02.Pop();
 
-            data32_t data = rsp.data[0];
+            data32_t data = rsp.data;
             REPORT_TIME(VOFF, sc_time_stamp(), "Consumer has received data from PLM[%u]: %u", addr, TO_UINT32(data));
 
             // Write a data word to the testbench.

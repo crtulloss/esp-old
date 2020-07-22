@@ -6,12 +6,12 @@ void ScratchpadWrapper::wrapper() {
     scratchpad.reset();
     req_wrapper_01.ResetRead();
     req_wrapper_02.ResetRead();
-    resp_wrapper_01.ResetWrite();
-    resp_wrapper_02.ResetWrite();
+    rsp_wrapper_01.ResetWrite();
+    rsp_wrapper_02.ResetWrite();
 
 
     cli_req_t<data32_t, SCRATCHPAD_ADDR_WIDTH, NUM_INPUTS> bundle_req;
-    cli_rsp_t<data32_t, NUM_INPUTS> bundle_resp;
+    cli_rsp_t<data32_t, NUM_INPUTS> bundle_rsp;
 
     req_t stored_req;
     bool  stored_req_valid = false;
@@ -79,16 +79,16 @@ void ScratchpadWrapper::wrapper() {
 #pragma hls_unroll yes
         for(int i=0; i<2; ++i) is_request |= bundle_req.valids[i];
 #pragma hls_unroll yes
-        for(int i=0; i<2; ++i) bundle_resp.valids[i] = false;
+        for(int i=0; i<2; ++i) bundle_rsp.valids[i] = false;
 
         // Iterate until all of the requests in the bundle get served.
         // (Worst case N iterations for N input requests)
         while (is_request) { // While there is at least one request
-            cli_rsp_t<data32_t, NUM_INPUTS> scratch_resp;
+            cli_rsp_t<data32_t, NUM_INPUTS> scratch_rsp;
             bool served[2];
 
             // run the core function
-            scratchpad.load_store(bundle_req, scratch_resp, served);
+            scratchpad.load_store(bundle_req, scratch_rsp, served);
 
             // Check if any request has remained.
             is_request = false;
@@ -99,29 +99,29 @@ void ScratchpadWrapper::wrapper() {
                 is_request |= new_valid;
                 bundle_req.valids[i] = new_valid;
 
-                // Build the response (only in case of a LOAD request).
+                // Build the rsponse (only in case of a LOAD request).
                 if (is_load && served[i]) {
-                    bundle_resp.valids[i] = scratch_resp.valids[i];
-                    bundle_resp.data[i] = scratch_resp.data[i];
-                    NVHLS_ASSERT(served[i] && bundle_resp.valids[i]);
+                    bundle_rsp.valids[i] = scratch_rsp.valids[i];
+                    bundle_rsp.data[i] = scratch_rsp.data[i];
+                    NVHLS_ASSERT(served[i] && bundle_rsp.valids[i]);
                 }
             }
         }
 
-        // All requests have been served, thus send responses back to each
+        // All requests have been served, thus send rsponses back to each
         // port (only if it is a LOAD request).
-        if (is_load && bundle_resp.valids[0]) {
+        if (is_load && bundle_rsp.valids[0]) {
             rsp_t rsp_thread_one;
-            rsp_thread_one.valids[0] = bundle_resp.valids[0];
-            rsp_thread_one.data[0] = bundle_resp.data[0];
-            resp_wrapper_01.Push(rsp_thread_one);
+            rsp_thread_one.valids[0] = bundle_rsp.valids[0];
+            rsp_thread_one.data[0] = bundle_rsp.data[0];
+            rsp_wrapper_01.Push(rsp_thread_one);
         }
 
-        if (is_load && bundle_resp.valids[1]) {
+        if (is_load && bundle_rsp.valids[1]) {
             rsp_t rsp_thread_two;
-            rsp_thread_two.valids[0] = bundle_resp.valids[1];
-            rsp_thread_two.data[0] = bundle_resp.data[1];
-            resp_wrapper_02.Push(rsp_thread_two);
+            rsp_thread_two.valids[0] = bundle_rsp.valids[1];
+            rsp_thread_two.data[0] = bundle_rsp.data[1];
+            rsp_wrapper_02.Push(rsp_thread_two);
         }
     }
 
@@ -129,9 +129,9 @@ void ScratchpadWrapper::wrapper() {
 
 void ScratchpadWrapper::thread_port_01() {
     req_port_01.Reset();
-    resp_port_01.Reset();
+    rsp_port_01.Reset();
     req_wrapper_01.ResetWrite();
-    resp_wrapper_01.ResetRead();
+    rsp_wrapper_01.ResetRead();
 
 
 #pragma hls_pipeline_init_interval 1
@@ -141,16 +141,16 @@ void ScratchpadWrapper::thread_port_01() {
         req_wrapper_01.Push(cur_req);
 
         if (cur_req.type.val == CLITYPE_T::LOAD) {
-            resp_port_01.Push(resp_wrapper_01.Pop());
+            rsp_port_01.Push(rsp_wrapper_01.Pop());
         }
     }
 }
 
 void ScratchpadWrapper::thread_port_02() {
     req_port_02.Reset();
-    resp_port_02.Reset();
+    rsp_port_02.Reset();
     req_wrapper_02.ResetWrite();
-    resp_wrapper_02.ResetRead();
+    rsp_wrapper_02.ResetRead();
 
 #pragma hls_pipeline_init_interval 1
 #pragma pipeline_stall_mode flush
@@ -159,7 +159,7 @@ void ScratchpadWrapper::thread_port_02() {
         req_wrapper_02.Push(cur_req);
 
         if (cur_req.type.val == CLITYPE_T::LOAD) {
-            resp_port_02.Push(resp_wrapper_02.Pop());
+            rsp_port_02.Push(rsp_wrapper_02.Pop());
         }
     }
 }
