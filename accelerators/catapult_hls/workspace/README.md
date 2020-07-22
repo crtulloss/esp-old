@@ -62,7 +62,7 @@ Notice that the two MatchLib components (`ArbitratedScratchpad` and `ArbitratedS
   ...
   ```
 
-We designed the memory modules (`ArbitratedScratchpadWrapper` and `ArbitratedScratchpadDPWrapper`) to **wrap** the MatchLib components with a similar request-response-based interface (`req_t` and `rsp_t`). In addition to that, each port of the memroy wrapper is served by a concurrent SystemC thread. An additional thread, wraps the MatchLib component.
+We designed the memory modules (`ArbitratedScratchpadWrapper` and `ArbitratedScratchpadDPWrapper`) to **wrap** the MatchLib components with similar request-response-based interfaces (`req_t` and `rsp_t`) borrowing the `ArbitratedScratchpadWrapper` [API](https://github.com/NVlabs/matchlib/blob/master/cmod/include/ArbitratedScratchpad/ArbitratedScratchpadTypes.h). In addition to that, each port of the memory wrapper is served by a concurrent SystemC thread. An additional thread, wraps the MatchLib component.
 
 ![scratchpad_wrapper](doc/scratchpad_wrapper.png)
 
