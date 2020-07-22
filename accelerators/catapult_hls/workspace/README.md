@@ -1,5 +1,13 @@
 # MatchLib Arbitrated Scratchpads for SystemC Shared Memories
 
+<!-- vim-markdown-toc GFM -->
+
+* [Overview](#overview)
+* [Quick Start](#quick-start)
+* [References](#references)
+
+<!-- vim-markdown-toc -->
+
 ## Overview
 
 We provide two example of designs, `ArbitratedScratchpadWrapper` and `ArbitratedScratchpadDPWrapper`, that use the [MatchLib memory components](https://nvlabs.github.io/matchlib/group___arbitrated_scratchpad.html) `ArbitratedScratchpad` and `ArbitratedScratchpadDP` to model shared memories.
