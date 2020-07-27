@@ -1,0 +1,4 @@
+mindfuzz_plm_block_in_dma32 65536 32 1w:0r 0w:1r
+mindfuzz_plm_block_out_dma32 2432 32 1w:0r 0w:1r
+mindfuzz_plm_block_in_dma64 65536 32 2w:0r 0w:1r
+mindfuzz_plm_block_out_dma64 2432 32 1w:0r 0w:2r
