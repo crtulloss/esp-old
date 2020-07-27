@@ -1,0 +1,10 @@
+For the data in data5.csv, the weights are in weights5.csv.
+For the data in data10.csv, the weights are in weights10.csv.
+
+Parameters used for training weights:
+* No bias
+* Learning rate = 1e-6
+* Threshold for relevance = 100
+* Epochs = 1
+* Batch size = 70 samples
+* Initial weights = [1,1,1...]
