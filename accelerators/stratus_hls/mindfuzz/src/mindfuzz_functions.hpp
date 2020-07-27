@@ -1,9 +1,4 @@
-// Copyright (c) 2011-2019 Columbia University, System Level Design Group
-// SPDX-License-Identifier: Apache-2.0
-
-#include "mindfuzz.hpp"
-
-// Optional application-specific helper functions
+// helper functions for autoencoder weight updates, threshold updates, detection
 
 // TODO figure out RELU implementation
 /*
@@ -16,13 +11,105 @@ void RELU(TYPE activations[layer1_dimension], TYPE dactivations[layer1_dimension
 }
 */
 
+void thresh_update(TYPE in[],
+                   int32_t total_tsamps,
+                   int32_t num_windows,
+                   int32_t window_size,
+                   int32_t rate_spike,
+                   int32_t rate_noise,
+                   int32_t spike_weight,
+                   TYPE mean_spike[],
+                   TYPE mean_noise[],
+                   TYPE thresh[],
+                   int32_t indata_offset) {
+
+    TYPE data;
+    TYPE m_spike;
+    TYPE m_noise;
+    TYPE delta_spike;
+    TYPE delta_noise;
+    TYPE delta_spike_abs;
+    TYPE delta_noise_abs;
+
+    uint32_t num_electrodes = num_windows*window_size;
+
+    uint32_t samp_offset;
+    uint32_t window_offset;
+    uint32_t total_offset;
+
+    // going to update means and threshold for each sample
+    for (uint32_t samp = 0; samp < total_tsamps; samp++) {
+        
+        samp_offset = samp * num_electrodes;
+
+        for (uint32_t window = 0; window < num_windows; window++) {
+            
+            window_offset = window * window_size;
+            // modified from hw version to account for all input data being in one array
+            total_offset = indata_offset + samp_offset + window_offset;
+
+            for (uint32_t elec = 0; elec < window_size; elec++) {
+
+                // acquire sample for this electrode
+                data = a_read(in[total_offset + elec]);
+
+                // acquire relevant means
+                m_spike = a_read(mean_spike[window_offset + elec]);
+                m_noise = a_read(mean_noise[window_offset + elec]);
+
+                // calculate deltas
+                delta_spike = data - m_spike;
+                delta_noise = data - m_noise;
+
+                // calculate absolute values
+                if (delta_spike < 0) {
+                    delta_spike_abs = delta_spike * -1.0;
+                }
+                else {
+                    delta_spike_abs = delta_spike;
+                }
+                if (delta_noise < 0) {
+                    delta_noise_abs = delta_noise * -1.0;
+                }
+                else {
+                    delta_noise_abs = delta_noise;
+                }
+
+                // determine which mean the sample is closer to and update means
+                if (delta_spike_abs < delta_noise_abs) {
+
+                    // spike cluster
+                    // update the mean
+                    m_spike = m_spike + delta_spike * rate_spike;
+                    mean_spike[window_offset + elec] = a_write(m_spike);
+                }
+
+                else {
+                    // noise cluster
+                    // update the mean
+                    m_noise = m_noise + delta_noise * rate_noise;
+                    mean_noise[window_offset + elec] = a_write(m_noise);
+                }
+
+                // update thresh
+                thresh[window_offset + elec] = a_write(spike_weight * (m_spike + m_noise));
+
+                // done with this electrode
+            }
+            // done with this window
+        }
+        // done with this sample
+    }
+}
+
 // relavancy detection used to choose input data
-void mindfuzz::relevant(int32_t total_tsamps,
-                        int32_t num_windows,
-                        int32_t window_size,
-                        bool flag[],
-                        bool ping,
-                        TYPE thresh) {
+void relevant(TYPE in[],
+              int32_t total_tsamps,
+              int32_t num_windows,
+              int32_t window_size,
+              bool flag[],
+              TYPE thresh,
+              int32_t indata_offset) {
 
     TYPE data;
 
@@ -50,30 +137,25 @@ void mindfuzz::relevant(int32_t total_tsamps,
         for (uint32_t window = 0; window < num_windows; window++) {
 
             window_offset = window * window_size;
-            total_offset = samp_offset + window_offset;
+            // modified from hw version to account for all input data being in one array
+            total_offset = indata_offset + samp_offset + window_offset;
 
             for (uint32_t elec = 0; elec < window_size; elec++) {
 
                 // on first sample for each elec, reset the max and min
                 if (samp == 0) {
-                    max[window_offset + elec] = fp2int<TYPE, WORD_SIZE>(0.0);
-                    min[window_offset + elec] = fp2int<TYPE, WORD_SIZE>(0.0);
+                    max[window_offset + elec] = a_write(0.0);
+                    min[window_offset + elec] = a_write(0.0);
                 }
 
-                // acquire data
-                if (ping) {
-                    data = int2fp<TYPE, WORD_SIZE>(plm_in_ping[total_offset + elec]);
-                }
-                else {
-                    data = int2fp<TYPE, WORD_SIZE>(plm_in_pong[total_offset + elec]);
-                }
+                data = a_read(in[total_offset + elec]);
 
                 // compare data for this sample with existing max and min
-                if (data > int2fp<TYPE, WORD_SIZE>(max[window_offset + elec])) {
-                    max[window_offset + elec] = fp2int<TYPE, WORD_SIZE>(data);
+                if (data > a_read(max[window_offset + elec])) {
+                    max[window_offset + elec] = a_write(data);
                 }
-                else if (data < int2fp<TYPE, WORD_SIZE>(min[window_offset + elec])) {
-                    min[window_offset + elec] = fp2int<TYPE, WORD_SIZE>(data);
+                else if (data < a_read(min[window_offset + elec])) {
+                    min[window_offset + elec] = a_write(data);
                 }
 
                 // done with this sample for this electrode
@@ -93,12 +175,20 @@ void mindfuzz::relevant(int32_t total_tsamps,
 
         // check max and min for each elec
         for (uint32_t elec = 0; elec < window_size; elec++) {
-            if ((int2fp<TYPE, WORD_SIZE>(max[window_offset + elec]) - int2fp<TYPE, WORD_SIZE>(min[window_offset + elec])) > (TYPE)0.9) {
+            if ((a_read(max[window_offset + elec]) - a_read(min[window_offset + elec])) > thresh) {
                 // flag the window
                 flag[window] = true;
                 // don't need to check other electrodes in this window
+                cout << "min " << window << "elec " << elec << ": max " << a_read(max[window_offset + elec])
+                    << "\tmin: " << a_read(min[window_offset + elec]) << "\n";
                 break;
             }
+            /*
+            else {
+                flag[window] = true;
+                break;
+            }
+            */
         }
         // done with this window
     }
@@ -107,21 +197,24 @@ void mindfuzz::relevant(int32_t total_tsamps,
 }
 
 // backprop function used in computational kernel
-void mindfuzz::backprop(bool do_relu,
-                        TYPE learning_rate,
-                        int32_t tsamps_perbatch,
-                        int32_t num_windows,
-                        int32_t epochs_perbatch,
-                        int32_t input_dimension,
-                        int32_t layer1_dimension,
-                        int32_t output_dimension,
-                        int32_t W1_size,
-                        int32_t W2_size,
-                        int32_t B1_size,
-                        int32_t B2_size,
-                        int32_t batch,
-                        bool flag[],
-                        bool ping) {
+void backprop(TYPE in[],
+              TYPE plm_out[],
+              bool do_relu,
+              TYPE learning_rate,
+              TYPE learning_rate_scaled,
+              int32_t tsamps_perbatch,
+              int32_t num_windows,
+              int32_t epochs_perbatch,
+              int32_t input_dimension,
+              int32_t layer1_dimension,
+              int32_t output_dimension,
+              int32_t W1_size,
+              int32_t W2_size,
+              int32_t B1_size,
+              int32_t B2_size,
+              int32_t batch,
+              bool flag[],
+              int32_t indata_offset) {
 
     // single-tsamp data for all electrodes - size e.g. 4 * 32 = 256
     uint32_t num_electrodes = num_windows*input_dimension;
@@ -142,17 +235,22 @@ void mindfuzz::backprop(bool do_relu,
     uint32_t window_offset_output;
     uint32_t window_offset_layer1;
     uint32_t window_offset_input;
+#ifdef do_bias
     uint32_t window_offset_biases2;
     uint32_t window_offset_biases1;
+#endif
 
     // PLM access offsets for weights and biases
     uint32_t plm_offset_W1 = 0;
     uint32_t plm_offset_W2 = plm_offset_W1 + W1_size;
+#ifdef do_bias
     uint32_t plm_offset_B1 = plm_offset_W2 + W2_size;
     uint32_t plm_offset_B2 = plm_offset_B1 + B1_size;
+#endif
 
     // PLM access offset for input data
-    uint32_t batch_offset = num_electrodes * tsamps_perbatch * batch;
+    // for sw-only version, added offset to take into account load batch
+    uint32_t batch_offset = indata_offset + num_electrodes * tsamps_perbatch * batch;
 
     // useful for arithmetic
     uint32_t W1_singlewindow = layer1_dimension*input_dimension;
@@ -170,10 +268,13 @@ void mindfuzz::backprop(bool do_relu,
     const uint32_t const_W1_size = const_W2_size;
     const uint32_t const_B2_size = CONST_NUM_WINDOWS * CONST_WINDOW_SIZE;
     const uint32_t const_B1_size = CONST_NUM_WINDOWS * CONST_NEURONS_PERWIN;
+    
     TYPE dW2[const_W2_size];
     TYPE dW1[const_W1_size];
+#ifdef do_bias
     TYPE dB2[const_B2_size];
     TYPE dB1[const_B1_size];
+#endif
 
     // temporary variables to store some results
     // forward pass: activation of layer 1 and difference between out and in
@@ -197,14 +298,17 @@ void mindfuzz::backprop(bool do_relu,
         // reset weight and bias delta accumulation variables
         // assumes W2_size = W1_size
         for (uint32_t i = 0; i < W2_size; i++) {
-            dW1[i] = fp2int<TYPE, WORD_SIZE>(0.0);
-            dW2[i] = fp2int<TYPE, WORD_SIZE>(0.0);
+            dW1[i] = a_write(0.0);
+            dW2[i] = a_write(0.0);
+            
+#ifdef do_bias
             if (i < B2_size) {
-                dB2[i] = fp2int<TYPE, WORD_SIZE>(0.0);
+                dB2[i] = a_write(0.0);
             }
             if (i < B1_size) {
-                dB1[i] = fp2int<TYPE, WORD_SIZE>(0.0);
+                dB1[i] = a_write(0.0);
             }
+#endif
         }
 
         for (uint32_t samp = 0; samp < tsamps_perbatch; samp++) {
@@ -214,25 +318,10 @@ void mindfuzz::backprop(bool do_relu,
 
             // access input data for all windows from PLM
             // only place we need to worry about pingpong
-            if (ping) {
-                for (uint32_t elec = 0; elec < num_electrodes; elec++) {
-                    // this is a PLM access - can only UNROLL if has multiple ports
-                    elecdata[elec] = fp2int<TYPE, WORD_SIZE>(int2fp<TYPE, WORD_SIZE>(plm_in_ping[samp_offset + elec]));
-/*
-                    float temp_data = int2fp<TYPE, WORD_SIZE>(plm_in_ping[samp_offset + elec]);
-                    ESP_REPORT_INFO("data, accessed properly, is %.8f", temp_data);
-                    plm_in_ping[samp_offset + elec] = fp2int<TYPE, WORD_SIZE>(temp_data);
-                    temp_data = int2fp<TYPE, WORD_SIZE>(plm_in_ping[samp_offset + elec]);
-                    ESP_REPORT_INFO("data, after rewriting y, is %.8f", temp_data);
-*/
+            for (uint32_t elec = 0; elec < num_electrodes; elec++) {
+                // this is a PLM access - can only UNROLL if has multiple ports
+                elecdata[elec] = a_write(a_read(in[samp_offset + elec]));
 
-                }
-            }
-            else {
-                for (uint32_t elec = 0; elec < num_electrodes; elec++) {
-                    // this is a PLM access - can only UNROLL if has multiple ports
-                    elecdata[elec] = fp2int<TYPE, WORD_SIZE>(int2fp<TYPE, WORD_SIZE>(plm_in_pong[samp_offset + elec]));
-                }
             }
 
             for (uint32_t window = 0; window < num_windows; window++) {
@@ -248,8 +337,11 @@ void mindfuzz::backprop(bool do_relu,
                     window_offset_output = window*output_dimension;
                     window_offset_layer1 = window*layer1_dimension;
                     window_offset_input = window*input_dimension;
+                    
+#ifdef do_bias
                     window_offset_biases1 = plm_offset_B1 + window_offset_layer1;
                     window_offset_biases2 = plm_offset_B2 + window_offset_output;
+#endif
 
                     // forward pass
                     // compute layer1 activations
@@ -259,129 +351,98 @@ void mindfuzz::backprop(bool do_relu,
                     TYPE temp_incr;
                     for (uint32_t neuron = 0; neuron < layer1_dimension; neuron++) {
 
-/*
-                        ESP_REPORT_INFO("begin computation of this act1");
-*/
-
                         // reset activation for this sample
-                        act1[window_offset_layer1 + neuron] = fp2int<TYPE, WORD_SIZE>(0.0);
-
-/*
-                        float temp_data = int2fp<TYPE, WORD_SIZE>(act1[window_offset_layer1 + neuron]);
-                        ESP_REPORT_INFO("act1, initial is %.8f", temp_data);
-*/
+                        act1[window_offset_layer1 + neuron] = a_write(0.0);
 
                         // mac
                         for (uint32_t in = 0; in < input_dimension; in++) {
 
-/*
-                            temp_data = int2fp<TYPE, WORD_SIZE>(plm_out[window_offset_weights1 + neuron*input_dimension + in]);
-                            ESP_REPORT_INFO("W1 is %.8f", temp_data);
-                            temp_data = int2fp<TYPE, WORD_SIZE>(elecdata[window_offset_input + in]);
-                            ESP_REPORT_INFO("in is %.8f", temp_data);
-                            temp_data = int2fp<TYPE, WORD_SIZE>(plm_out[window_offset_weights1 +
-                                    neuron*input_dimension + in]) *
-                                int2fp<TYPE, WORD_SIZE>(elecdata[window_offset_input + in]);
-                            ESP_REPORT_INFO("product is %.8f", temp_data);
-
-                            float temp_act1 = int2fp<TYPE, WORD_SIZE>(act1[window_offset_layer1 + neuron]);
-*/
-
                             // acquire existing act1
-                            temp_act1 = int2fp<TYPE, WORD_SIZE>(act1[window_offset_layer1 + neuron]);
+                            temp_act1 = a_read(act1[window_offset_layer1 + neuron]);
                             // compute (FP) increment
-                            temp_incr = int2fp<TYPE, WORD_SIZE>(plm_out[window_offset_weights1 +
+                            temp_incr = a_read(plm_out[window_offset_weights1 +
                                     neuron*input_dimension + in]) *
-                                int2fp<TYPE, WORD_SIZE>(elecdata[window_offset_input + in]);
+                                a_read(elecdata[window_offset_input + in]);
                             // update act1
                             act1[window_offset_layer1 + neuron] =
-                                fp2int<TYPE, WORD_SIZE>(temp_incr + temp_act1);
-
-/*
-                            temp_data = int2fp<TYPE, WORD_SIZE>(act1[window_offset_layer1 + neuron]);
-                            ESP_REPORT_INFO("new act is %.8f", temp_data);
-*/
+                                a_write(temp_incr + temp_act1);
 
                         }
                      
                         // bias
+#ifdef do_bias
                         // acquire existing act1
-                        temp_act1 = int2fp<TYPE, WORD_SIZE>(act1[window_offset_layer1 + neuron]);
+                        temp_act1 = a_read(act1[window_offset_layer1 + neuron]);
                         // compute (FP) increment
-                        temp_incr = int2fp<TYPE, WORD_SIZE>(plm_out[window_offset_biases1 + neuron]);
+                        temp_incr = a_read(plm_out[window_offset_biases1 + neuron]);
                         // update act1
                         act1[window_offset_layer1 + neuron] =
-                            fp2int<TYPE, WORD_SIZE>(temp_incr + temp_act1);
-/*
-                        temp_data = int2fp<TYPE, WORD_SIZE>(act1[window_offset_layer1 + neuron]);
-                        ESP_REPORT_INFO("act1 after bias addition is %.8f", temp_data);
-*/
-
+                            a_write(temp_incr + temp_act1);
+#endif
                     }
 
                     // compute output activations
                     TYPE temp_diff;
+#ifdef do_bias
                     TYPE temp_dB2;
+#endif
                     for (uint32_t out = 0; out < output_dimension; out++) {
 
                         // reset output difference for this sample
-                        diff[window_offset_output + out] = fp2int<TYPE, WORD_SIZE>(0.0);
+                        diff[window_offset_output + out] = a_write(0.0);
 
                         // mac
                         for (uint32_t neuron = 0; neuron < layer1_dimension; neuron++) {
 
-
                             // acquire existing diff
-                            temp_diff = int2fp<TYPE, WORD_SIZE>(diff[window_offset_output + out]);
+                            temp_diff = a_read(diff[window_offset_output + out]);
                             // compute (FP) increment
-                            temp_incr = int2fp<TYPE, WORD_SIZE>(plm_out[window_offset_weights2 +
+                            temp_incr = a_read(plm_out[window_offset_weights2 +
                                     out*layer1_dimension + neuron]) *
-                                int2fp<TYPE, WORD_SIZE>(act1[window_offset_layer1 + neuron]);
+                                a_read(act1[window_offset_layer1 + neuron]);
                             // update diff
                             diff[window_offset_output + out] =
-                                fp2int<TYPE, WORD_SIZE>(temp_incr + temp_diff);
+                                a_write(temp_incr + temp_diff);
 
                         }
-
-                        // bias
-                        // acquire existing diff
-                        temp_diff = int2fp<TYPE, WORD_SIZE>(diff[window_offset_output + out]);
-                        // compute (FP) increment
-                        temp_incr = int2fp<TYPE, WORD_SIZE>(plm_out[window_offset_biases2 + out]);
                         
+                        // acquire existing diff
+                        temp_diff = a_read(diff[window_offset_output + out]);
+
                         // subtract the ground truth difference
                         // we don't need the output, only the difference
-                        temp_incr = temp_incr -
-                            int2fp<TYPE, WORD_SIZE>(elecdata[window_offset_input + out]);
+                        temp_incr = -1 * a_read(elecdata[window_offset_input + out]);
+
+                        // bias
+#ifdef do_bias
+                        temp_incr = temp_incr + a_read(plm_out[window_offset_biases2 + out]);
+#endif
 
                         // update diff
                         diff[window_offset_output + out] =
-                            fp2int<TYPE, WORD_SIZE>(temp_incr + temp_diff);
-
-/*
-                        float temp_data = int2fp<TYPE, WORD_SIZE>(diff[window_offset_output + out]);
-                        ESP_REPORT_INFO("diff, accessed properly, is %.8f", temp_data);
-*/
-
+                            a_write(temp_incr + temp_diff);
 
                         // beginning of backprop for this sample
                         // this part only requires a loop over output
                         // epoch-accum dB2 - simple because we just add diff
-                        temp_dB2 = int2fp<TYPE, WORD_SIZE>(dB2[window_offset_output + out]);
-                        temp_incr = int2fp<TYPE, WORD_SIZE>(diff[window_offset_output + out]);
-                        dB2[window_offset_output + out] = fp2int<TYPE, WORD_SIZE>(temp_dB2 + temp_incr);
-
+#ifdef do_bias
+                        temp_dB2 = a_read(dB2[window_offset_output + out]);
+                        temp_incr = ((TYPE)2.0) * a_read(diff[window_offset_output + out]);
+                        dB2[window_offset_output + out] = a_write(temp_dB2 + temp_incr);
+#endif
                     }
 
                     TYPE temp_W2xdiff;
                     TYPE temp_dW2;
+#ifdef do_bias
                     TYPE temp_dB1;
+#endif
                     TYPE temp_dW1;
                     // backprop for this sample (with no weight update yet)
                     for (uint32_t neuron = 0; neuron < layer1_dimension; neuron++) {
 
                         // reset W2xdiff sample accum variable
-                        W2xdiff[window_offset_layer1 + neuron] = fp2int<TYPE, WORD_SIZE>(0.0);
+                        W2xdiff[window_offset_layer1 + neuron] = a_write(0.0);
 
                         // dual-purpose loop; both computations here looped over neurons and outputs
                         // they are unrelated
@@ -390,54 +451,54 @@ void mindfuzz::backprop(bool do_relu,
                             // mac W2xdiff
 
                             // acquire existing W2xdiff
-                            temp_W2xdiff = int2fp<TYPE, WORD_SIZE>(
-                                W2xdiff[window_offset_layer1 + neuron]);
+                            temp_W2xdiff = a_read(W2xdiff[window_offset_layer1 + neuron]);
                             // compute (FP) increment
-                            temp_incr = int2fp<TYPE, WORD_SIZE>(plm_out[window_offset_weights2 +
+                            temp_incr = a_read(plm_out[window_offset_weights2 +
                                     out*layer1_dimension + neuron]) *
-                                int2fp<TYPE, WORD_SIZE>(diff[window_offset_output + out]);
+                                a_read(diff[window_offset_output + out]);
                             // update W2xdiff
                             W2xdiff[window_offset_layer1 + neuron] =
-                                fp2int<TYPE, WORD_SIZE>(temp_incr + temp_W2xdiff);
+                                a_write(temp_incr + temp_W2xdiff);
 
-                            // epoch-accum dw2
+                            // epoch-accum dW2
 
                             // acquire existing dW2
-                            temp_dW2 = int2fp<TYPE, WORD_SIZE>(
+                            temp_dW2 = a_read(
                                 dW2[window_offset_dW2 + out*layer1_dimension + neuron]);
                             // compute (FP) increment
-                            temp_incr = int2fp<TYPE, WORD_SIZE>(diff[window_offset_output + out]) *
-                                int2fp<TYPE, WORD_SIZE>(act1[window_offset_layer1 + neuron]);
+                            temp_incr = ((TYPE)2.0) * a_read(diff[window_offset_output + out]) *
+                                a_read(act1[window_offset_layer1 + neuron]);
                             // update dW2
                             dW2[window_offset_dW2 + out*layer1_dimension + neuron] = 
-                                fp2int<TYPE, WORD_SIZE>(temp_incr + temp_dW2);
+                                a_write(temp_incr + temp_dW2);
                         }
 
                         // these must be done after because they depend on W2xdiff
 
                         // epoch-accum dB1
-
+#ifdef do_bias
                         // acquire existing dB1
-                        temp_dB1 = int2fp<TYPE, WORD_SIZE>(
+                        temp_dB1 = a_read(
                             dB1[window_offset_layer1 + neuron]);
                         // compute (FP) increment
-                        temp_incr = int2fp<TYPE, WORD_SIZE>(W2xdiff[window_offset_layer1 + neuron]);
+                        temp_incr = ((TYPE)2.0) * a_read(W2xdiff[window_offset_layer1 + neuron]);
                         // update dB1
                         dB1[window_offset_layer1 + neuron] = 
-                            fp2int<TYPE, WORD_SIZE>(temp_incr + temp_dB1);
+                            a_write(temp_incr + temp_dB1);
+#endif
 
                         // epoch-accum dW1
                         for (uint32_t in = 0; in < input_dimension; in++) {
 
                             // acquire existing dW1
-                            temp_dW1 = int2fp<TYPE, WORD_SIZE>(
+                            temp_dW1 = a_read(
                                 dW1[window_offset_dW1 + neuron*input_dimension + in]);
                             // compute (FP) increment
-                            temp_incr = int2fp<TYPE, WORD_SIZE>(W2xdiff[window_offset_layer1 + neuron]) *
-                                        int2fp<TYPE, WORD_SIZE>(elecdata[window_offset_input + in]);
+                            temp_incr = ((TYPE)2.0) * a_read(W2xdiff[window_offset_layer1 + neuron]) *
+                                        a_read(elecdata[window_offset_input + in]);
                             // update dW1
                             dW1[window_offset_dW1 + neuron*input_dimension + in] = 
-                                fp2int<TYPE, WORD_SIZE>(temp_incr + temp_dW1);
+                                a_write(temp_incr + temp_dW1);
                         }
                     }
                 }
@@ -463,8 +524,10 @@ void mindfuzz::backprop(bool do_relu,
                 window_offset_output = window*output_dimension;
                 window_offset_layer1 = window*layer1_dimension;
                 window_offset_input = window*input_dimension;
+#ifdef do_bias
                 window_offset_biases1 = plm_offset_B1 + window_offset_layer1;
                 window_offset_biases2 = plm_offset_B2 + window_offset_output;
+#endif
 
                 // these normalizations only useful for this window
                 TYPE norm, bias_norm;
@@ -473,108 +536,60 @@ void mindfuzz::backprop(bool do_relu,
 
                 for (uint32_t neuron = 0; neuron < layer1_dimension; neuron++) {
                     
-/*
-                    TYPE prev_value = fp2int<TYPE, WORD_SIZE>(plm_out[window_offset_biases1 + neuron]);
-*/
-
                     // update B1
-
+#ifdef do_bias
                     // acquire existing plmval
-                    temp_plmval = int2fp<TYPE, WORD_SIZE>(
+                    temp_plmval = a_read(
                         plm_out[window_offset_biases1 + neuron]);
                     // compute (FP) increment
-                    temp_incr = int2fp<TYPE, WORD_SIZE>(dB1[window_offset_layer1 + neuron]) *
-                        ((TYPE)0.01);
-/*
-                    while ((temp_incr > ((TYPE)1.0)) || (temp_incr < ((TYPE)-1.0))) {
-                        temp_incr = temp_incr * ((TYPE)0.1);
-                    }
-                    temp_incr = temp_incr * ((TYPE)0.05);
-*/
+                    temp_incr = a_read(dB1[window_offset_layer1 + neuron]) *
+                        (learning_rate_scaled);
+
                     // update plmval
                     plm_out[window_offset_biases1 + neuron] = 
-                        fp2int<TYPE, WORD_SIZE>(temp_plmval - temp_incr);
-
-/*
-                    TYPE next_value = fp2int<TYPE, WORD_SIZE>(plm_out[window_offset_biases1 + neuron]);
-
-                    if (int2fp<TYPE, WORD_SIZE>(dB1[window_offset_layer1 + neuron]) != (TYPE)0.0) {
-                        //ESP_REPORT_INFO("delta nonzero");
-                        if ((int2fp<TYPE, WORD_SIZE>(dB1[window_offset_layer1 + neuron]) * ((TYPE)0.01)) == 0.0) {
-                            ESP_REPORT_INFO("delta nonzero, scaled delta zero!");
-                        }
-                    }
-                    if (prev_value == next_value) {
-                        ESP_REPORT_INFO("no update occured");
-                    }
-*/
-
-/*
-                    float temp_delta = (float) int2fp<TYPE, WORD_SIZE>(
-                                           dB1[window_offset_layer1 + neuron]);
-                    ESP_REPORT_INFO("delta, accessed properly, is %.8f", temp_delta);
-                    temp_delta = (float) (int2fp<TYPE, WORD_SIZE>(
-                                           dB1[window_offset_layer1 + neuron]) * (TYPE)0.01);                   
-                    ESP_REPORT_INFO("scaled delta, accessed properly, is %.8f", temp_delta);
-                    temp_delta = (float) (dB1[window_offset_layer1 + neuron]);
-                    ESP_REPORT_INFO("delta, access wrong, is %.8f", temp_delta);
-                    temp_delta = (float) (dB1[window_offset_layer1 + neuron] * (TYPE)0.01);
-                    ESP_REPORT_INFO("scaled delta, access wrong, is %.8f", temp_delta);
-*/
+                        a_write(temp_plmval - temp_incr);
+#endif
 
 /*
                     // add to bias normalization
-                    bias_norm += int2fp<TYPE, WORD_SIZE>(plm_out[window_offset_biases1 + neuron]) *
-                        int2fp<TYPE, WORD_SIZE>(plm_out[window_offset_biases1 + neuron]);
+                    bias_norm += a_read(plm_out[window_offset_biases1 + neuron]) *
+                        a_read(plm_out[window_offset_biases1 + neuron]);
 */
 
                     // update W1
                     for (uint32_t in = 0; in < input_dimension; in++) {
 
                         // acquire existing plmval
-                        temp_plmval = int2fp<TYPE, WORD_SIZE>(
+                        temp_plmval = a_read(
                             plm_out[window_offset_weights1 + neuron*input_dimension + in]);
                         if ((window == 0) && (neuron == 0) && (in == 0)) {
-                            ESP_REPORT_INFO("before %.8f", temp_plmval);
+                            cout << "before " << temp_plmval << "\n";
                         }
                         // compute (FP) increment
-/*
-                        temp_incr = int2fp<TYPE, WORD_SIZE>(dW1[window_offset_dW1
-                                + neuron*input_dimension + in]) *
-                            ((TYPE)0.01);
-*/
-                        temp_incr = int2fp<TYPE, WORD_SIZE>(dW1[window_offset_dW1
-                                + neuron*input_dimension + in]) * ((TYPE)0.01);
-/*
-                        // artificially ensure that increment never exceeds 1 in absolute value
-                        while ((temp_incr > ((TYPE)1.0)) || (temp_incr < ((TYPE)-1.0))) {
-                            if ((window == 0) && (neuron == 0) && (in == 0)) {
-                                ESP_REPORT_INFO("tempincrement %.8f", -1.0*temp_incr);
-                            }
-                            temp_incr = temp_incr * ((TYPE)0.1);
-                        }
-                        temp_incr = temp_incr * ((TYPE)0.05);
-*/
+
+                        temp_incr = a_read(dW1[window_offset_dW1
+                                + neuron*input_dimension + in]) * (learning_rate_scaled);
+
                         if ((window == 0) && (neuron == 0) && (in == 0)) {
-                            ESP_REPORT_INFO("increment %.8f", -1.0*temp_incr);
+                            cout << "increment " << -1.0*temp_incr << "\n";
                         }
                         // update plmval
                         plm_out[window_offset_weights1 + neuron*input_dimension + in] = 
-                            fp2int<TYPE, WORD_SIZE>(temp_plmval - temp_incr);
+                            a_write(temp_plmval - temp_incr);
 
                         // for testing
-                        temp_plmval = int2fp<TYPE, WORD_SIZE>(
+                        temp_plmval = a_read(
                             plm_out[window_offset_weights1 + neuron*input_dimension + in]);
                         if ((window == 0) && (neuron == 0) && (in == 0)) {
-                            ESP_REPORT_INFO("after %.8f", temp_plmval);
+                            cout << "after " << temp_plmval << "\n";
                         }
 
 /*
                         // add to weight normalization
                         norm +=
-                            int2fp<TYPE, WORD_SIZE>(plm_out[window_offset_weights1 +
+                            a_read(plm_out[window_offset_weights1 +
                                 neuron*input_dimension + in]) *
-                            int2fp<TYPE, WORD_SIZE>(plm_out[window_offset_weights1 +
+                            a_read(plm_out[window_offset_weights1 +
                                 neuron*input_dimension + in]);
 */
                     }
@@ -593,14 +608,14 @@ void mindfuzz::backprop(bool do_relu,
 
                     // bias normalization
                     plm_out[window_offset_biases1 + neuron] =
-                        fp2int<TYPE, WORD_SIZE>(int2fp<TYPE, WORD_SIZE>(
+                        a_write(a_read(
                             plm_out[window_offset_biases1 + neuron]) / bias_norm);
                     
                     // weight normalization
                     for (uint32_t in = 0; in < input_dimension; in++) {
 
                         plm_out[window_offset_weights1 + neuron*input_dimension + in] =
-                            fp2int<TYPE, WORD_SIZE>(int2fp<TYPE, WORD_SIZE>(
+                            a_write(a_read(
                                 plm_out[window_offset_weights1 + neuron*input_dimension + in]) / norm);
                     }
                 }
@@ -613,55 +628,58 @@ void mindfuzz::backprop(bool do_relu,
                     
                     // update B2
 
+#ifdef do_bias
                     // acquire existing plmval
-                    temp_plmval = int2fp<TYPE, WORD_SIZE>(
+                    temp_plmval = a_read(
                         plm_out[window_offset_biases2 + out]);
                     // compute (FP) increment
-                    temp_incr = int2fp<TYPE, WORD_SIZE>(dB2[window_offset_output + out]) *
-                        ((TYPE)0.01);
-/*
-                    while ((temp_incr > ((TYPE)1.0)) || (temp_incr < ((TYPE)-1.0))) {
-                        temp_incr = temp_incr * ((TYPE)0.1);
-                    }
-                    temp_incr = temp_incr * ((TYPE)0.05);
-*/
+                    temp_incr = a_read(dB2[window_offset_output + out]) *
+                        (learning_rate);
+
                     // update plmval
                     plm_out[window_offset_biases2 + out] = 
-                        fp2int<TYPE, WORD_SIZE>(temp_plmval - temp_incr);
+                        a_write(temp_plmval - temp_incr);
+#endif
 
 /*
                     // add to bias normalization
-                    bias_norm += int2fp<TYPE, WORD_SIZE>(plm_out[window_offset_biases2 + out]) *
-                        int2fp<TYPE, WORD_SIZE>(plm_out[window_offset_biases2 + out]);
+                    bias_norm += a_read(plm_out[window_offset_biases2 + out]) *
+                        a_read(plm_out[window_offset_biases2 + out]);
 */
 
                     // update W2
                     for (uint32_t neuron = 0; neuron < layer1_dimension; neuron++) {
 
-
                         // acquire existing plmval
-                        temp_plmval = int2fp<TYPE, WORD_SIZE>(
+                        temp_plmval = a_read(
                             plm_out[window_offset_weights2 + out*layer1_dimension + neuron]);
-                        // compute (FP) increment
-                        temp_incr = int2fp<TYPE, WORD_SIZE>(dW2[window_offset_dW2
-                                + out*layer1_dimension + neuron]) *
-                            ((TYPE)0.01);
-/*
-                        while ((temp_incr > ((TYPE)1.0)) || (temp_incr < ((TYPE)-1.0))) {
-                            temp_incr = temp_incr * ((TYPE)0.1);
+                        if ((window == 0) && (neuron == 0) && (out == 0)) {
+                            cout << "before " << temp_plmval << "\n";
                         }
-                        temp_incr = temp_incr * ((TYPE)0.05);
-*/
+                        // compute (FP) increment
+                        temp_incr = a_read(dW2[window_offset_dW2
+                                + out*layer1_dimension + neuron]) *
+                            (learning_rate);
+                        if ((window == 0) && (neuron == 0) && (out == 0)) {
+                            cout << "increment " << -1.0*temp_incr << "\n";
+                        }
                         // update plmval
                         plm_out[window_offset_weights2 + out*layer1_dimension + neuron] =
-                            fp2int<TYPE, WORD_SIZE>(temp_plmval - temp_incr);
+                            a_write(temp_plmval - temp_incr);
+
+                        // for testing
+                        temp_plmval = a_read(
+                            plm_out[window_offset_weights2 + out*layer1_dimension + neuron]);
+                        if ((window == 0) && (neuron == 0) && (out == 0)) {
+                            cout << "after " << temp_plmval << "\n";
+                        }
 
 /*
                         // add to weight normalization
                         norm +=
-                            int2fp<TYPE, WORD_SIZE>(plm_out[window_offset_weights2 +
+                            a_read(plm_out[window_offset_weights2 +
                                 out*layer1_dimension + neuron]) *
-                            int2fp<TYPE, WORD_SIZE>(plm_out[window_offset_weights2 +
+                            a_read(plm_out[window_offset_weights2 +
                                 out*layer1_dimension + neuron]);
 */
                     }
@@ -679,14 +697,14 @@ void mindfuzz::backprop(bool do_relu,
 
                     // bias normalization
                     plm_out[window_offset_biases2 + out] =
-                        fp2int<TYPE, WORD_SIZE>(int2fp<TYPE, WORD_SIZE>(
+                        a_write(a_read(
                             plm_out[window_offset_biases2 + out]) / bias_norm);
                     
                     // weight normalization
                     for (uint32_t neuron = 0; neuron < layer1_dimension; neuron++) {
 
                         plm_out[window_offset_weights2 + out*layer1_dimension + neuron] =
-                            fp2int<TYPE, WORD_SIZE>(int2fp<TYPE, WORD_SIZE>(
+                            a_write(a_read(
                                 plm_out[window_offset_weights2 + out*layer1_dimension + neuron]) / norm);
                     }
                 }
