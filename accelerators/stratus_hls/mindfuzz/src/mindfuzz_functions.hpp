@@ -1,3 +1,12 @@
+// Copyright (c) 2011-2019 Columbia University, System Level Design Group
+// SPDX-License-Identifier: Apache-2.0
+
+#include "mindfuzz.hpp"
+
+// Optional application-specific helper functions
+
+// Caleb Rees Tulloss
+// Bioelectronic Systems Lab
 // helper functions for autoencoder weight updates, threshold updates, detection
 
 // TODO figure out RELU implementation
@@ -103,13 +112,12 @@ void thresh_update(TYPE in[],
 }
 
 // relavancy detection used to choose input data
-void relevant(TYPE in[],
-              int32_t total_tsamps,
+void relevant(int32_t total_tsamps,
               int32_t num_windows,
               int32_t window_size,
               bool flag[],
-              TYPE thresh,
-              int32_t indata_offset) {
+              bool ping,
+              TYPE thresh) {
 
     TYPE data;
 
@@ -137,8 +145,7 @@ void relevant(TYPE in[],
         for (uint32_t window = 0; window < num_windows; window++) {
 
             window_offset = window * window_size;
-            // modified from hw version to account for all input data being in one array
-            total_offset = indata_offset + samp_offset + window_offset;
+            total_offset = samp_offset + window_offset;
 
             for (uint32_t elec = 0; elec < window_size; elec++) {
 
@@ -148,7 +155,12 @@ void relevant(TYPE in[],
                     min[window_offset + elec] = a_write(0.0);
                 }
 
-                data = a_read(in[total_offset + elec]);
+                if (ping) {
+                    data = a_read(plm_in_ping[total_offset + elec]);
+                }
+                else {
+                    data = a_read(plm_in_pong[total_offset + elec]);
+                }
 
                 // compare data for this sample with existing max and min
                 if (data > a_read(max[window_offset + elec])) {
@@ -179,16 +191,8 @@ void relevant(TYPE in[],
                 // flag the window
                 flag[window] = true;
                 // don't need to check other electrodes in this window
-                cout << "min " << window << "elec " << elec << ": max " << a_read(max[window_offset + elec])
-                    << "\tmin: " << a_read(min[window_offset + elec]) << "\n";
                 break;
             }
-            /*
-            else {
-                flag[window] = true;
-                break;
-            }
-            */
         }
         // done with this window
     }
@@ -197,9 +201,7 @@ void relevant(TYPE in[],
 }
 
 // backprop function used in computational kernel
-void backprop(TYPE in[],
-              TYPE plm_out[],
-              bool do_relu,
+void backprop(bool do_relu,
               TYPE learning_rate,
               TYPE learning_rate_scaled,
               int32_t tsamps_perbatch,
@@ -214,7 +216,7 @@ void backprop(TYPE in[],
               int32_t B2_size,
               int32_t batch,
               bool flag[],
-              int32_t indata_offset) {
+              bool ping) {
 
     // single-tsamp data for all electrodes - size e.g. 4 * 32 = 256
     uint32_t num_electrodes = num_windows*input_dimension;
@@ -250,7 +252,7 @@ void backprop(TYPE in[],
 
     // PLM access offset for input data
     // for sw-only version, added offset to take into account load batch
-    uint32_t batch_offset = indata_offset + num_electrodes * tsamps_perbatch * batch;
+    uint32_t batch_offset = num_electrodes * tsamps_perbatch * batch;
 
     // useful for arithmetic
     uint32_t W1_singlewindow = layer1_dimension*input_dimension;
@@ -318,10 +320,17 @@ void backprop(TYPE in[],
 
             // access input data for all windows from PLM
             // only place we need to worry about pingpong
-            for (uint32_t elec = 0; elec < num_electrodes; elec++) {
-                // this is a PLM access - can only UNROLL if has multiple ports
-                elecdata[elec] = a_write(a_read(in[samp_offset + elec]));
-
+            if (ping) {
+                for (uint32_t elec = 0; elec < num_electrodes; elec++) {
+                    // this is a PLM access - can only UNROLL if has multiple ports
+                    elecdata[elec] = a_write(a_read(plm_in_ping[samp_offset + elec]));
+                }
+            }
+            else {
+                for (uint32_t elec = 0; elec < num_electrodes; elec++) {
+                    // this is a PLM access - can only UNROLL if has multiple ports
+                    elecdata[elec] = a_write(a_read(plm_in_pong[samp_offset + elec]));
+                }
             }
 
             for (uint32_t window = 0; window < num_windows; window++) {
@@ -411,7 +420,7 @@ void backprop(TYPE in[],
 
                         // subtract the ground truth difference
                         // we don't need the output, only the difference
-                        temp_incr = -1 * a_read(elecdata[window_offset_input + out]);
+                        temp_incr = ((TYPE)-1.0) * a_read(elecdata[window_offset_input + out]);
 
                         // bias
 #ifdef do_bias
@@ -563,7 +572,7 @@ void backprop(TYPE in[],
                         temp_plmval = a_read(
                             plm_out[window_offset_weights1 + neuron*input_dimension + in]);
                         if ((window == 0) && (neuron == 0) && (in == 0)) {
-                            cout << "before " << temp_plmval << "\n";
+                            ESP_REPORT_INFO("before %.8f", temp_plmval);
                         }
                         // compute (FP) increment
 
@@ -571,7 +580,7 @@ void backprop(TYPE in[],
                                 + neuron*input_dimension + in]) * (learning_rate_scaled);
 
                         if ((window == 0) && (neuron == 0) && (in == 0)) {
-                            cout << "increment " << -1.0*temp_incr << "\n";
+                            ESP_REPORT_INFO("increment %.8f", -1.0*temp_incr);
                         }
                         // update plmval
                         plm_out[window_offset_weights1 + neuron*input_dimension + in] = 
@@ -581,7 +590,7 @@ void backprop(TYPE in[],
                         temp_plmval = a_read(
                             plm_out[window_offset_weights1 + neuron*input_dimension + in]);
                         if ((window == 0) && (neuron == 0) && (in == 0)) {
-                            cout << "after " << temp_plmval << "\n";
+                            ESP_REPORT_INFO("after %.8f", temp_plmval);
                         }
 
 /*
@@ -654,14 +663,14 @@ void backprop(TYPE in[],
                         temp_plmval = a_read(
                             plm_out[window_offset_weights2 + out*layer1_dimension + neuron]);
                         if ((window == 0) && (neuron == 0) && (out == 0)) {
-                            cout << "before " << temp_plmval << "\n";
+                            ESP_REPORT_INFO("before %.8f", temp_plmval);
                         }
                         // compute (FP) increment
                         temp_incr = a_read(dW2[window_offset_dW2
                                 + out*layer1_dimension + neuron]) *
                             (learning_rate);
                         if ((window == 0) && (neuron == 0) && (out == 0)) {
-                            cout << "increment " << -1.0*temp_incr << "\n";
+                            ESP_REPORT_INFO("increment %.8f", -1.0*temp_incr);
                         }
                         // update plmval
                         plm_out[window_offset_weights2 + out*layer1_dimension + neuron] =
@@ -671,7 +680,7 @@ void backprop(TYPE in[],
                         temp_plmval = a_read(
                             plm_out[window_offset_weights2 + out*layer1_dimension + neuron]);
                         if ((window == 0) && (neuron == 0) && (out == 0)) {
-                            cout << "after " << temp_plmval << "\n";
+                            ESP_REPORT_INFO("after %.8f", temp_plmval);
                         }
 
 /*
