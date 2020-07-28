@@ -59,13 +59,13 @@ public:
         do_relu = 0;
         window_size = 4;
         batches_perindata = 1;
-        learning_rate = 0.01;
         neurons_perwin = 1;
         tsamps_perbatch = 70;
-        detect_threshold = 0.9;
+        detect_threshold = 100.0;
         num_windows = 7;
         epochs_perbatch = 1;
-        num_batches = 70;
+        num_batches = 500;
+        learning_rate = 1 * 0.000001 / tsamps_perbatch / window_size;
     }
 
     // Processes

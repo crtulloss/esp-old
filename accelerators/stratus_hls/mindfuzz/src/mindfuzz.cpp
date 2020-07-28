@@ -434,6 +434,7 @@ void mindfuzz::compute_kernel()
                 // backprop will access weights, training data, biases directly (they are in PLMs)
                 backprop(do_relu,
                          learning_rate,
+                         learning_rate,
                          tsamps_perbatch,
                          num_windows,
                          epochs_perbatch,

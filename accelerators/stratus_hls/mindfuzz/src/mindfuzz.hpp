@@ -23,9 +23,13 @@
 
 #define NUM_BUFF_ELEMENTS 4
 
-#define CONST_NUM_WINDOWS 32
-#define CONST_WINDOW_SIZE 8
-#define CONST_NEURONS_PERWIN 4
+#define CONST_NUM_WINDOWS 7
+#define CONST_WINDOW_SIZE 4
+#define CONST_NEURONS_PERWIN 1
+//#define do_bias
+
+#define a_write(x) fp2int<TYPE, WORD_SIZE>(x)
+#define a_ready(x) int2fp<TYPE, WORD_SIZE>(x)
 
 class mindfuzz : public esp_accelerator_3P<DMA_WIDTH>
 {
@@ -69,6 +73,7 @@ public:
                   TYPE thresh);
     void backprop(bool do_relu,
                   TYPE learning_rate,
+                  TYPE learning_rate_scaled,
                   int32_t tsamps_perbatch,
                   int32_t num_windows,
                   int32_t epochs_perbatch,

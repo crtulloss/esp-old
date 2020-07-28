@@ -5,6 +5,7 @@
 #include <sstream>
 #include <fstream>
 #include <vector>
+#include <iomanip>
 #include "system.hpp"
 
 using namespace std;
@@ -44,6 +45,7 @@ void system_t::config_proc()
     }
 
     ESP_REPORT_INFO("config done");
+    ESP_REPORT_INFO("learning rate is %.8f", learning_rate);
 
     // Compute
     {
@@ -99,10 +101,10 @@ void system_t::load_memory()
     // Input data and golden output (aligned to DMA_WIDTH makes your life easier)
 #if (DMA_WORD_PER_BEAT == 0)
     in_words_adj = num_windows*window_size*tsamps_perbatch*batches_perindata;
-    out_words_adj = num_windows*(neurons_perwin*(window_size+1) + window_size*(neurons_perwin+1));
+    out_words_adj = num_windows*(neurons_perwin*(window_size) + window_size*(neurons_perwin));
 #else
     in_words_adj = round_up(num_windows*window_size*tsamps_perbatch*batches_perindata, DMA_WORD_PER_BEAT);
-    out_words_adj = round_up(num_windows*(neurons_perwin*(window_size+1) + window_size*(neurons_perwin+1)), DMA_WORD_PER_BEAT);
+    out_words_adj = round_up(num_windows*(neurons_perwin*(window_size) + window_size*(neurons_perwin)), DMA_WORD_PER_BEAT);
 #endif
 
     in_size = in_words_adj * (num_batches);
@@ -111,7 +113,7 @@ void system_t::load_memory()
 
 
     // read input data into 2D array from CSV file
-    std::ifstream indata("data.csv");
+    std::ifstream indata("../sw/m1/data5.csv");
     std::string line;
     std::vector<std::vector<std::string> > parsedCSV;
     while (std::getline(indata, line)) {
@@ -161,11 +163,18 @@ void system_t::load_memory()
     ESP_REPORT_INFO("input transferred to array");
 
     // read output (weight) data from CSV file into 1D array
-    std::ifstream wdata("weights.csv");
+    std::ifstream wdata("../sw/m1/weights5.csv");
     std::string wline;
-    std::vector<std::string> parsed_weights;
+    std::vector<std::vector<std::string> > parsed_weights;
     while (std::getline(wdata, wline)) {
-        parsed_weights.push_back(wline);
+        std::stringstream lineStream(wline);
+        std::string cell;
+        std::vector<std::string> parsedRow;
+        while(std::getline(lineStream, cell, ',')) {
+            parsedRow.push_back(cell);
+        }
+
+        parsed_weights.push_back(parsedRow);
     }
 
     ESP_REPORT_INFO("output CSV read");
@@ -174,16 +183,19 @@ void system_t::load_memory()
 
     // if out_size is odd, out_size will be too large for this loop
     uint32_t out_size_unround =
-        num_windows*(neurons_perwin*(window_size+1) + window_size*(neurons_perwin+1));
+        num_windows*(neurons_perwin*(window_size) + window_size*(neurons_perwin));
 
     ESP_REPORT_INFO("out size (unrounded is %d", out_size_unround);
 
     // temporary float array to store the golden output data
     gold = new float[out_size];
 
-    for (uint32_t elem = 0; elem < out_size_unround; elem++) {
+    uint32_t W1_size = num_windows*neurons_perwin*window_size;
+    uint32_t W2_size = num_windows*neurons_perwin*window_size;
 
-        std::string element = parsed_weights[elem];
+    for (uint32_t elem = 0; elem < W1_size; elem++) {
+
+        std::string element = parsed_weights[elem + 1][2];
 
         // convert string to float
         stringstream sselem(element);
@@ -193,7 +205,21 @@ void system_t::load_memory()
         // put it in the array
         gold[elem] = float_element;
     }
+    for (uint32_t elem = 0; elem < W2_size; elem++) {
 
+        std::string element = parsed_weights[elem + 1][3];
+
+        // convert string to float
+        stringstream sselem(element);
+        float float_element = 0;
+        sselem >> float_element;
+            
+        // put it in the array
+        gold[W1_size + elem] = float_element;
+    }
+#ifdef do_bias
+//TODO
+#endif
     ESP_REPORT_INFO("output transferred to array");
 
     // Memory initialization:
@@ -257,15 +283,15 @@ int system_t::validate()
     const float ERR_TH = 0.05;
 
     // note that this will not be affected by rounding
-    int num_weights = num_windows*(neurons_perwin*(window_size+1) + window_size*(neurons_perwin+1));
+    int num_weights = num_windows*(neurons_perwin*(window_size) + window_size*(neurons_perwin));
 
     for (int j = 0; j < num_weights; j++) {
+        ESP_REPORT_INFO("index %d:\tgold %0.8f\tout %0.8f\n", j, gold[j], out[j]);
         if ((fabs(gold[j] - out[j]) / fabs(gold[j])) > ERR_TH) {
-            ESP_REPORT_INFO("ERROR at index %d:\tgold %0.8f vs out %0.8f\n", j, gold[j], out[j]);
             errors++;
         }
         else {
-            ESP_REPORT_INFO("NO ERROR at index %d:\tgold %0.8f vs out %0.8f\n", j, gold[j], out[j]);
+            ESP_REPORT_INFO("close enough!\n");
         }
     }
 
