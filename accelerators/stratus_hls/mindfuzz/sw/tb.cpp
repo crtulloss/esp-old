@@ -51,9 +51,6 @@ int main()
 
     // setup 
     
-    // input batching is different from compute batching
-    // num_loads is the number of load batches (actually num of indata)
-    // num_loads * batches_perload is the number of compute batches
     // total size of a load batch is useful for relevancy check
     uint32_t total_tsamps = tsamps_perbatch * batches_perload;
 

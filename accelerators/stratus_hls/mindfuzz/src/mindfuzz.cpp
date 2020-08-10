@@ -62,14 +62,6 @@ void mindfuzz::load_input()
         num_windows = config.num_windows;
         iters_perbatch = config.iters_perbatch;
         num_loads = config.num_loads;
-
-        // input batching is different from compute batching
-        // num_loads is the number of compute batches
-        // num_loads / batches_perload is the number of load batches
-        // load_batches = num_loads / batches_perload;
-        //
-        // update: num_loads is now the number of input data batches
-        // NOT the number of backprop batches
     }
 
     // Load
@@ -343,10 +335,6 @@ void mindfuzz::compute_kernel()
         iters_perbatch = config.iters_perbatch;
         num_loads = config.num_loads;
         
-        // input batching is different from compute batching
-        // num_loads is the number of compute batches
-        // num_loads / batches_perload is the number of load batches
-        // load_batches = num_loads / batches_perload;
         // total size of a load batch is useful for relevancy check
         total_tsamps = tsamps_perbatch * batches_perload;
 
@@ -527,11 +515,6 @@ void mindfuzz::store_output()
         num_windows = config.num_windows;
         iters_perbatch = config.iters_perbatch;
         num_loads = config.num_loads;
-
-        // input batching is different from compute batching
-        // num_loads is the number of compute batches
-        // num_loads / batches_perload is the number of load batches
-        // load_batches = num_loads / batches_perload;
     }
 
     // Store
