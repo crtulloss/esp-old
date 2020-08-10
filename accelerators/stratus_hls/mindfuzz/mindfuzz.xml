@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <sld>
   <accelerator name="mindfuzz" desc="Accelerator MINDFUZZ" data_size="67" device_id="433" hls_tool="stratus_hls">
-    <param name="num_batches" desc="num_batches" />
-    <param name="epochs_perbatch" desc="epochs_perbatch" />
+    <param name="num_loads" desc="num_loads" />
+    <param name="iters_perbatch" desc="iters_perbatch" />
     <param name="num_windows" desc="num_windows" />
     <param name="detect_threshold" desc="detect_threshold" />
     <param name="tsamps_perbatch" desc="tsamps_perbatch" />
     <param name="neurons_perwin" desc="neurons_perwin" />
     <param name="learning_rate" desc="learning_rate" />
-    <param name="batches_perindata" desc="batches_perindata" />
+    <param name="batches_perload" desc="batches_perload" />
     <param name="window_size" desc="window_size" />
     <param name="do_relu" desc="do_relu" />
   </accelerator>

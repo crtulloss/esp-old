@@ -34,14 +34,14 @@ void mindfuzz::load_input()
     // Config
     int32_t do_relu;
     int32_t window_size;
-    int32_t batches_perindata;
+    int32_t batches_perload;
     TYPE learning_rate;
     int32_t neurons_perwin;
     int32_t tsamps_perbatch;
     TYPE detect_threshold;
     int32_t num_windows;
-    int32_t epochs_perbatch;
-    int32_t num_batches;
+    int32_t iters_perbatch;
+    int32_t num_loads;
 
     // declare some necessary variables
     // int32_t load_batches;
@@ -54,21 +54,21 @@ void mindfuzz::load_input()
         // User-defined config code
         do_relu = config.do_relu;
         window_size = config.window_size;
-        batches_perindata = config.batches_perindata;
+        batches_perload = config.batches_perload;
         learning_rate = config.learning_rate;
         neurons_perwin = config.neurons_perwin;
         tsamps_perbatch = config.tsamps_perbatch;
         detect_threshold = config.detect_threshold;
         num_windows = config.num_windows;
-        epochs_perbatch = config.epochs_perbatch;
-        num_batches = config.num_batches;
+        iters_perbatch = config.iters_perbatch;
+        num_loads = config.num_loads;
 
         // input batching is different from compute batching
-        // num_batches is the number of compute batches
-        // num_batches / batches_perindata is the number of load batches
-        // load_batches = num_batches / batches_perindata;
+        // num_loads is the number of compute batches
+        // num_loads / batches_perload is the number of load batches
+        // load_batches = num_loads / batches_perload;
         //
-        // update: num_batches is now the number of input data batches
+        // update: num_loads is now the number of input data batches
         // NOT the number of backprop batches
     }
 
@@ -81,17 +81,17 @@ void mindfuzz::load_input()
         uint32_t offset = 0;
 
         // Batching
-        for (uint16_t b = 0; b < num_batches; b++)
+        for (uint16_t b = 0; b < num_loads; b++)
         {
             wait();
 
 // for 16b data, DMA_WORD_PER_BEAT = 2
 // DMA_WORD_PER_BEAT would equal 0 if WORD size > BEAT size
 #if (DMA_WORD_PER_BEAT == 0)
-            uint32_t length = num_windows*window_size*tsamps_perbatch*batches_perindata;
+            uint32_t length = num_windows*window_size*tsamps_perbatch*batches_perload;
 #else
             // broke up this computation and added some waits in order to improve schedule
-            uint32_t length_dum = num_windows*window_size*tsamps_perbatch*batches_perindata;
+            uint32_t length_dum = num_windows*window_size*tsamps_perbatch*batches_perload;
             wait();
             uint32_t length = round_up(length_dum, DMA_WORD_PER_BEAT);
 #endif
@@ -189,14 +189,14 @@ void mindfuzz::detect_kernel()
     // Config
     int32_t do_relu;
     int32_t window_size;
-    int32_t batches_perindata;
+    int32_t batches_perload;
     TYPE learning_rate;
     int32_t neurons_perwin;
     int32_t tsamps_perbatch;
     TYPE detect_threshold;
     int32_t num_windows;
-    int32_t epochs_perbatch;
-    int32_t num_batches;
+    int32_t iters_perbatch;
+    int32_t num_loads;
     {
         HLS_PROTO("detect-config");
 
@@ -206,14 +206,14 @@ void mindfuzz::detect_kernel()
         // User-defined config code
         do_relu = config.do_relu;
         window_size = config.window_size;
-        batches_perindata = config.batches_perindata;
+        batches_perload = config.batches_perload;
         learning_rate = config.learning_rate;
         neurons_perwin = config.neurons_perwin;
         tsamps_perbatch = config.tsamps_perbatch;
         detect_threshold = config.detect_threshold;
         num_windows = config.num_windows;
-        epochs_perbatch = config.epochs_perbatch;
-        num_batches = config.num_batches;
+        iters_perbatch = config.iters_perbatch;
+        num_loads = config.num_loads;
     }
 
 
@@ -225,11 +225,11 @@ void mindfuzz::detect_kernel()
     this->full = "0000";
     
     // length of time-series data per window and per electrode per input batch
-    uint32_t len_perelec = tsamps_perbatch*batches_perindata;
+    uint32_t len_perelec = tsamps_perbatch*batches_perload;
     uint32_t len_perwindow = window_size*len_perelec;
     uint32_t in_length = num_windows*len_perwindow;
     {
-        for (uint16_t b = 0; b < num_batches; b++)
+        for (uint16_t b = 0; b < num_loads; b++)
         {
 
             // since we have a chunking factor of 1, this only does one iteration
@@ -306,14 +306,14 @@ void mindfuzz::compute_kernel()
     // Config
     int32_t do_relu;
     int32_t window_size;
-    int32_t batches_perindata;
+    int32_t batches_perload;
     TYPE learning_rate;
     int32_t neurons_perwin;
     int32_t tsamps_perbatch;
     TYPE detect_threshold;
     int32_t num_windows;
-    int32_t epochs_perbatch;
-    int32_t num_batches;
+    int32_t iters_perbatch;
+    int32_t num_loads;
 
     // declare some necessary variables
     // int32_t load_batches;
@@ -334,21 +334,21 @@ void mindfuzz::compute_kernel()
         // User-defined config code
         do_relu = config.do_relu;
         window_size = config.window_size;
-        batches_perindata = config.batches_perindata;
+        batches_perload = config.batches_perload;
         learning_rate = config.learning_rate;
         neurons_perwin = config.neurons_perwin;
         tsamps_perbatch = config.tsamps_perbatch;
         detect_threshold = config.detect_threshold;
         num_windows = config.num_windows;
-        epochs_perbatch = config.epochs_perbatch;
-        num_batches = config.num_batches;
+        iters_perbatch = config.iters_perbatch;
+        num_loads = config.num_loads;
         
         // input batching is different from compute batching
-        // num_batches is the number of compute batches
-        // num_batches / batches_perindata is the number of load batches
-        // load_batches = num_batches / batches_perindata;
+        // num_loads is the number of compute batches
+        // num_loads / batches_perload is the number of load batches
+        // load_batches = num_loads / batches_perload;
         // total size of a load batch is useful for relevancy check
-        total_tsamps = tsamps_perbatch * batches_perindata;
+        total_tsamps = tsamps_perbatch * batches_perload;
 
         // some dimension computation useful for backprop
         input_dimension = window_size;
@@ -409,7 +409,7 @@ void mindfuzz::compute_kernel()
 
     // actual computation
     {
-        for (uint16_t b = 0; b < num_batches; b++)
+        for (uint16_t b = 0; b < num_loads; b++)
         {
 
             // no-chunk code
@@ -427,9 +427,8 @@ void mindfuzz::compute_kernel()
                      detect_threshold);
 
             // run backprop for each compute batch in this load batch
-            for (uint16_t batch = 0; batch < batches_perindata; batch++) {
+            for (uint16_t batch = 0; batch < batches_perload; batch++) {
 
-                ESP_REPORT_INFO("batch %d", b*batches_perindata + batch);
                 // pass relevant parameters like sizes, flag, and pingpong
                 // backprop will access weights, training data, biases directly (they are in PLMs)
                 backprop(do_relu,
@@ -437,7 +436,7 @@ void mindfuzz::compute_kernel()
                          learning_rate,
                          tsamps_perbatch,
                          num_windows,
-                         epochs_perbatch,
+                         iters_perbatch,
                          input_dimension,
                          layer1_dimension,
                          output_dimension,
@@ -456,7 +455,7 @@ void mindfuzz::compute_kernel()
             // this piece of indata (load_batch) done
 
 /*
-            uint32_t in_length = num_windows*window_size*tsamps_perbatch*batches_perindata;
+            uint32_t in_length = num_windows*window_size*tsamps_perbatch*batches_perload;
 
             // since we have a chunking factor of 1, this only does one iteration
             // TODO add parameter to pass to backprop() so that we can
@@ -500,14 +499,14 @@ void mindfuzz::store_output()
     // Config
     int32_t do_relu;
     int32_t window_size;
-    int32_t batches_perindata;
+    int32_t batches_perload;
     TYPE learning_rate;
     int32_t neurons_perwin;
     int32_t tsamps_perbatch;
     TYPE detect_threshold;
     int32_t num_windows;
-    int32_t epochs_perbatch;
-    int32_t num_batches;
+    int32_t iters_perbatch;
+    int32_t num_loads;
 
     // declare some necessary variables
     // int32_t load_batches;
@@ -520,19 +519,19 @@ void mindfuzz::store_output()
         // User-defined config code
         do_relu = config.do_relu;
         window_size = config.window_size;
-        batches_perindata = config.batches_perindata;
+        batches_perload = config.batches_perload;
         learning_rate = config.learning_rate;
         neurons_perwin = config.neurons_perwin;
         tsamps_perbatch = config.tsamps_perbatch;
         detect_threshold = config.detect_threshold;
         num_windows = config.num_windows;
-        epochs_perbatch = config.epochs_perbatch;
-        num_batches = config.num_batches;
+        iters_perbatch = config.iters_perbatch;
+        num_loads = config.num_loads;
 
         // input batching is different from compute batching
-        // num_batches is the number of compute batches
-        // num_batches / batches_perindata is the number of load batches
-        // load_batches = num_batches / batches_perindata;
+        // num_loads is the number of compute batches
+        // num_loads / batches_perload is the number of load batches
+        // load_batches = num_loads / batches_perload;
     }
 
     // Store
@@ -543,9 +542,9 @@ void mindfuzz::store_output()
 
 // compute the DMA offset due to input data
 #if (DMA_WORD_PER_BEAT == 0)
-        uint32_t store_offset = (num_windows*window_size*tsamps_perbatch*batches_perindata) * num_batches;
+        uint32_t store_offset = (num_windows*window_size*tsamps_perbatch*batches_perload) * num_loads;
 #else
-        uint32_t store_offset = round_up(num_windows*window_size*tsamps_perbatch*batches_perindata, DMA_WORD_PER_BEAT) * num_batches;
+        uint32_t store_offset = round_up(num_windows*window_size*tsamps_perbatch*batches_perload, DMA_WORD_PER_BEAT) * num_loads;
 #endif
         uint32_t offset = store_offset;
 

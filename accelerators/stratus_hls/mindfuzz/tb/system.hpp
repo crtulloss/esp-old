@@ -4,8 +4,6 @@
 #ifndef __SYSTEM_HPP__
 #define __SYSTEM_HPP__
 
-#include "mindfuzz_conf_info.hpp"
-#include "mindfuzz_debug_info.hpp"
 #include "mindfuzz.hpp"
 #include "mindfuzz_directives.hpp"
 
@@ -58,14 +56,15 @@ public:
         /* <<--params-default-->> */
         do_relu = 0;
         window_size = 4;
-        batches_perindata = 1;
+        batches_perload = 1;
         neurons_perwin = 1;
         tsamps_perbatch = 70;
         detect_threshold = 100.0;
         num_windows = 7;
-        epochs_perbatch = 1;
-        num_batches = 500;
-        learning_rate = 1 * 0.000001 / tsamps_perbatch / window_size;
+        iters_perbatch = 1;
+        num_loads = 500;
+        learning_rate = ((TYPE)0.000001) / ((TYPE)tsamps_perbatch) / ((TYPE)window_size);
+
     }
 
     // Processes
@@ -86,14 +85,14 @@ public:
     /* <<--params-->> */
     int32_t do_relu;
     int32_t window_size;
-    int32_t batches_perindata;
-    int32_t learning_rate;
+    int32_t batches_perload;
+    TYPE learning_rate;
     int32_t neurons_perwin;
     int32_t tsamps_perbatch;
-    int32_t detect_threshold;
+    TYPE detect_threshold;
     int32_t num_windows;
-    int32_t epochs_perbatch;
-    int32_t num_batches;
+    int32_t iters_perbatch;
+    int32_t num_loads;
 
     uint32_t in_words_adj;
     uint32_t out_words_adj;

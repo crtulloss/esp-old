@@ -1,8 +1,6 @@
 // Copyright (c) 2011-2019 Columbia University, System Level Design Group
 // SPDX-License-Identifier: Apache-2.0
 
-#include "mindfuzz.hpp"
-
 // Optional application-specific helper functions
 
 // Caleb Rees Tulloss
@@ -19,18 +17,18 @@ void RELU(TYPE activations[layer1_dimension], TYPE dactivations[layer1_dimension
     }
 }
 */
-
-void thresh_update(TYPE in[],
-                   int32_t total_tsamps,
-                   int32_t num_windows,
-                   int32_t window_size,
-                   int32_t rate_spike,
-                   int32_t rate_noise,
-                   int32_t spike_weight,
-                   TYPE mean_spike[],
-                   TYPE mean_noise[],
-                   TYPE thresh[],
-                   int32_t indata_offset) {
+/*
+void mindfuzz::thresh_update(TYPE in[],
+                             int32_t total_tsamps,
+                             int32_t num_windows,
+                             int32_t window_size,
+                             int32_t rate_spike,
+                             int32_t rate_noise,
+                             int32_t spike_weight,
+                             TYPE mean_spike[],
+                             TYPE mean_noise[],
+                             TYPE thresh[],
+                             int32_t indata_offset) {
 
     TYPE data;
     TYPE m_spike;
@@ -110,14 +108,15 @@ void thresh_update(TYPE in[],
         // done with this sample
     }
 }
+*/
 
 // relavancy detection used to choose input data
-void relevant(int32_t total_tsamps,
-              int32_t num_windows,
-              int32_t window_size,
-              bool flag[],
-              bool ping,
-              TYPE thresh) {
+void mindfuzz::relevant(int32_t total_tsamps,
+                        int32_t num_windows,
+                        int32_t window_size,
+                        bool flag[],
+                        bool ping,
+                        TYPE thresh) {
 
     TYPE data;
 
@@ -201,22 +200,22 @@ void relevant(int32_t total_tsamps,
 }
 
 // backprop function used in computational kernel
-void backprop(bool do_relu,
-              TYPE learning_rate,
-              TYPE learning_rate_scaled,
-              int32_t tsamps_perbatch,
-              int32_t num_windows,
-              int32_t epochs_perbatch,
-              int32_t input_dimension,
-              int32_t layer1_dimension,
-              int32_t output_dimension,
-              int32_t W1_size,
-              int32_t W2_size,
-              int32_t B1_size,
-              int32_t B2_size,
-              int32_t batch,
-              bool flag[],
-              bool ping) {
+void mindfuzz::backprop(bool do_relu,
+                        TYPE learning_rate,
+                        TYPE learning_rate_scaled,
+                        int32_t tsamps_perbatch,
+                        int32_t num_windows,
+                        int32_t iters_perbatch,
+                        int32_t input_dimension,
+                        int32_t layer1_dimension,
+                        int32_t output_dimension,
+                        int32_t W1_size,
+                        int32_t W2_size,
+                        int32_t B1_size,
+                        int32_t B2_size,
+                        int32_t batch,
+                        bool flag[],
+                        bool ping) {
 
     // single-tsamp data for all electrodes - size e.g. 4 * 32 = 256
     uint32_t num_electrodes = num_windows*input_dimension;
@@ -258,7 +257,7 @@ void backprop(bool do_relu,
     uint32_t W1_singlewindow = layer1_dimension*input_dimension;
     uint32_t W2_singlewindow = output_dimension*layer1_dimension;
 
-    // epoch accumulation variables for batched backprop
+    // iter accumulation variables for batched backprop
 /*
     TYPE dW2[W2_size];
     TYPE dW1[W1_size];
@@ -295,7 +294,7 @@ void backprop(bool do_relu,
     // TODO rewrite to not use arbitrarily sized arrays
     TYPE W2xdiff[const_B1_size];
 
-    for (uint32_t epoch = 0; epoch < epochs_perbatch; epoch++) {
+    for (uint32_t iter = 0; iter < iters_perbatch; iter++) {
         
         // reset weight and bias delta accumulation variables
         // assumes W2_size = W1_size
@@ -433,7 +432,7 @@ void backprop(bool do_relu,
 
                         // beginning of backprop for this sample
                         // this part only requires a loop over output
-                        // epoch-accum dB2 - simple because we just add diff
+                        // iter-accum dB2 - simple because we just add diff
 #ifdef do_bias
                         temp_dB2 = a_read(dB2[window_offset_output + out]);
                         temp_incr = ((TYPE)2.0) * a_read(diff[window_offset_output + out]);
@@ -469,7 +468,7 @@ void backprop(bool do_relu,
                             W2xdiff[window_offset_layer1 + neuron] =
                                 a_write(temp_incr + temp_W2xdiff);
 
-                            // epoch-accum dW2
+                            // iter-accum dW2
 
                             // acquire existing dW2
                             temp_dW2 = a_read(
@@ -484,7 +483,7 @@ void backprop(bool do_relu,
 
                         // these must be done after because they depend on W2xdiff
 
-                        // epoch-accum dB1
+                        // iter-accum dB1
 #ifdef do_bias
                         // acquire existing dB1
                         temp_dB1 = a_read(
@@ -496,7 +495,7 @@ void backprop(bool do_relu,
                             a_write(temp_incr + temp_dB1);
 #endif
 
-                        // epoch-accum dW1
+                        // iter-accum dW1
                         for (uint32_t in = 0; in < input_dimension; in++) {
 
                             // acquire existing dW1
@@ -513,11 +512,11 @@ void backprop(bool do_relu,
                 }
                 // end of this window
             }
-            // this sample is complete for this epoch
+            // this sample is complete for this iter
         }
 
         // all samples have now been processed,
-        // and we are ready to perform a weight update for this epoch
+        // and we are ready to perform a weight update for this iter
         TYPE temp_plmval;
         TYPE temp_incr;
         for (uint32_t window = 0; window < num_windows; window++) {
@@ -571,27 +570,12 @@ void backprop(bool do_relu,
                         // acquire existing plmval
                         temp_plmval = a_read(
                             plm_out[window_offset_weights1 + neuron*input_dimension + in]);
-                        if ((window == 0) && (neuron == 0) && (in == 0)) {
-                            ESP_REPORT_INFO("before %.8f", temp_plmval);
-                        }
                         // compute (FP) increment
-
                         temp_incr = a_read(dW1[window_offset_dW1
                                 + neuron*input_dimension + in]) * (learning_rate_scaled);
-
-                        if ((window == 0) && (neuron == 0) && (in == 0)) {
-                            ESP_REPORT_INFO("increment %.8f", -1.0*temp_incr);
-                        }
                         // update plmval
                         plm_out[window_offset_weights1 + neuron*input_dimension + in] = 
                             a_write(temp_plmval - temp_incr);
-
-                        // for testing
-                        temp_plmval = a_read(
-                            plm_out[window_offset_weights1 + neuron*input_dimension + in]);
-                        if ((window == 0) && (neuron == 0) && (in == 0)) {
-                            ESP_REPORT_INFO("after %.8f", temp_plmval);
-                        }
 
 /*
                         // add to weight normalization
@@ -662,26 +646,14 @@ void backprop(bool do_relu,
                         // acquire existing plmval
                         temp_plmval = a_read(
                             plm_out[window_offset_weights2 + out*layer1_dimension + neuron]);
-                        if ((window == 0) && (neuron == 0) && (out == 0)) {
-                            ESP_REPORT_INFO("before %.8f", temp_plmval);
-                        }
                         // compute (FP) increment
                         temp_incr = a_read(dW2[window_offset_dW2
                                 + out*layer1_dimension + neuron]) *
                             (learning_rate);
-                        if ((window == 0) && (neuron == 0) && (out == 0)) {
-                            ESP_REPORT_INFO("increment %.8f", -1.0*temp_incr);
-                        }
                         // update plmval
                         plm_out[window_offset_weights2 + out*layer1_dimension + neuron] =
                             a_write(temp_plmval - temp_incr);
 
-                        // for testing
-                        temp_plmval = a_read(
-                            plm_out[window_offset_weights2 + out*layer1_dimension + neuron]);
-                        if ((window == 0) && (neuron == 0) && (out == 0)) {
-                            ESP_REPORT_INFO("after %.8f", temp_plmval);
-                        }
 
 /*
                         // add to weight normalization
@@ -721,7 +693,7 @@ void backprop(bool do_relu,
             }
             // this window is now complete
         }
-        // this epoch is now complete
+        // this iter is now complete
     }
-    // all epochs complete
+    // all iters complete
 }

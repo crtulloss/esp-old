@@ -36,13 +36,13 @@ int main()
     // basic config params
     bool do_relu = false;
     int window_size = 4;
-    int batches_perindata = 1;
+    int batches_perload = 1;
     int neurons_perwin = 1;
     int tsamps_perbatch = 70;
     TYPE detect_threshold = 100.0;
     int num_windows = 7;
-    int epochs_perbatch = 1;
-    int num_batches = 500;
+    int iters_perbatch = 1;
+    int num_loads = 500;
     // 2 from error function, 1e-6 is learning rate, scale by batch and window size
     TYPE learning_rate = 1 * 0.000001 / tsamps_perbatch / window_size;
     TYPE learning_rate_scaled = learning_rate;
@@ -52,10 +52,10 @@ int main()
     // setup 
     
     // input batching is different from compute batching
-    // num_batches is the number of load batches (actually num of indata)
-    // num_batches * batches_perindata is the number of compute batches
+    // num_loads is the number of load batches (actually num of indata)
+    // num_loads * batches_perload is the number of compute batches
     // total size of a load batch is useful for relevancy check
-    uint32_t total_tsamps = tsamps_perbatch * batches_perindata;
+    uint32_t total_tsamps = tsamps_perbatch * batches_perload;
 
     // some dimension computation useful for backprop
     uint32_t input_dimension = window_size;
@@ -68,8 +68,8 @@ int main()
     uint32_t B1_size = num_windows*layer1_dimension;
 
     // some dimensions useful for array sizing
-    uint32_t in_size_perload = num_windows*window_size*tsamps_perbatch*batches_perindata;
-    uint32_t in_size = in_size_perload*num_batches;
+    uint32_t in_size_perload = num_windows*window_size*tsamps_perbatch*batches_perload;
+    uint32_t in_size = in_size_perload*num_loads;
     uint32_t out_size = W2_size + W1_size;
 #ifdef do_bias
     out_size += B2_size + B1_size;
@@ -93,7 +93,7 @@ int main()
     // move the input data to an array
     TYPE in[in_size];
 
-    for (uint32_t row = 0; row < num_batches*batches_perindata*tsamps_perbatch; row++) {
+    for (uint32_t row = 0; row < num_loads*batches_perload*tsamps_perbatch; row++) {
 
         uint32_t row_offset = row * num_windows * window_size;
 
@@ -206,8 +206,8 @@ int main()
 
     // actual computation
     {
-        // note that this num_batches refers to the number of load batches
-        for (uint16_t b = 0; b < num_batches; b++)
+        // note that this num_loads refers to the number of load batches
+        for (uint16_t b = 0; b < num_loads; b++)
         {
 
             // no-chunk code
@@ -232,9 +232,9 @@ int main()
             //cout << "backprop\n";
 
             // run backprop for each compute batch in this load batch
-            for (uint16_t batch = 0; batch < batches_perindata; batch++) {
+            for (uint16_t batch = 0; batch < batches_perload; batch++) {
 
-                //ESP_REPORT_INFO("batch %d", b*batches_perindata + batch);
+                //ESP_REPORT_INFO("batch %d", b*batches_perload + batch);
                 // pass relevant parameters like sizes, flag, and pingpong
                 // backprop will access weights, training data, biases directly (they are in PLMs)
                 backprop(in,
@@ -244,7 +244,7 @@ int main()
                          learning_rate_scaled,
                          tsamps_perbatch,
                          num_windows,
-                         epochs_perbatch,
+                         iters_perbatch,
                          input_dimension,
                          layer1_dimension,
                          output_dimension,

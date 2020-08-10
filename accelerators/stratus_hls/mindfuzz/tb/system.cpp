@@ -31,21 +31,21 @@ void system_t::config_proc()
         /* <<--params-->> */
         config.do_relu = do_relu;
         config.window_size = window_size;
-        config.batches_perindata = batches_perindata;
+        config.batches_perload = batches_perload;
         config.learning_rate = learning_rate;
         config.neurons_perwin = neurons_perwin;
         config.tsamps_perbatch = tsamps_perbatch;
         config.detect_threshold = detect_threshold;
         config.num_windows = num_windows;
-        config.epochs_perbatch = epochs_perbatch;
-        config.num_batches = num_batches;
+        config.iters_perbatch = iters_perbatch;
+        config.num_loads = num_loads;
 
         wait(); conf_info.write(config);
         conf_done.write(true);
     }
 
     ESP_REPORT_INFO("config done");
-    ESP_REPORT_INFO("learning rate is %.8f", learning_rate);
+    ESP_REPORT_INFO("learning rate is %.15f", learning_rate);
 
     // Compute
     {
@@ -100,14 +100,14 @@ void system_t::load_memory()
 
     // Input data and golden output (aligned to DMA_WIDTH makes your life easier)
 #if (DMA_WORD_PER_BEAT == 0)
-    in_words_adj = num_windows*window_size*tsamps_perbatch*batches_perindata;
+    in_words_adj = num_windows*window_size*tsamps_perbatch*batches_perload;
     out_words_adj = num_windows*(neurons_perwin*(window_size) + window_size*(neurons_perwin));
 #else
-    in_words_adj = round_up(num_windows*window_size*tsamps_perbatch*batches_perindata, DMA_WORD_PER_BEAT);
+    in_words_adj = round_up(num_windows*window_size*tsamps_perbatch*batches_perload, DMA_WORD_PER_BEAT);
     out_words_adj = round_up(num_windows*(neurons_perwin*(window_size) + window_size*(neurons_perwin)), DMA_WORD_PER_BEAT);
 #endif
 
-    in_size = in_words_adj * (num_batches);
+    in_size = in_words_adj * (num_loads);
     // edited bc output only at end, not related to batchign
     out_size = out_words_adj;
 
@@ -133,12 +133,12 @@ void system_t::load_memory()
     in = new float[in_size];
 
     // dimensions of data relative to CSV 2D
-    // in_size = num_batches * batches_perindata * tsamps_perbatch *  // num rows
+    // in_size = num_loads * batches_perload * tsamps_perbatch *  // num rows
     //           num_windows * window_size                            // num cols
 
     ESP_REPORT_INFO("in size is %d", in_size);
 
-    for (uint32_t row = 0; row < num_batches*batches_perindata*tsamps_perbatch; row++) {
+    for (uint32_t row = 0; row < num_loads*batches_perload*tsamps_perbatch; row++) {
 
         uint32_t row_offset = row * num_windows * window_size;
 

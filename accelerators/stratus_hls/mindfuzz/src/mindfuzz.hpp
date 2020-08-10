@@ -28,8 +28,8 @@
 #define CONST_NEURONS_PERWIN 1
 //#define do_bias
 
-#define a_write(x) fp2int<TYPE, WORD_SIZE>(x)
-#define a_ready(x) int2fp<TYPE, WORD_SIZE>(x)
+#define a_write(x) (fp2int<TYPE, WORD_SIZE>(x))
+#define a_read(x) (int2fp<TYPE, WORD_SIZE>(x))
 
 class mindfuzz : public esp_accelerator_3P<DMA_WIDTH>
 {
@@ -76,7 +76,7 @@ public:
                   TYPE learning_rate_scaled,
                   int32_t tsamps_perbatch,
                   int32_t num_windows,
-                  int32_t epochs_perbatch,
+                  int32_t iters_perbatch,
                   int32_t input_dimension,
                   int32_t layer1_dimension,
                   int32_t output_dimension,
@@ -87,6 +87,19 @@ public:
                   int32_t batch,
                   bool flag[],
                   bool ping);
+/*
+    void thresh_update(TYPE in[],
+                       int32_t total_tsamps,
+                       int32_t num_windows,
+                       int32_t window_size,
+                       int32_t rate_spike,
+                       int32_t rate_noise,
+                       int32_t spike_weight,
+                       TYPE mean_spike[],
+                       TYPE mean_noise[],
+                       TYPE thresh[],
+                       int32_t indata_offset);
+*/
 
     // Private local memories
     sc_dt::sc_int<DATA_WIDTH> plm_in_ping[PLM_IN_WORD];
