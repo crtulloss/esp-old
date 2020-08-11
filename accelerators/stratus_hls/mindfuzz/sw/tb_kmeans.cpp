@@ -42,12 +42,12 @@ int main()
     TYPE detect_threshold = 100.0;
     int num_windows = 1;
     int iters_perbatch = 1;
-    int num_loads = 13332;
+    int num_loads = 100;
 
     TYPE learning_rate_spike = 0.1;
     TYPE learning_rate_noise = 0.01;
     TYPE spike_weight = 0.5;
-    TYPE std = 0.00005198448064670633;
+    TYPE stdev = 0.00005198448064670633;
 
     // setup 
     
@@ -126,7 +126,7 @@ int main()
             // and one extra timestamp column
             // and one column indicating which cluster
             // add appropriate offsets to indices to ignore these
-            std::string element = parsedCSV[row+1][col+2];
+            std::string element = parsed_clusters[row+1][col+2];
 
             // convert string to float
             stringstream sselem(element);
@@ -147,8 +147,8 @@ int main()
     TYPE thresh[num_windows * window_size];
 
     // initial values
-    TYPE mean_spike_init = 4*std;
-    TYPE mean_noise_init = 2*std;
+    TYPE mean_spike_init = 4*stdev;
+    TYPE mean_noise_init = 3*stdev;
 
     // initialize means
     for (uint16_t i = 0; i < num_windows * window_size; i++) {

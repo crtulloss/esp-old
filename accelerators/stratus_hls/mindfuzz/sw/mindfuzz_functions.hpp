@@ -12,12 +12,13 @@ void RELU(TYPE activations[layer1_dimension], TYPE dactivations[layer1_dimension
 */
 
 // updates threshold between spike and noise for a given time window
+// scalar version
 void thresh_update(TYPE in[],
                    int32_t num_windows,
                    int32_t window_size,
-                   int32_t rate_spike,
-                   int32_t rate_noise,
-                   int32_t spike_weight,
+                   TYPE rate_spike,
+                   TYPE rate_noise,
+                   TYPE spike_weight,
                    TYPE mean_spike[],
                    TYPE mean_noise[],
                    TYPE thresh[],
@@ -28,8 +29,8 @@ void thresh_update(TYPE in[],
     TYPE m_noise;
     TYPE delta_spike;
     TYPE delta_noise;
-
-    uint32_t num_electrodes = num_windows*window_size;
+    TYPE delta_spike_abs;
+    TYPE delta_noise_abs;
 
     uint32_t window_offset;
     uint32_t total_offset;
@@ -50,24 +51,26 @@ void thresh_update(TYPE in[],
             m_spike = a_read(mean_spike[window_offset + elec]);
             m_noise = a_read(mean_noise[window_offset + elec]);
 
-            // case 1: data above both means
-            if (data > m_spike) {
-                delta_spike = data - m_spike;
-                delta_noise = data - m_noise;
+            // calculate deltas
+            delta_spike = data - m_spike;
+            delta_noise = data - m_noise;
+
+            // calculate absolute deltas
+            if (delta_noise < 0) {
+                delta_noise_abs = delta_noise * -1.0;
             }
-            // case 2: data below both means
-            else if (data < m_noise) {
-                delta_spike = m_spike - data;
-                delta_noise = m_noise - data;
-            }
-            // case 3: data between means
             else {
-                delta_spike = m_spike - data;
-                delta_noise = data - m_noise;
+                delta_noise_abs = delta_noise;
+            }
+            if (delta_spike < 0) {
+                delta_spike_abs = delta_spike * -1.0;
+            }
+            else {
+                delta_spike_abs = delta_spike;
             }
 
             // determine which mean the sample is closer to and update means
-            if (delta_spike < delta_noise) {
+            if (delta_spike_abs < delta_noise_abs) {
 
                 // spike cluster
                 // update the mean
@@ -91,6 +94,126 @@ void thresh_update(TYPE in[],
     }
 }
 
+// updates threshold between spike and noise for a given time window
+// vector version
+void thresh_update_vector(TYPE in[],
+                          int32_t num_windows,
+                          int32_t window_size,
+                          TYPE rate_spike,
+                          TYPE rate_noise,
+                          TYPE spike_weight,
+                          TYPE mean_spike[],
+                          TYPE mean_noise[],
+                          TYPE thresh[],
+                          int32_t indata_offset) {
+
+    TYPE data;
+    TYPE m_spike;
+    TYPE m_noise;
+    TYPE delta_spike;
+    TYPE delta_noise;
+    TYPE delta_spike_abs;
+    TYPE delta_noise_abs;
+
+    TYPE norm_spike;
+    TYPE norm_noise;
+    bool spike;
+
+    uint32_t window_offset;
+    uint32_t total_offset;
+
+    for (uint32_t window = 0; window < num_windows; window++) {
+        
+        window_offset = window * window_size;
+        // modified from hw version to account for all input data being in one array
+        total_offset = indata_offset + window_offset;
+        
+        // reset norm for this window
+        norm_spike = 0;
+        norm_noise = 0;
+
+        for (uint32_t elec = 0; elec < window_size; elec++) {
+
+            // acquire sample for this electrode
+            // note that in current version, this data will be max-min for a time window
+            data = a_read(in[total_offset + elec]);
+
+            // acquire relevant means
+            m_spike = a_read(mean_spike[window_offset + elec]);
+            m_noise = a_read(mean_noise[window_offset + elec]);
+
+            // calculate deltas
+            delta_spike = data - m_spike;
+            delta_noise = data - m_noise;
+
+            // calculate absolute deltas
+            if (delta_noise < 0) {
+                delta_noise_abs = delta_noise * -1.0;
+            }
+            else {
+                delta_noise_abs = delta_noise;
+            }
+            if (delta_spike < 0) {
+                delta_spike_abs = delta_spike * -1.0;
+            }
+            else {
+                delta_spike_abs = delta_spike;
+            }
+
+            // update norms - Manhattan norm
+            norm_spike = norm_spike + delta_spike_abs;
+            norm_noise = norm_noise + delta_noise_abs;
+            
+            // done with this electrode
+        }
+
+        // determine which mean the sample is closer to and update means
+        if (norm_spike < norm_noise) {
+            spike = true;
+        }
+
+        else {
+            spike = false;
+        }
+
+
+        // update the means appropriately
+        for (uint32_t elec = 0; elec < window_size; elec++) {
+
+            // acquire sample for this electrode
+            // note that in current version, this data will be max-min for a time window
+            data = a_read(in[total_offset + elec]);
+
+            // acquire relevant means
+            m_spike = a_read(mean_spike[window_offset + elec]);
+            m_noise = a_read(mean_noise[window_offset + elec]);
+
+            // calculate deltas
+            delta_spike = data - m_spike;
+            delta_noise = data - m_noise;
+
+            if (spike) {
+                // spike cluster
+                // update the mean
+                m_spike = m_spike + delta_spike * rate_spike;
+                mean_spike[window_offset + elec] = a_write(m_spike);
+            }
+            else {
+                // noise cluster
+                // update the mean
+                m_noise = m_noise + delta_noise * rate_noise;
+                mean_noise[window_offset + elec] = a_write(m_noise);
+            }
+
+            // update thresh
+            thresh[window_offset + elec] = a_write(spike_weight * (m_spike + m_noise));
+
+            // done with this electrode
+        }
+
+        // done with this window
+    }
+}
 // relavancy detection used to choose input data
 void relevant(TYPE in[],
               int32_t total_tsamps,
