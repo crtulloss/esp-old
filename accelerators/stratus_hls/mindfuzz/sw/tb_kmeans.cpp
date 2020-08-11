@@ -47,7 +47,7 @@ int main()
     TYPE learning_rate_spike = 0.1;
     TYPE learning_rate_noise = 0.01;
     TYPE spike_weight = 0.5;
-    TYPE std = 0.1;
+    TYPE std = 0.00005198448064670633;
 
     // setup 
     
