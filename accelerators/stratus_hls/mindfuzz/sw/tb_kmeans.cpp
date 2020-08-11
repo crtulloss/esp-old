@@ -117,9 +117,9 @@ int main()
 
     for (uint32_t row = 0; row < num_loads*2; row++) {
 
-        uint32_t row_offset = row * num_windows * winodw_size;
+        uint32_t row_offset = row * num_windows * window_size;
 
-	for (uint32_t col = 0; col < num_windows*window_size; col++) {
+    for (uint32_t col = 0; col < num_windows*window_size; col++) {
 
             // acquire 2D array element
             // there is one extra header row in the CSV
@@ -167,7 +167,7 @@ int main()
             int32_t outdata_offset = out_size_perload*b;
 
             // perform a threshold update
-	    thresh_update(in,
+            thresh_update(in,
                           num_windows,
                           window_size,
                           learning_rate_spike,
