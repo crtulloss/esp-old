@@ -162,7 +162,7 @@ void system_t::load_memory()
 
     ESP_REPORT_INFO("input transferred to array");
 
-    // read output (weight) data from CSV file into 1D array
+    // read output (weight) data from CSV file into 2D array
     std::ifstream wdata("../sw/m1/weights5.csv");
     std::string wline;
     std::vector<std::vector<std::string> > parsed_weights;
