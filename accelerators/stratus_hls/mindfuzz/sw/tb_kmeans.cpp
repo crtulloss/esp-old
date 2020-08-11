@@ -119,7 +119,7 @@ int main()
 
         uint32_t row_offset = row * num_windows * window_size;
 
-    for (uint32_t col = 0; col < num_windows*window_size; col++) {
+        for (uint32_t col = 0; col < num_windows*window_size; col++) {
 
             // acquire 2D array element
             // there is one extra header row in the CSV
