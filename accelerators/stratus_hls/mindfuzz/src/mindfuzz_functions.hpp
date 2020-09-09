@@ -20,16 +20,11 @@ void RELU(TYPE activations[layer1_dimension], TYPE dactivations[layer1_dimension
 
 // updates threshold between spike and noise for a given time window
 // scalar version
-void mindfuzz::thresh_update(TYPE in[],
-                             int32_t num_windows,
+void mindfuzz::thresh_update(int32_t num_windows,
                              int32_t window_size,
                              TYPE rate_spike,
                              TYPE rate_noise,
-                             TYPE spike_weight,
-                             TYPE mean_spike[],
-                             TYPE mean_noise[],
-                             TYPE thresh[],
-                             int32_t indata_offset) {
+                             TYPE spike_weight) {
 
     TYPE data;
     TYPE m_spike;
@@ -39,24 +34,21 @@ void mindfuzz::thresh_update(TYPE in[],
     TYPE delta_spike_abs;
     TYPE delta_noise_abs;
 
-    uint32_t window_offset;
     uint32_t total_offset;
 
     for (uint32_t window = 0; window < num_windows; window++) {
         
-        window_offset = window * window_size;
-        // modified from hw version to account for all input data being in one array
-        total_offset = indata_offset + window_offset;
+        total_offset = window * window_size;
 
         for (uint32_t elec = 0; elec < window_size; elec++) {
 
             // acquire sample for this electrode
             // note that in current version, this data will be max-min for a time window
-            data = a_read(in[total_offset + elec]);
+            data = a_read(plm_maxmin[total_offset + elec]);
 
             // acquire relevant means
-            m_spike = a_read(mean_spike[window_offset + elec]);
-            m_noise = a_read(mean_noise[window_offset + elec]);
+            m_spike = a_read(plm_mean_spike[window_offset + elec]);
+            m_noise = a_read(plm_mean_noise[window_offset + elec]);
 
             // calculate deltas
             delta_spike = data - m_spike;
@@ -82,18 +74,18 @@ void mindfuzz::thresh_update(TYPE in[],
                 // spike cluster
                 // update the mean
                 m_spike = m_spike + delta_spike * rate_spike;
-                mean_spike[window_offset + elec] = a_write(m_spike);
+                plm_mean_spike[window_offset + elec] = a_write(m_spike);
             }
 
             else {
                 // noise cluster
                 // update the mean
                 m_noise = m_noise + delta_noise * rate_noise;
-                mean_noise[window_offset + elec] = a_write(m_noise);
+                plm_mean_noise[window_offset + elec] = a_write(m_noise);
             }
 
             // update thresh
-            thresh[window_offset + elec] = a_write(spike_weight * (m_spike + m_noise));
+            plm_thresh[window_offset + elec] = a_write(spike_weight * (m_spike + m_noise));
 
             // done with this electrode
         }
@@ -103,16 +95,11 @@ void mindfuzz::thresh_update(TYPE in[],
 
 // updates threshold between spike and noise for a given time window
 // vector version
-void mindfuzz::thresh_update_vector(TYPE in[],
-                                    int32_t num_windows,
+void mindfuzz::thresh_update_vector(int32_t num_windows,
                                     int32_t window_size,
                                     TYPE rate_spike,
                                     TYPE rate_noise,
-                                    TYPE spike_weight,
-                                    TYPE mean_spike[],
-                                    TYPE mean_noise[],
-                                    TYPE thresh[],
-                                    int32_t indata_offset) {
+                                    TYPE spike_weight) {
 
     TYPE data;
     TYPE m_spike;
@@ -126,28 +113,25 @@ void mindfuzz::thresh_update_vector(TYPE in[],
     TYPE norm_noise;
     bool spike;
 
-    uint32_t window_offset;
     uint32_t total_offset;
 
     for (uint32_t window = 0; window < num_windows; window++) {
         
-        window_offset = window * window_size;
-        // modified from hw version to account for all input data being in one array
-        total_offset = indata_offset + window_offset;
+        total_offset = window * window_size;
         
         // reset norm for this window
-        norm_spike = 0;
-        norm_noise = 0;
+        norm_spike = 0.0;
+        norm_noise = 0.0;
 
         for (uint32_t elec = 0; elec < window_size; elec++) {
 
             // acquire sample for this electrode
             // note that in current version, this data will be max-min for a time window
-            data = a_read(in[total_offset + elec]);
+            data = a_read(plm_maxmin[total_offset + elec]);
 
             // acquire relevant means
-            m_spike = a_read(mean_spike[window_offset + elec]);
-            m_noise = a_read(mean_noise[window_offset + elec]);
+            m_spike = a_read(plm_mean_spike[window_offset + elec]);
+            m_noise = a_read(plm_mean_noise[window_offset + elec]);
 
             // calculate deltas
             delta_spike = data - m_spike;
@@ -189,11 +173,11 @@ void mindfuzz::thresh_update_vector(TYPE in[],
 
             // acquire sample for this electrode
             // note that in current version, this data will be max-min for a time window
-            data = a_read(in[total_offset + elec]);
+            data = a_read(plm_maxmin[total_offset + elec]);
 
             // acquire relevant means
-            m_spike = a_read(mean_spike[window_offset + elec]);
-            m_noise = a_read(mean_noise[window_offset + elec]);
+            m_spike = a_read(plm_mean_spike[window_offset + elec]);
+            m_noise = a_read(plm_mean_noise[window_offset + elec]);
 
             // calculate deltas
             delta_spike = data - m_spike;
@@ -203,17 +187,17 @@ void mindfuzz::thresh_update_vector(TYPE in[],
                 // spike cluster
                 // update the mean
                 m_spike = m_spike + delta_spike * rate_spike;
-                mean_spike[window_offset + elec] = a_write(m_spike);
+                plm_mean_spike[window_offset + elec] = a_write(m_spike);
             }
             else {
                 // noise cluster
                 // update the mean
                 m_noise = m_noise + delta_noise * rate_noise;
-                mean_noise[window_offset + elec] = a_write(m_noise);
+                plm_mean_noise[window_offset + elec] = a_write(m_noise);
             }
 
             // update thresh
-            thresh[window_offset + elec] = a_write(spike_weight * (m_spike + m_noise));
+            plm_thresh[window_offset + elec] = a_write(spike_weight * (m_spike + m_noise));
 
             // done with this electrode
         }
@@ -227,10 +211,11 @@ void mindfuzz::relevant(int32_t total_tsamps,
                         int32_t num_windows,
                         int32_t window_size,
                         bool flag[],
-                        bool ping,
-                        TYPE thresh) {
+                        bool ping) {
 
     TYPE data;
+    TYPE maxmin;
+    TYPE thresh;
 
     uint32_t num_electrodes = num_windows*window_size;
 
@@ -240,9 +225,8 @@ void mindfuzz::relevant(int32_t total_tsamps,
     TYPE min[num_electrodes];
 */
     // sized using fixed magic numbers based on max accel config
-    const uint32_t const_num_electrodes = CONST_NUM_WINDOWS*CONST_WINDOW_SIZE;
-    TYPE max[const_num_electrodes];
-    TYPE min[const_num_electrodes];
+    TYPE max[PLM_ELEC_WORD];
+    TYPE min[PLM_ELEC_WORD];
 
     uint32_t samp_offset;
     uint32_t window_offset;
@@ -298,11 +282,18 @@ void mindfuzz::relevant(int32_t total_tsamps,
 
         // check max and min for each elec
         for (uint32_t elec = 0; elec < window_size; elec++) {
-            if ((a_read(max[window_offset + elec]) - a_read(min[window_offset + elec])) > thresh) {
+          
+            // calculate max-min
+            maxmin = a_read(max[window_offset + elec]) - a_read(min[window_offset + elec]);
+            // update in plm
+            plm_maxmin[window_offset + elec] = a_write(maxmin);
+
+            // acquire thresh for this electrode
+            thresh = a_read(plm_thresh[window_offset + elec]);
+
+            if (maxmin > thresh) {
                 // flag the window
                 flag[window] = true;
-                // don't need to check other electrodes in this window
-                break;
             }
         }
         // done with this window
