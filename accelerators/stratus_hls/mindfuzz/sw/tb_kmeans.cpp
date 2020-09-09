@@ -210,7 +210,6 @@ int main()
         cout << std::setprecision(12) << "gold " << gold[j] << "\tout " << plm_out[j] << "\n";
         if ((fabs(gold[j] - plm_out[j]) / fabs(gold[j])) > ERR_TH) {
             errors++;
-            cout << "error\n";
         }
         else {
             //cout << "close for weight " << j << "\n";
