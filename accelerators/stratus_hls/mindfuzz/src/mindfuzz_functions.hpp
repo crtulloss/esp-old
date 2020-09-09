@@ -20,16 +20,16 @@ void RELU(TYPE activations[layer1_dimension], TYPE dactivations[layer1_dimension
 
 // updates threshold between spike and noise for a given time window
 // scalar version
-void thresh_update(TYPE in[],
-                   int32_t num_windows,
-                   int32_t window_size,
-                   TYPE rate_spike,
-                   TYPE rate_noise,
-                   TYPE spike_weight,
-                   TYPE mean_spike[],
-                   TYPE mean_noise[],
-                   TYPE thresh[],
-                   int32_t indata_offset) {
+void mindfuzz::thresh_update(TYPE in[],
+                             int32_t num_windows,
+                             int32_t window_size,
+                             TYPE rate_spike,
+                             TYPE rate_noise,
+                             TYPE spike_weight,
+                             TYPE mean_spike[],
+                             TYPE mean_noise[],
+                             TYPE thresh[],
+                             int32_t indata_offset) {
 
     TYPE data;
     TYPE m_spike;
@@ -103,16 +103,16 @@ void thresh_update(TYPE in[],
 
 // updates threshold between spike and noise for a given time window
 // vector version
-void thresh_update_vector(TYPE in[],
-                          int32_t num_windows,
-                          int32_t window_size,
-                          TYPE rate_spike,
-                          TYPE rate_noise,
-                          TYPE spike_weight,
-                          TYPE mean_spike[],
-                          TYPE mean_noise[],
-                          TYPE thresh[],
-                          int32_t indata_offset) {
+void mindfuzz::thresh_update_vector(TYPE in[],
+                                    int32_t num_windows,
+                                    int32_t window_size,
+                                    TYPE rate_spike,
+                                    TYPE rate_noise,
+                                    TYPE spike_weight,
+                                    TYPE mean_spike[],
+                                    TYPE mean_noise[],
+                                    TYPE thresh[],
+                                    int32_t indata_offset) {
 
     TYPE data;
     TYPE m_spike;
