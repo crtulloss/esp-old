@@ -35,19 +35,30 @@ int main()
 
     // basic config params
     bool do_relu = false;
-    int window_size = 1;
+    int window_size = 9;
     int batches_perload = 1;
     int neurons_perwin = 1;
     int tsamps_perbatch = 70;
     TYPE detect_threshold = 100.0;
     int num_windows = 1;
     int iters_perbatch = 1;
-    int num_loads = 100;
+    int num_loads = 13332;
 
     TYPE learning_rate_spike = 0.1;
-    TYPE learning_rate_noise = 0.01;
+    TYPE learning_rate_noise = 0.1;
     TYPE spike_weight = 0.5;
-    TYPE stdev = 0.00005198448064670633;
+    //TYPE stdev[1] = {0.00005198448064670633};
+    
+    TYPE stdev[9] = {3.37122322e-05,
+                     3.39214722e-05,
+                     2.69856226e-05,
+                     4.67356132e-05,
+                     5.19864304e-05,
+                     3.61158530e-05,
+                     5.24126091e-05,
+                     5.44700858e-05,
+                     4.08343586e-05};
+                     
 
     // setup 
     
@@ -58,7 +69,7 @@ int main()
     uint32_t out_size = out_size_perload*num_loads;
 
     // read input data into the array pasedCSV
-    std::ifstream indata("kmeans/data_kmeans_scalar.csv");
+    std::ifstream indata("kmeans/data_kmeans_vector.csv");
     std::string line;
     std::vector<std::vector<std::string> > parsedCSV;
     while(std::getline(indata, line)) {
@@ -98,7 +109,7 @@ int main()
     }
 
     // read output (cluster centers) data from CSV file into 2D array
-    std::ifstream wdata("kmeans/kmeans_scalar.csv");
+    std::ifstream wdata("kmeans/kmeans_vector.csv");
     std::string wline;
     std::vector<std::vector<std::string> > parsed_clusters;
     while(std::getline(wdata, wline)) {
@@ -146,14 +157,10 @@ int main()
     TYPE mean_noise[num_windows * window_size];
     TYPE thresh[num_windows * window_size];
 
-    // initial values
-    TYPE mean_spike_init = 4*stdev;
-    TYPE mean_noise_init = 3*stdev;
-
     // initialize means
     for (uint16_t i = 0; i < num_windows * window_size; i++) {
-        mean_spike[i] = mean_spike_init;
-        mean_noise[i] = mean_noise_init;
+        mean_spike[i] = 4*stdev[i];
+        mean_noise[i] = 3*stdev[i];
     }
 
     // actual computation
@@ -167,7 +174,7 @@ int main()
             int32_t outdata_offset = out_size_perload*b;
 
             // perform a threshold update
-            thresh_update(in,
+            thresh_update_vector(in,
                           num_windows,
                           window_size,
                           learning_rate_spike,
@@ -203,6 +210,7 @@ int main()
         cout << std::setprecision(12) << "gold " << gold[j] << "\tout " << plm_out[j] << "\n";
         if ((fabs(gold[j] - plm_out[j]) / fabs(gold[j])) > ERR_TH) {
             errors++;
+            cout << "error\n";
         }
         else {
             //cout << "close for weight " << j << "\n";
