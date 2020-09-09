@@ -214,6 +214,7 @@ void thresh_update_vector(TYPE in[],
         // done with this window
     }
 }
+
 // relavancy detection used to choose input data
 void relevant(TYPE in[],
               int32_t total_tsamps,
