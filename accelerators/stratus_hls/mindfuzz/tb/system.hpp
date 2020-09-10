@@ -60,7 +60,7 @@ public:
         neurons_perwin = 1;
         tsamps_perbatch = 70;
         detect_threshold = 100.0;
-        num_windows = 7;
+        num_windows = 1;
         iters_perbatch = 1;
         num_loads = 500;
         learning_rate = ((TYPE)0.000001) / ((TYPE)tsamps_perbatch) / ((TYPE)window_size);

@@ -20,11 +20,11 @@ void RELU(TYPE activations[layer1_dimension], TYPE dactivations[layer1_dimension
 
 // updates threshold between spike and noise for a given time window
 // scalar version
-void mindfuzz::thresh_update(int32_t num_windows,
-                             int32_t window_size,
-                             TYPE rate_spike,
-                             TYPE rate_noise,
-                             TYPE spike_weight) {
+void mindfuzz::thresh_update_scalar(int32_t num_windows,
+                                    int32_t window_size,
+                                    TYPE rate_spike,
+                                    TYPE rate_noise,
+                                    TYPE spike_weight) {
 
     TYPE data;
     TYPE m_spike;

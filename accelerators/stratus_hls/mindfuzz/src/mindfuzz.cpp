@@ -454,7 +454,7 @@ void mindfuzz::compute_kernel()
             // this will take the max-min computed in relevant for each electrode
             // and cluster the time window as either a spike or noise,
             // updating the means and thresholds accordingly
-            thresh_update_vector(num_windows,
+            thresh_update_scalar(num_windows,
                                  window_size,
                                  rate_spike,
                                  rate_noise,

@@ -104,11 +104,11 @@ public:
                   bool flag[],
                   bool ping);
 
-    void thresh_update(int32_t num_windows,
-                       int32_t window_size,
-                       TYPE rate_spike,
-                       TYPE rate_noise,
-                       TYPE spike_weight);
+    void thresh_update_scalar(int32_t num_windows,
+                              int32_t window_size,
+                              TYPE rate_spike,
+                              TYPE rate_noise,
+                              TYPE spike_weight);
 
     void thresh_update_vector(int32_t num_windows,
                               int32_t window_size,
