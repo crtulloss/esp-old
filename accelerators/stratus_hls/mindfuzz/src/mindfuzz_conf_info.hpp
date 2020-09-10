@@ -45,10 +45,10 @@ public:
         TYPE detect_threshold, 
         int32_t num_windows, 
         int32_t iters_perbatch, 
-        int32_t num_loads
-        TYPE rate_spike;
-        TYPE rate_noise;
-        TYPE spike_weight;
+        int32_t num_loads,
+        TYPE rate_spike,
+        TYPE rate_noise,
+        TYPE spike_weight
         )
     {
         /* <<--ctor-custom-->> */

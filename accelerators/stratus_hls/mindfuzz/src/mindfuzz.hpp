@@ -63,7 +63,7 @@ public:
         HLS_MAP_plm(plm_maxmin, PLM_ELEC_NAME);
         HLS_MAP_plm(plm_mean_noise, PLM_ELEC_NAME);
         HLS_MAP_plm(plm_mean_spike, PLM_ELEC_NAME);
-        HLS_MAP_PLM(plm_thresh, PLM_ELEC_NAME);
+        HLS_MAP_plm(plm_thresh, PLM_ELEC_NAME);
     }
 
     // Processes

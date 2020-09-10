@@ -47,8 +47,8 @@ void mindfuzz::thresh_update_scalar(int32_t num_windows,
             data = a_read(plm_maxmin[total_offset + elec]);
 
             // acquire relevant means
-            m_spike = a_read(plm_mean_spike[window_offset + elec]);
-            m_noise = a_read(plm_mean_noise[window_offset + elec]);
+            m_spike = a_read(plm_mean_spike[total_offset + elec]);
+            m_noise = a_read(plm_mean_noise[total_offset + elec]);
 
             // calculate deltas
             delta_spike = data - m_spike;
@@ -74,18 +74,18 @@ void mindfuzz::thresh_update_scalar(int32_t num_windows,
                 // spike cluster
                 // update the mean
                 m_spike = m_spike + delta_spike * rate_spike;
-                plm_mean_spike[window_offset + elec] = a_write(m_spike);
+                plm_mean_spike[total_offset + elec] = a_write(m_spike);
             }
 
             else {
                 // noise cluster
                 // update the mean
                 m_noise = m_noise + delta_noise * rate_noise;
-                plm_mean_noise[window_offset + elec] = a_write(m_noise);
+                plm_mean_noise[total_offset + elec] = a_write(m_noise);
             }
 
             // update thresh
-            plm_thresh[window_offset + elec] = a_write(spike_weight * (m_spike + m_noise));
+            plm_thresh[total_offset + elec] = a_write(spike_weight * (m_spike + m_noise));
 
             // done with this electrode
         }
@@ -130,8 +130,8 @@ void mindfuzz::thresh_update_vector(int32_t num_windows,
             data = a_read(plm_maxmin[total_offset + elec]);
 
             // acquire relevant means
-            m_spike = a_read(plm_mean_spike[window_offset + elec]);
-            m_noise = a_read(plm_mean_noise[window_offset + elec]);
+            m_spike = a_read(plm_mean_spike[total_offset + elec]);
+            m_noise = a_read(plm_mean_noise[total_offset + elec]);
 
             // calculate deltas
             delta_spike = data - m_spike;
@@ -176,8 +176,8 @@ void mindfuzz::thresh_update_vector(int32_t num_windows,
             data = a_read(plm_maxmin[total_offset + elec]);
 
             // acquire relevant means
-            m_spike = a_read(plm_mean_spike[window_offset + elec]);
-            m_noise = a_read(plm_mean_noise[window_offset + elec]);
+            m_spike = a_read(plm_mean_spike[total_offset + elec]);
+            m_noise = a_read(plm_mean_noise[total_offset + elec]);
 
             // calculate deltas
             delta_spike = data - m_spike;
@@ -187,17 +187,17 @@ void mindfuzz::thresh_update_vector(int32_t num_windows,
                 // spike cluster
                 // update the mean
                 m_spike = m_spike + delta_spike * rate_spike;
-                plm_mean_spike[window_offset + elec] = a_write(m_spike);
+                plm_mean_spike[total_offset + elec] = a_write(m_spike);
             }
             else {
                 // noise cluster
                 // update the mean
                 m_noise = m_noise + delta_noise * rate_noise;
-                plm_mean_noise[window_offset + elec] = a_write(m_noise);
+                plm_mean_noise[total_offset + elec] = a_write(m_noise);
             }
 
             // update thresh
-            plm_thresh[window_offset + elec] = a_write(spike_weight * (m_spike + m_noise));
+            plm_thresh[total_offset + elec] = a_write(spike_weight * (m_spike + m_noise));
 
             // done with this electrode
         }
