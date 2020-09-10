@@ -39,6 +39,9 @@ void system_t::config_proc()
         config.num_windows = num_windows;
         config.iters_perbatch = iters_perbatch;
         config.num_loads = num_loads;
+        config.rate_spike = rate_spike;
+        config.rate_noise = rate_noise;
+        config.spike_weight = spike_weight;
 
         wait(); conf_info.write(config);
         conf_done.write(true);

@@ -64,6 +64,9 @@ public:
         iters_perbatch = 1;
         num_loads = 500;
         learning_rate = ((TYPE)0.000001) / ((TYPE)tsamps_perbatch) / ((TYPE)window_size);
+        rate_spike = 0.01;
+        rate_noise = 0.01;
+        spike_weight = 0.5;
 
     }
 
