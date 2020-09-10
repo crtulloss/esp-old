@@ -11,5 +11,8 @@
     <param name="batches_perload" desc="batches_perload" />
     <param name="window_size" desc="window_size" />
     <param name="do_relu" desc="do_relu" />
+    <param name="rate_spike" desc="rate_spike" />
+    <param name="rate_noise" desc="rate_noise" />
+    <param name="spike_weight" desc="spike_weight" />
   </accelerator>
 </sld>
