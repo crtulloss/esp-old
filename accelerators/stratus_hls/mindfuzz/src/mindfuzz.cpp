@@ -425,13 +425,6 @@ void mindfuzz::compute_kernel()
     
     bool ping = true;
 
-    // for relevancy detection
-/*
-    bool flag[num_windows];
-*/
-    // TODO fix to not use arbitrarily sized array
-    bool flag[CONST_NUM_WINDOWS];
-
     // actual computation
     {
         for (uint16_t b = 0; b < num_loads; b++)

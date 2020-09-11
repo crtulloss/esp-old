@@ -26,6 +26,7 @@
 //#define PLM_OUT_WORD 2432
 //#define PLM_IN_WORD 65536
 
+// TODO formalize these as the maximum sizes so they can be used for array sizing e.g. flag array
 // macro versions of some config parameters, in case we don't want them configable
 #define CONST_NUM_WINDOWS 1
 #define CONST_WINDOW_SIZE 4
@@ -64,6 +65,9 @@ public:
         HLS_MAP_plm(plm_mean_noise, PLM_ELEC_NAME);
         HLS_MAP_plm(plm_mean_spike, PLM_ELEC_NAME);
         HLS_MAP_plm(plm_thresh, PLM_ELEC_NAME);
+
+        // flatten the flag array into registers
+        HLS_FLATTEN_ARRAY(flag);
     }
 
     // Processes
@@ -120,13 +124,14 @@ public:
     sc_dt::sc_int<DATA_WIDTH> plm_in_pong[PLM_IN_WORD];
     // deleted output pingpong
     sc_dt::sc_int<DATA_WIDTH> plm_out[PLM_OUT_WORD];
-
-
     // for relevancy detection
     sc_dt::sc_int<DATA_WIDTH> plm_maxmin[PLM_ELEC_WORD];
     sc_dt::sc_int<DATA_WIDTH> plm_mean_spike[PLM_ELEC_WORD];
     sc_dt::sc_int<DATA_WIDTH> plm_mean_noise[PLM_ELEC_WORD];
     sc_dt::sc_int<DATA_WIDTH> plm_thresh[PLM_ELEC_WORD];
+
+    // flattened arrays
+    bool flag[CONST_NUM_WINDOWS];
 
     // for detection buffer coordination
     // TODO revisit this
