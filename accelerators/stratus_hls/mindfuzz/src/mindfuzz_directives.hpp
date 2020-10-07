@@ -17,6 +17,8 @@
 #define PLM_OUT_NAME "mindfuzz_plm_block_out_dma64"
 #endif
 
+#define PLM_ELEC_NAME "mindfuzz_plm_block_elec_32"
+
 #if defined(STRATUS_HLS)
 
 // added by CRT - related to datatypes

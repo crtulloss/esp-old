@@ -42,6 +42,9 @@ void mindfuzz::load_input()
     int32_t num_windows;
     int32_t iters_perbatch;
     int32_t num_loads;
+    TYPE rate_spike;
+    TYPE rate_noise;
+    TYPE spike_weight;
 
     // declare some necessary variables
     // int32_t load_batches;
@@ -62,6 +65,9 @@ void mindfuzz::load_input()
         num_windows = config.num_windows;
         iters_perbatch = config.iters_perbatch;
         num_loads = config.num_loads;
+        rate_spike = config.rate_spike;
+        rate_noise = config.rate_noise;
+        spike_weight = config.spike_weight;
     }
 
     // Load
@@ -189,6 +195,10 @@ void mindfuzz::detect_kernel()
     int32_t num_windows;
     int32_t iters_perbatch;
     int32_t num_loads;
+    TYPE rate_spike;
+    TYPE rate_noise;
+    TYPE spike_weight;
+
     {
         HLS_PROTO("detect-config");
 
@@ -206,6 +216,9 @@ void mindfuzz::detect_kernel()
         num_windows = config.num_windows;
         iters_perbatch = config.iters_perbatch;
         num_loads = config.num_loads;
+        rate_spike = config.rate_spike;
+        rate_noise = config.rate_noise;
+        spike_weight = config.spike_weight;
     }
 
 
@@ -306,6 +319,9 @@ void mindfuzz::compute_kernel()
     int32_t num_windows;
     int32_t iters_perbatch;
     int32_t num_loads;
+    TYPE rate_spike;
+    TYPE rate_noise;
+    TYPE spike_weight;
 
     // declare some necessary variables
     // int32_t load_batches;
@@ -334,6 +350,9 @@ void mindfuzz::compute_kernel()
         num_windows = config.num_windows;
         iters_perbatch = config.iters_perbatch;
         num_loads = config.num_loads;
+        rate_spike = config.rate_spike;
+        rate_noise = config.rate_noise;
+        spike_weight = config.spike_weight;
         
         // total size of a load batch is useful for relevancy check
         total_tsamps = tsamps_perbatch * batches_perload;
@@ -351,6 +370,24 @@ void mindfuzz::compute_kernel()
 
 
     // Compute
+
+    // initialize spike/noise means and thresholds
+    {
+        // initial value for each
+        // TODO fix these
+        TYPE initial_mean_noise = 1.0;
+        TYPE initial_mean_spike = 3.0;
+        TYPE initial_thresh = 2.0;
+
+        for (uint32_t window = 0; window < num_windows; window++) {
+            uint32_t window_offset = window * window_size;
+            for (uint32_t elec = 0; elec < window_size; elec++) {
+                plm_mean_noise[window_offset + elec] = a_write(initial_mean_noise);
+                plm_mean_spike[window_offset + elec] = a_write(initial_mean_spike);
+                plm_thresh[window_offset + elec] = a_write(initial_thresh);
+            }
+        }
+    }
 
     // initialize weights and biases
     {
@@ -388,13 +425,6 @@ void mindfuzz::compute_kernel()
     
     bool ping = true;
 
-    // for relevancy detection
-/*
-    bool flag[num_windows];
-*/
-    // TODO fix to not use arbitrarily sized array
-    bool flag[CONST_NUM_WINDOWS];
-
     // actual computation
     {
         for (uint16_t b = 0; b < num_loads; b++)
@@ -411,8 +441,17 @@ void mindfuzz::compute_kernel()
                      num_windows,
                      window_size,
                      flag,
-                     ping,
-                     detect_threshold);
+                     ping);
+
+            // run threshold update
+            // this will take the max-min computed in relevant for each electrode
+            // and cluster the time window as either a spike or noise,
+            // updating the means and thresholds accordingly
+            thresh_update_scalar(num_windows,
+                                 window_size,
+                                 rate_spike,
+                                 rate_noise,
+                                 spike_weight);
 
             // run backprop for each compute batch in this load batch
             for (uint16_t batch = 0; batch < batches_perload; batch++) {
@@ -495,6 +534,9 @@ void mindfuzz::store_output()
     int32_t num_windows;
     int32_t iters_perbatch;
     int32_t num_loads;
+    TYPE rate_spike;
+    TYPE rate_noise;
+    TYPE spike_weight;
 
     // declare some necessary variables
     // int32_t load_batches;
@@ -515,6 +557,9 @@ void mindfuzz::store_output()
         num_windows = config.num_windows;
         iters_perbatch = config.iters_perbatch;
         num_loads = config.num_loads;
+        rate_spike = config.rate_spike;
+        rate_noise = config.rate_noise;
+        spike_weight = config.spike_weight;
     }
 
     // Store

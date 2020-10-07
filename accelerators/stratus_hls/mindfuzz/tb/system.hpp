@@ -60,10 +60,13 @@ public:
         neurons_perwin = 1;
         tsamps_perbatch = 70;
         detect_threshold = 100.0;
-        num_windows = 7;
+        num_windows = 1;
         iters_perbatch = 1;
         num_loads = 500;
         learning_rate = ((TYPE)0.000001) / ((TYPE)tsamps_perbatch) / ((TYPE)window_size);
+        rate_spike = 0.01;
+        rate_noise = 0.01;
+        spike_weight = 0.5;
 
     }
 
@@ -93,6 +96,9 @@ public:
     int32_t num_windows;
     int32_t iters_perbatch;
     int32_t num_loads;
+    TYPE rate_spike;
+    TYPE rate_noise;
+    TYPE spike_weight;
 
     uint32_t in_words_adj;
     uint32_t out_words_adj;
