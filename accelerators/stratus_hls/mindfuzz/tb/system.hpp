@@ -96,6 +96,9 @@ public:
     int32_t num_windows;
     int32_t iters_perbatch;
     int32_t num_loads;
+    TYPE rate_spike;
+    TYPE rate_noise;
+    TYPE spike_weight;
 
     uint32_t in_words_adj;
     uint32_t out_words_adj;
