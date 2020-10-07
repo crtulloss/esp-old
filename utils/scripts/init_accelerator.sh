@@ -304,9 +304,9 @@ for d in $dirs; do
 
     if cat /etc/os-release | grep -q -i ubuntu; then
         rename "s/accelerator/$LOWER/g" *
-    fi
-
-    if cat /etc/os-release | grep -q -i centos; then
+    elif cat /etc/os-release | grep -q -i centos; then
+        rename accelerator $LOWER *
+    elif cat /etc/os-release | grep -q -i rhel; then
         rename accelerator $LOWER *
     fi
 
@@ -569,9 +569,9 @@ cp $TEMPLATES_DIR/include/accelerator.h .
 
 if cat /etc/os-release | grep -q -i ubuntu; then
     rename "s/accelerator/$LOWER/g" accelerator.h
-fi
-
-if cat /etc/os-release | grep -q -i centos; then
+elif cat /etc/os-release | grep -q -i centos; then
+    rename accelerator $LOWER accelerator.h
+elif cat /etc/os-release | grep -q -i rhel; then
     rename accelerator $LOWER accelerator.h
 fi
 
@@ -585,9 +585,9 @@ for d in $dirs; do
 
     if cat /etc/os-release | grep -q -i ubuntu; then
         rename "s/accelerator/$LOWER/g" *
-    fi
-
-    if cat /etc/os-release | grep -q -i centos; then
+    elif cat /etc/os-release | grep -q -i centos; then
+	rename accelerator $LOWER *
+    elif cat /etc/os-release | grep -q -i rhel; then
 	rename accelerator $LOWER *
     fi
 

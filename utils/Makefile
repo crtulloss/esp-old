@@ -467,7 +467,7 @@ startup.o: $(BOOTROM_PATH)/startup.S ariane.dtb
 		-I$(BOOTROM_PATH) \
 		-c $< -o $@
 
-main.o: $(BOOTROM_PATH)/main.c
+main.o: $(BOOTROM_PATH)/main.c socmap.h
 	$(QUIET_CC) riscv64-unknown-elf-gcc \
 		-Os \
 		-Wall -Werror \
@@ -532,7 +532,7 @@ RISCV_CFLAGS += -nostartfiles -lm -lgcc
 
 systest.exe: systest.c uart.o
 	$(QUIET_CC) riscv64-unknown-elf-gcc $(RISCV_CFLAGS) \
-	$(RISCV_TESTS)/benchmarks/common/syscalls.c \
+	$(SOFT)/common/syscalls.c \
 	$(RISCV_TESTS)/benchmarks/common/crt.S  \
 	-T $(RISCV_TESTS)/benchmarks/common/test.ld -o $@ \
 	-I$(DESIGN_PATH) \
@@ -824,6 +824,8 @@ VLOG_RTL_SRCS  += $(shell (find $(ESP_ROOT)/tech/$(TECHLIB) -name "*.v" ))
 
 SVLOG_RTL_SRCS  = $(shell (find $(ESP_ROOT)/rtl/src -name "*.sv" ))
 
+IP_XCI_SRCS  = $(shell (find $(ESP_ROOT)/tech/$(TECHLIB) -name "*.xci" ))
+
 VHDL_SIM_PKGS  = $(shell (find $(ESP_ROOT)/sim/include -name "*.vhd" ))
 VHDL_SIM_SRCS  = $(shell (find $(ESP_ROOT)/sim/src -name "*.vhd" ))
 VLOG_SIM_SRCS  = $(shell (find $(ESP_ROOT)/sim/src -name "*.v" ))
@@ -888,7 +890,7 @@ check_all_rtl_srcs-distclean:
 
 $(ESP_ROOT)/.cache/modelsim/xilinx_lib:
 	$(QUIET_MKDIR)mkdir -p $@
-	@echo "compile_simlib -directory xilinx_lib -simulator modelsim -library unisim -no_ip_compile" > $@/simlib.tcl; \
+	@echo "compile_simlib -directory xilinx_lib -simulator modelsim -library all" > $@/simlib.tcl; \
 	cd $(ESP_ROOT)/.cache/modelsim; \
 	if ! vivado $(VIVADO_BATCH_OPT) -source xilinx_lib/simlib.tcl; then \
 		echo "$(SPACES)ERROR: Xilinx library compilation failed!"; rm -rf xilinx_lib modelsim.ini; exit 1; \
@@ -912,7 +914,7 @@ modelsim/modelsim.ini: $(ESP_ROOT)/.cache/modelsim/xilinx_lib
 
 $(ESP_ROOT)/.cache/xcelium/xilinx_lib:
 	$(QUIET_MKDIR)mkdir -p $@
-	@echo "compile_simlib -directory xilinx_lib -simulator xcelium -library unisim -no_ip_compile" > $@/simlib.tcl; \
+	@echo "compile_simlib -directory xilinx_lib -simulator xcelium -library all" > $@/simlib.tcl; \
 	cd $(ESP_ROOT)/.cache/xcelium; \
 	if ! vivado $(VIVADO_BATCH_OPT) -source xilinx_lib/simlib.tcl; then \
 		echo "$(SPACES)ERROR: Xilinx library compilation failed!"; rm -rf xilinx_lib cds.lib; exit 1; \
@@ -928,7 +930,7 @@ xcelium/hdl.var: xcelium/cds.lib
 
 $(ESP_ROOT)/.cache/incisive/xilinx_lib:
 	$(QUIET_MKDIR)mkdir -p $@
-	@echo "compile_simlib -directory xilinx_lib -simulator ies -library unisim -no_ip_compile" > $@/simlib.tcl; \
+	@echo "compile_simlib -directory xilinx_lib -simulator ies -library all" > $@/simlib.tcl; \
 	cd $(ESP_ROOT)/.cache/incisive; \
 	if ! vivado $(VIVADO_BATCH_OPT) -source xilinx_lib/simlib.tcl; then \
 		echo "$(SPACES)ERROR: Xilinx library compilation failed!"; rm -rf xilinx_lib cds.lib; exit 1; \
@@ -1402,10 +1404,16 @@ ifneq ($(findstring profpga, $(BOARD)),)
 else
 	@echo "set_property include_dirs {$(ESP_CACHES_INCDIR) $(THIRDPARTY_INCDIR) $(ARIANE)/src/common_cells/include} [get_filesets {sim_1 sources_1}]" >> $@
 endif
-	@echo "set_property verilog_define {WT_DCACHE=1} [get_filesets {sim_1 sources_1}]" >> $@
+	@echo "set_property verilog_define {XILINX_FPGA=1 WT_DCACHE=1} [get_filesets {sim_1 sources_1}]" >> $@
 	@echo "source ./srcs.tcl" >> $@
 ifneq ("$(PROTOBOARD)","")
 	@echo "set_property board_part $(PROTOBOARD) [current_project]"  >> $@
+endif
+ifneq ($(IP_XCI_SRCS),)
+	@for rtl in $(IP_XCI_SRCS); do \
+		echo "import_ip -files $$rtl" >> $@; \
+	done;
+	@echo "upgrade_ip [get_ips -all]" >> $@
 endif
 	@if test -r $(ESP_ROOT)/constraints/$(BOARD)/mig.xci; then \
 		echo $(SPACES)"INFO including MIG IP"; \
@@ -1741,6 +1749,7 @@ distclean:	check_all_srcs-distclean 	\
 		sldgen-distclean		\
 		espmon-distclean		\
 		mmi64-distclean
+	$(QUIET_CLEAN)$(RM) *.log
 
 
 .PHONY: clean distclean

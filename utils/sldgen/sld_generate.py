@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# Copyright (c) 2011-2019 Columbia University, System Level Design Group
+# Copyright (c) 2011-2020 Columbia University, System Level Design Group
 # SPDX-License-Identifier: Apache-2.0
 
 ###############################################################################
@@ -54,6 +54,7 @@ class Implementation():
   def __init__(self):
     self.name = ""
     self.dma_width = 0
+    self.datatype = ""
 
   def __str__(self):
     return self.name
@@ -225,7 +226,7 @@ def bind_apb3(f, prefix):
   f.write("      " + prefix + "paddr => apbi_paddr,\n");
   f.write("      " + prefix + "pwrite => apbi.pwrite,\n");
   f.write("      " + prefix + "pwdata => apbi.pwdata,\n");
-  f.write("      " + prefix + "prdata => apbo(pindex).prdata,\n");
+  f.write("      " + prefix + "prdata => apbo.prdata,\n");
   f.write("      " + prefix + "pready => pready,\n");
   f.write("      " + prefix + "pslverr => open, -- TODO: handle APB3 error\n");
 
@@ -308,15 +309,113 @@ def write_axi_acc_port_map(f, acc, dma_width):
   f.write("    );\n")
 
 
-def write_acc_interface(f, acc, dma_width, rst, is_vivadohls_if):
-  for param in acc.param:
-    if not param.readonly:
-      spacing = " "
-      if 17 - len(param.name) > 0:
-        spacing = (17-len(param.name))*" "
-      f.write("      conf_info_" + param.name + spacing + ": in  std_logic_vector(" + str(param.size - 1) + " downto 0);\n")
+def write_acc_interface(f, acc, dma_width, datatype, rst, is_vivadohls_if, is_catapulthls_cxx_if, is_catapulthls_sysc_if):
 
-  if not is_vivadohls_if:
+  if is_catapulthls_cxx_if:
+    conf_info_size = 0
+    for param in acc.param:
+      if not param.readonly:
+        conf_info_size = conf_info_size + param.size
+    spacing = " "
+    f.write("      clk                        : in  std_ulogic;\n")
+    spacing = (27-len(rst))*" "
+    f.write("      " + rst + spacing       + ": in  std_ulogic;\n")
+    f.write("\n")
+    f.write("      conf_info_rsc_dat          : in  std_logic_vector(" + str(conf_info_size - 1) + " downto 0);\n")
+    f.write("      conf_info_rsc_vld          : in  std_ulogic;\n")
+    f.write("      conf_info_rsc_rdy          : out std_ulogic;\n")
+    f.write("\n")
+    f.write("      dma_read_ctrl_rsc_dat      : out std_logic_vector(" + str(66) + " downto 0);\n")
+    f.write("      dma_read_ctrl_rsc_vld      : out std_ulogic;\n")
+    f.write("      dma_read_ctrl_rsc_rdy      : in  std_ulogic;\n")
+    f.write("\n")
+    f.write("      dma_write_ctrl_rsc_dat     : out std_logic_vector(" + str(66) + " downto 0);\n")
+    f.write("      dma_write_ctrl_rsc_vld     : out std_ulogic;\n")
+    f.write("      dma_write_ctrl_rsc_rdy     : in  std_ulogic;\n")
+    f.write("\n")
+    f.write("      dma_read_chnl_rsc_dat      : in  std_logic_vector(" + str(dma_width - 1) + " downto 0);\n")
+    f.write("      dma_read_chnl_rsc_vld      : in  std_ulogic;\n")
+    f.write("      dma_read_chnl_rsc_rdy      : out std_ulogic;\n")
+    f.write("\n")
+    f.write("      dma_write_chnl_rsc_dat     : out std_logic_vector(" + str(dma_width - 1) + " downto 0);\n")
+    f.write("      dma_write_chnl_rsc_vld     : out std_ulogic;\n")
+    f.write("      dma_write_chnl_rsc_rdy     : in  std_ulogic;\n")
+    f.write("\n")
+    f.write("      acc_done_rsc_vld           : out std_ulogic\n")
+
+  elif is_catapulthls_sysc_if:
+    conf_info_size = 0
+    for param in acc.param:
+      if not param.readonly:
+        conf_info_size = conf_info_size + param.size
+    spacing = " "
+    f.write("      clk                        : in  std_ulogic;\n")
+    spacing = (27-len(rst))*" "
+    f.write("      " + rst + spacing       + ": in  std_ulogic;\n")
+    f.write("\n")
+    f.write("      conf_info                  : in  std_logic_vector(" + str(conf_info_size - 1) + " downto 0);\n")
+    f.write("      conf_done                  : in  std_ulogic;\n")
+    f.write("\n")
+    f.write("      dma_read_ctrl_msg          : out std_logic_vector(" + str(66) + " downto 0);\n")
+    f.write("      dma_read_ctrl_val          : out std_ulogic;\n")
+    f.write("      dma_read_ctrl_rdy          : in  std_ulogic;\n")
+    f.write("\n")
+    f.write("      dma_write_ctrl_msg         : out std_logic_vector(" + str(66) + " downto 0);\n")
+    f.write("      dma_write_ctrl_val         : out std_ulogic;\n")
+    f.write("      dma_write_ctrl_rdy         : in  std_ulogic;\n")
+    f.write("\n")
+    f.write("      dma_read_chnl_msg          : in  std_logic_vector(" + str(dma_width - 1) + " downto 0);\n")
+    f.write("      dma_read_chnl_val          : in  std_ulogic;\n")
+    f.write("      dma_read_chnl_rdy          : out std_ulogic;\n")
+    f.write("\n")
+    f.write("      dma_write_chnl_msg         : out std_logic_vector(" + str(dma_width - 1) + " downto 0);\n")
+    f.write("      dma_write_chnl_val         : out std_ulogic;\n")
+    f.write("      dma_write_chnl_rdy         : in  std_ulogic;\n")
+    f.write("\n")
+    f.write("      acc_done                   : out std_ulogic\n")
+  elif is_vivadohls_if:
+    for param in acc.param:
+      if not param.readonly:
+        spacing = " "
+        if 17 - len(param.name) > 0:
+          spacing = (17-len(param.name))*" "
+        f.write("      conf_info_" + param.name + spacing + ": in  std_logic_vector(" + str(param.size - 1) + " downto 0);\n")
+    f.write("      ap_clk                     : in  std_ulogic;\n")
+    spacing = (27-len(rst))*" "
+    f.write("      " + rst + spacing       + ": in  std_ulogic;\n")
+    f.write("      ap_start                   : in  std_ulogic;\n")
+    f.write("      ap_done                    : out std_ulogic;\n")
+    f.write("      ap_idle                    : out std_ulogic;\n")
+    f.write("      ap_ready                   : out std_ulogic;\n")
+    if datatype == 'float' or  datatype == 'float_out':
+      f.write("      out_word_din             : out std_logic_vector (" + str(dma_width - 1) + " downto 0);\n")
+      f.write("      out_word_full_n          : in  std_logic;\n")
+      f.write("      out_word_write           : out std_logic;\n")
+    else:
+      f.write("      out_word_V_din             : out std_logic_vector (" + str(dma_width - 1) + " downto 0);\n")
+      f.write("      out_word_V_full_n          : in  std_logic;\n")
+      f.write("      out_word_V_write           : out std_logic;\n")
+    if datatype == 'float' or  datatype == 'float_in':
+      f.write("      in1_word_dout            : in  std_logic_vector (" + str(dma_width - 1) + " downto 0);\n")
+      f.write("      in1_word_empty_n         : in  std_logic;\n")
+      f.write("      in1_word_read            : out std_logic;\n")
+    else:
+      f.write("      in1_word_V_dout            : in  std_logic_vector (" + str(dma_width - 1) + " downto 0);\n")
+      f.write("      in1_word_V_empty_n         : in  std_logic;\n")
+      f.write("      in1_word_V_read            : out std_logic;\n")
+    f.write("      load_ctrl                  : out std_logic_vector (" + str(95) + " downto 0);\n")
+    f.write("      load_ctrl_ap_ack           : in  std_logic;\n")
+    f.write("      load_ctrl_ap_vld           : out std_logic;\n")
+    f.write("      store_ctrl                 : out std_logic_vector (" + str(95) + " downto 0);\n")
+    f.write("      store_ctrl_ap_ack          : in  std_logic;\n")
+    f.write("      store_ctrl_ap_vld          : out std_logic\n")
+  else:
+    for param in acc.param:
+      if not param.readonly:
+        spacing = " "
+        if 17 - len(param.name) > 0:
+          spacing = (17-len(param.name))*" "
+        f.write("      conf_info_" + param.name + spacing + ": in  std_logic_vector(" + str(param.size - 1) + " downto 0);\n")
     f.write("      clk                        : in  std_ulogic;\n")
     spacing = (27-len(rst))*" "
     f.write("      " + rst + spacing       + ": in  std_ulogic;\n")
@@ -338,26 +437,6 @@ def write_acc_interface(f, acc, dma_width, rst, is_vivadohls_if):
     f.write("      dma_write_chnl_ready       : in  std_ulogic;\n")
     f.write("      dma_write_chnl_data        : out std_logic_vector(" + str(dma_width - 1) + " downto 0);\n")
     f.write("      acc_done                   : out std_ulogic\n")
-  else:
-    f.write("      ap_clk                     : in  std_ulogic;\n")
-    spacing = (27-len(rst))*" "
-    f.write("      " + rst + spacing       + ": in  std_ulogic;\n")
-    f.write("      ap_start                   : in  std_ulogic;\n")
-    f.write("      ap_done                    : out std_ulogic;\n")
-    f.write("      ap_idle                    : out std_ulogic;\n")
-    f.write("      ap_ready                   : out std_ulogic;\n")
-    f.write("      out_word_V_din             : out std_logic_vector (" + str(dma_width - 1) + " downto 0);\n")
-    f.write("      out_word_V_full_n          : in  std_logic;\n")
-    f.write("      out_word_V_write           : out std_logic;\n")
-    f.write("      in1_word_V_dout            : in  std_logic_vector (" + str(dma_width - 1) + " downto 0);\n")
-    f.write("      in1_word_V_empty_n         : in  std_logic;\n")
-    f.write("      in1_word_V_read            : out std_logic;\n")
-    f.write("      load_ctrl                  : out std_logic_vector (" + str(95) + " downto 0);\n")
-    f.write("      load_ctrl_ap_ack           : in  std_logic;\n")
-    f.write("      load_ctrl_ap_vld           : out std_logic;\n")
-    f.write("      store_ctrl                 : out std_logic_vector (" + str(95) + " downto 0);\n")
-    f.write("      store_ctrl_ap_ack          : in  std_logic;\n")
-    f.write("      store_ctrl_ap_vld          : out std_logic\n")
 
 def write_ap_acc_signals(f):
   f.write("\n")
@@ -378,44 +457,9 @@ def write_ap_acc_signals(f):
   f.write("signal dma_write_ctrl_data : std_logic_vector(95 downto 0);\n")
   f.write("\n")
 
-def write_acc_port_map(f, acc, dma_width, rst, is_noc_interface, is_vivadohls_if):
+def write_acc_port_map(f, acc, dma_width, datatype, rst, is_noc_interface, is_vivadohls_if, is_catapulthls_cxx_if, is_catapulthls_sysc_if):
 
-  if not is_vivadohls_if:
-    f.write("    port map(\n")
-    for param in acc.param:
-      if not param.readonly:
-        spacing = " "
-        if 16 - len(param.name) > 0:
-          spacing = (16-len(param.name))*" "
-        if is_noc_interface:
-          f.write("      conf_info_" + param.name + spacing + " => " + "bank(" + acc.name.upper() + "_" + param.name.upper() + "_REG)(" + str(param.size - 1) + " downto 0),\n")
-        else:
-          f.write("      conf_info_" + param.name + spacing + " => " + "conf_info_" + param.name +",\n")
-    f.write("      clk                        => clk,\n")
-    spacing = (27-len(rst))*" "
-    f.write("      " + rst + spacing       + "=> acc_rst,\n")
-    f.write("      conf_done                  => conf_done,\n")
-    f.write("      dma_read_ctrl_valid        => dma_read_ctrl_valid,\n")
-    f.write("      dma_read_ctrl_ready        => dma_read_ctrl_ready,\n")
-    f.write("      dma_read_ctrl_data_index   => dma_read_ctrl_data_index,\n")
-    f.write("      dma_read_ctrl_data_length  => dma_read_ctrl_data_length,\n")
-    f.write("      dma_read_ctrl_data_size    => dma_read_ctrl_data_size,\n")
-    f.write("      dma_write_ctrl_valid       => dma_write_ctrl_valid,\n")
-    f.write("      dma_write_ctrl_ready       => dma_write_ctrl_ready,\n")
-    f.write("      dma_write_ctrl_data_index  => dma_write_ctrl_data_index,\n")
-    f.write("      dma_write_ctrl_data_length => dma_write_ctrl_data_length,\n")
-    f.write("      dma_write_ctrl_data_size   => dma_write_ctrl_data_size,\n")
-    f.write("      dma_read_chnl_valid        => dma_read_chnl_valid,\n")
-    f.write("      dma_read_chnl_ready        => dma_read_chnl_ready,\n")
-    f.write("      dma_read_chnl_data         => dma_read_chnl_data,\n")
-    f.write("      dma_write_chnl_valid       => dma_write_chnl_valid,\n")
-    f.write("      dma_write_chnl_ready       => dma_write_chnl_ready,\n")
-    f.write("      dma_write_chnl_data        => dma_write_chnl_data,\n")
-    f.write("      acc_done                   => acc_done\n")
-    f.write("    );\n")
-
-  else:
-
+  if is_vivadohls_if:
     f.write("    port map(\n")
     for param in acc.param:
       if not param.readonly:
@@ -435,12 +479,20 @@ def write_acc_port_map(f, acc, dma_width, rst, is_noc_interface, is_vivadohls_if
     f.write("      store_ctrl_ap_vld          => dma_write_ctrl_valid,\n")
     f.write("      store_ctrl_ap_ack          => dma_write_ctrl_ready,\n")
     f.write("      store_ctrl                 => dma_write_ctrl_data,\n")
-    f.write("      in1_word_V_empty_n         => dma_read_chnl_valid,\n")
-    f.write("      in1_word_V_read            => dma_read_chnl_ready,\n")
-    f.write("      in1_word_V_dout            => dma_read_chnl_data,\n")
-    f.write("      out_word_V_write           => dma_write_chnl_valid,\n")
-    f.write("      out_word_V_full_n          => dma_write_chnl_ready,\n")
-    f.write("      out_word_V_din             => dma_write_chnl_data,\n")
+    if datatype == 'float':
+      f.write("      in1_word_empty_n         => dma_read_chnl_valid,\n")
+      f.write("      in1_word_read            => dma_read_chnl_ready,\n")
+      f.write("      in1_word_dout            => dma_read_chnl_data,\n")
+      f.write("      out_word_write           => dma_write_chnl_valid,\n")
+      f.write("      out_word_full_n          => dma_write_chnl_ready,\n")
+      f.write("      out_word_din             => dma_write_chnl_data,\n")
+    else:
+      f.write("      in1_word_V_empty_n         => dma_read_chnl_valid,\n")
+      f.write("      in1_word_V_read            => dma_read_chnl_ready,\n")
+      f.write("      in1_word_V_dout            => dma_read_chnl_data,\n")
+      f.write("      out_word_V_write           => dma_write_chnl_valid,\n")
+      f.write("      out_word_V_full_n          => dma_write_chnl_ready,\n")
+      f.write("      out_word_V_din             => dma_write_chnl_data,\n")
     f.write("      ap_done                    => ap_done,\n")
     f.write("      ap_idle                    => ap_idle,\n")
     f.write("      ap_ready                   => ap_ready\n")
@@ -510,6 +562,117 @@ def write_acc_port_map(f, acc, dma_width, rst, is_noc_interface, is_vivadohls_if
     f.write("  dma_write_ctrl_data_length <= dma_write_ctrl_data(63 downto 32);\n")
     f.write("  dma_write_ctrl_data_index  <= dma_write_ctrl_data(31 downto  0);\n")
     f.write("\n")
+  elif is_catapulthls_cxx_if:
+    f.write("    port map(\n")
+    f.write("      clk                        => clk,\n")
+    spacing = (27-len(rst))*" "
+    f.write("      " + rst + spacing       + "=> acc_rst,\n")
+    f.write("\n")
+    conf_info_rsc_data_size = 0
+    for param in acc.param:
+      if not param.readonly:
+          conf_info_rsc_data_size += param.size
+    for param in acc.param:
+      if not param.readonly:
+        spacing = " "
+        if 14 - len(param.name) > 0:
+          spacing = (14-len(param.name))*" "
+        f.write("      conf_info_rsc_dat(" + str(conf_info_rsc_data_size-1) + " downto " +  str(conf_info_rsc_data_size-param.size) + ") => " + "conf_info_" + param.name +",\n")
+        conf_info_rsc_data_size -= param.size
+    f.write("      conf_info_rsc_vld          => conf_info_rsc_valid,\n")
+    f.write("      conf_info_rsc_rdy          => conf_info_rsc_ready,\n")
+    f.write("\n")
+    f.write("      dma_read_ctrl_rsc_dat(66 downto 64) => dma_read_ctrl_data_size,\n")
+    f.write("      dma_read_ctrl_rsc_dat(63 downto 32) => dma_read_ctrl_data_length,\n")
+    f.write("      dma_read_ctrl_rsc_dat(31 downto 0)  => dma_read_ctrl_data_index,\n")
+    f.write("      dma_read_ctrl_rsc_vld      => dma_read_ctrl_valid,\n")
+    f.write("      dma_read_ctrl_rsc_rdy      => dma_read_ctrl_ready,\n")
+    f.write("\n")
+    f.write("      dma_write_ctrl_rsc_dat(" + str(66) + " downto " + str(64) + ") => dma_write_ctrl_data_size,\n"),
+    f.write("      dma_write_ctrl_rsc_dat(" + str(63) + " downto " + str(32) + ") => dma_write_ctrl_data_length,\n")
+    f.write("      dma_write_ctrl_rsc_dat(" + str(31) + " downto 0)  => dma_write_ctrl_data_index,\n")
+    f.write("      dma_write_ctrl_rsc_vld     => dma_write_ctrl_valid,\n")
+    f.write("      dma_write_ctrl_rsc_rdy     => dma_write_ctrl_ready,\n")
+    f.write("\n")
+    f.write("      dma_read_chnl_rsc_dat      => dma_read_chnl_data,\n")
+    f.write("      dma_read_chnl_rsc_vld      => dma_read_chnl_valid,\n")
+    f.write("      dma_read_chnl_rsc_rdy      => dma_read_chnl_ready,\n")
+    f.write("\n")
+    f.write("      dma_write_chnl_rsc_dat     => dma_write_chnl_data,\n")
+    f.write("      dma_write_chnl_rsc_vld     => dma_write_chnl_valid,\n")
+    f.write("      dma_write_chnl_rsc_rdy     => dma_write_chnl_ready,\n")
+    f.write("\n")
+    f.write("      acc_done_rsc_vld           => acc_done\n")
+    f.write("    );\n")
+  elif is_catapulthls_sysc_if:
+    f.write("    port map(\n")
+    conf_info_size = 0
+    for param in acc.param:
+      if not param.readonly:
+          conf_info_size += param.size
+    for param in acc.param:
+      if not param.readonly:
+        spacing = " "
+        if 16 - len(param.name) > 0:
+          spacing = (16-len(param.name))*" "
+        f.write("      conf_info(" + str(conf_info_size-1) + " downto " + str(conf_info_size-param.size) + ") => " + "conf_info_" + param.name +",\n")
+        conf_info_size -= param.size
+    f.write("      clk                        => clk,\n")
+    spacing = (27-len(rst))*" "
+    f.write("      " + rst + spacing       + "=> acc_rst,\n")
+    f.write("      conf_done                  => conf_done,\n")
+    f.write("      dma_read_ctrl_val          => dma_read_ctrl_valid,\n")
+    f.write("      dma_read_ctrl_rdy          => dma_read_ctrl_ready,\n")
+    f.write("      dma_read_ctrl_msg(" + str(66) + " downto " + str(64) + ") => dma_read_ctrl_data_size,\n")
+    f.write("      dma_read_ctrl_msg(" + str(63) + " downto " + str(32) + ") => dma_read_ctrl_data_length,\n")
+    f.write("      dma_read_ctrl_msg(" + str(31) + " downto " + str(0) + ") => dma_read_ctrl_data_index,\n")
+    f.write("      dma_write_ctrl_val         => dma_write_ctrl_valid,\n")
+    f.write("      dma_write_ctrl_rdy         => dma_write_ctrl_ready,\n")
+    f.write("      dma_write_ctrl_msg(" + str(66) + " downto " + str(64) + ") => dma_write_ctrl_data_size,\n")
+    f.write("      dma_write_ctrl_msg(" + str(63) + " downto " + str(32) + ") => dma_write_ctrl_data_length,\n")
+    f.write("      dma_write_ctrl_msg(" + str(31) + " downto " + str(0) + ") => dma_write_ctrl_data_index,\n")
+    f.write("      dma_read_chnl_val          => dma_read_chnl_valid,\n")
+    f.write("      dma_read_chnl_rdy          => dma_read_chnl_ready,\n")
+    f.write("      dma_read_chnl_msg          => dma_read_chnl_data,\n")
+    f.write("      dma_write_chnl_val         => dma_write_chnl_valid,\n")
+    f.write("      dma_write_chnl_rdy         => dma_write_chnl_ready,\n")
+    f.write("      dma_write_chnl_msg         => dma_write_chnl_data,\n")
+    f.write("      acc_done                   => acc_done\n")
+    f.write("    );\n")
+  else:
+    f.write("    port map(\n")
+    for param in acc.param:
+      if not param.readonly:
+        spacing = " "
+        if 16 - len(param.name) > 0:
+          spacing = (16-len(param.name))*" "
+        if is_noc_interface:
+          f.write("      conf_info_" + param.name + spacing + " => " + "bank(" + acc.name.upper() + "_" + param.name.upper() + "_REG)(" + str(param.size - 1) + " downto 0),\n")
+        else:
+          f.write("      conf_info_" + param.name + spacing + " => " + "conf_info_" + param.name +",\n")
+    f.write("      clk                        => clk,\n")
+    spacing = (27-len(rst))*" "
+    f.write("      " + rst + spacing       + "=> acc_rst,\n")
+    f.write("      conf_done                  => conf_done,\n")
+    f.write("      dma_read_ctrl_valid        => dma_read_ctrl_valid,\n")
+    f.write("      dma_read_ctrl_ready        => dma_read_ctrl_ready,\n")
+    f.write("      dma_read_ctrl_data_index   => dma_read_ctrl_data_index,\n")
+    f.write("      dma_read_ctrl_data_length  => dma_read_ctrl_data_length,\n")
+    f.write("      dma_read_ctrl_data_size    => dma_read_ctrl_data_size,\n")
+    f.write("      dma_write_ctrl_valid       => dma_write_ctrl_valid,\n")
+    f.write("      dma_write_ctrl_ready       => dma_write_ctrl_ready,\n")
+    f.write("      dma_write_ctrl_data_index  => dma_write_ctrl_data_index,\n")
+    f.write("      dma_write_ctrl_data_length => dma_write_ctrl_data_length,\n")
+    f.write("      dma_write_ctrl_data_size   => dma_write_ctrl_data_size,\n")
+    f.write("      dma_read_chnl_valid        => dma_read_chnl_valid,\n")
+    f.write("      dma_read_chnl_ready        => dma_read_chnl_ready,\n")
+    f.write("      dma_read_chnl_data         => dma_read_chnl_data,\n")
+    f.write("      dma_write_chnl_valid       => dma_write_chnl_valid,\n")
+    f.write("      dma_write_chnl_ready       => dma_write_chnl_ready,\n")
+    f.write("      dma_write_chnl_data        => dma_write_chnl_data,\n")
+    f.write("      acc_done                   => acc_done\n")
+    f.write("    );\n")
+
 
 # TODO replace all hardcoded vector lengths with constants
 def write_cache_interface(f, cac, is_llc):
@@ -531,7 +694,7 @@ def write_cache_interface(f, cac, is_llc):
     f.write("      llc_dma_req_in_data_word_offset  : in std_logic_vector(" + str(word_offset_bits - 1) + " downto 0);\n")
     f.write("      llc_dma_req_in_data_valid_words  : in std_logic_vector(" + str(word_offset_bits - 1) + " downto 0);\n")
     f.write("      llc_dma_req_in_data_line         : in std_logic_vector(" + str(bits_per_line - 1) + " downto 0);\n")
-    f.write("      llc_dma_req_in_data_req_id       : in std_logic_vector(3 downto 0);\n")
+    f.write("      llc_dma_req_in_data_req_id       : in std_logic_vector(5 downto 0);\n")
     f.write("      llc_rsp_in_valid             : in std_ulogic;\n")
     f.write("      llc_rsp_in_data_coh_msg      : in std_logic_vector(1 downto 0);\n")
     f.write("      llc_rsp_in_data_addr         : in std_logic_vector(" + str(phys_addr_bits - offset_bits - 1) + " downto 0);\n")
@@ -565,7 +728,7 @@ def write_cache_interface(f, cac, is_llc):
     f.write("      llc_dma_rsp_out_data_addr        : out std_logic_vector(" + str(phys_addr_bits - offset_bits - 1) + " downto 0);\n")
     f.write("      llc_dma_rsp_out_data_line        : out std_logic_vector(" + str(bits_per_line - 1) + " downto 0);\n")
     f.write("      llc_dma_rsp_out_data_invack_cnt  : out std_logic_vector(3 downto 0);\n")
-    f.write("      llc_dma_rsp_out_data_req_id      : out std_logic_vector(3 downto 0);\n")
+    f.write("      llc_dma_rsp_out_data_req_id      : out std_logic_vector(5 downto 0);\n")
     f.write("      llc_dma_rsp_out_data_dest_id     : out std_logic_vector(3 downto 0);\n")
     f.write("      llc_dma_rsp_out_data_word_offset : out std_logic_vector(" + str(word_offset_bits - 1) + " downto 0);\n")
     f.write("      llc_fwd_out_valid            : out std_ulogic;\n")
@@ -768,11 +931,19 @@ def gen_tech_dep(accelerator_list, cache_list, dma_width, template_dir, out_dir)
           if acc.hls_tool == 'stratus_hls':
             f.write("  component " + acc.name + "_" + impl.name + "\n")
             f.write("    port (\n")
-            write_acc_interface(f, acc, dma_width, "rst", False)
+            write_acc_interface(f, acc, dma_width, impl.datatype, "rst", False, False, False)
+          elif acc.hls_tool == 'catapult_hls_cxx':
+            f.write("  component " + acc.name + "_" + impl.name + "\n")
+            f.write("    port (\n")
+            write_acc_interface(f, acc, dma_width, impl.datatype, "rst", False, True, False)
+          elif acc.hls_tool == 'catapult_hls_sysc':
+            f.write("  component " + acc.name + "_" + impl.name + "\n")
+            f.write("    port (\n")
+            write_acc_interface(f, acc, dma_width, impl.datatype, "rst", False, False, True)
           else:
             f.write("  component " + acc.name + "_" + impl.name + "_top\n")
             f.write("    port (\n")
-            write_acc_interface(f, acc, dma_width, "ap_rst", True)
+            write_acc_interface(f, acc, dma_width, impl.datatype, "ap_rst", True, False, False)
           f.write("    );\n")
           f.write("  end component;\n\n")
           f.write("\n")
@@ -814,7 +985,7 @@ def gen_tech_indep(accelerator_list, axi_accelerator_list, cache_list, dma_width
         f.write("    );\n")
         f.write("\n")
         f.write("    port (\n")
-        write_acc_interface(f, acc, dma_width, "acc_rst", False)
+        write_acc_interface(f, acc, dma_width, "", "acc_rst", False, False, False)
         f.write("    );\n")
         f.write("  end component;\n\n")
         f.write("\n")
@@ -861,37 +1032,138 @@ def gen_tech_indep_impl(accelerator_list, cache_list, dma_width, template_dir, o
         f.write(tline)
         continue
       for acc in accelerator_list:
-        f.write("library ieee;\n")
-        f.write("use ieee.std_logic_1164.all;\n")
-        f.write("use work.sld_devices.all;\n")
-        f.write("use work.allacc.all;\n")
-        f.write("\n")
-        f.write("entity " + acc.name + "_rtl is\n\n")
-        f.write("    generic (\n")
-        f.write("      hls_conf  : hlscfg_t\n")
-        f.write("    );\n")
-        f.write("\n")
-        f.write("    port (\n")
-        write_acc_interface(f, acc, dma_width, "acc_rst", False)
-        f.write("    );\n")
-        f.write("\n")
-        f.write("end entity " + acc.name + "_rtl;\n\n")
-        f.write("\n")
-        f.write("architecture mapping of " + acc.name + "_rtl is\n\n")
-        if acc.hls_tool == 'vivado_hls':
-          write_ap_acc_signals(f)
-        f.write("begin  -- mapping\n\n")
-        for impl in acc.hlscfg:
+        if acc.hls_tool == 'catapult_hls_cxx':
+          f.write("library ieee;\n")
+          f.write("use ieee.std_logic_1164.all;\n")
+          f.write("use work.sld_devices.all;\n")
+          f.write("use work.allacc.all;\n")
           f.write("\n")
-          f.write("  impl_" + impl.name + "_gen: if hls_conf = HLSCFG_" + acc.name.upper() + "_" + impl.name.upper() + " generate\n")
-          if acc.hls_tool == 'stratus_hls':
+          f.write("entity " + acc.name + "_rtl is\n\n")
+          f.write("    generic (\n")
+          f.write("      hls_conf  : hlscfg_t\n")
+          f.write("    );\n")
+          f.write("\n")
+          f.write("    port (\n")
+          write_acc_interface(f, acc, dma_width, "", "acc_rst", False, False, False)
+          f.write("    );\n")
+          f.write("\n")
+          f.write("end entity " + acc.name + "_rtl;\n\n")
+          f.write("\n")
+          f.write("architecture mapping of " + acc.name + "_rtl is\n\n")
+          f.write("\n")
+          f.write("-- signals for conf_done fsm\n")
+          f.write("\n")
+          f.write("type rsc_state_t is (rsc_idle, rsc_handshake);\n")
+          f.write("signal rsc_state, rsc_state_next : rsc_state_t;\n")
+          f.write("\n")
+          f.write("signal conf_info_rsc_valid : std_ulogic;\n")
+          f.write("signal conf_info_rsc_ready : std_ulogic;\n")
+          f.write("\n")
+          f.write("\n")
+          f.write("begin  -- mapping\n\n")
+          for impl in acc.hlscfg:
+            f.write("\n")
+            f.write("  impl_" + impl.name + "_gen: if hls_conf = HLSCFG_" + acc.name.upper() + "_" + impl.name.upper() + " generate\n")
             f.write("    " + acc.name + "_" + impl.name + "_i: " + acc.name + "_" + impl.name + "\n")
-            write_acc_port_map(f, acc, dma_width, "rst", False, False)
-          else:
-            f.write("    " + acc.name + "_" + impl.name + "_top_i: " + acc.name + "_" + impl.name + "_top\n")
-            write_acc_port_map(f, acc, dma_width, "rst", False, True)
-          f.write("  end generate impl_" +  impl.name + "_gen;\n\n")
-        f.write("end mapping;\n\n")
+            write_acc_port_map(f, acc, dma_width, impl.datatype, "rst", False, False, True, False)
+            f.write("\n\n")
+            f.write("  -- CONF_DONE FSM\n")
+            f.write("\n")
+            f.write("  conf_done_fsm: process (rsc_state, conf_done, conf_info_rsc_ready) is\n")
+            f.write("  begin  -- process conf_done_fsm\n")
+            f.write("    rsc_state_next <= rsc_state;\n")
+            f.write("    conf_info_rsc_valid <= '0';\n")
+            f.write("\n")
+            f.write("    case rsc_state is\n")
+            f.write("\n")
+            f.write("      when rsc_idle =>\n")
+            f.write("        if conf_done = '1' then\n")
+            f.write("          rsc_state_next <= rsc_handshake;\n")
+            f.write("        end if;\n")
+            f.write("\n")
+            f.write("      when rsc_handshake =>\n")
+            f.write("        conf_info_rsc_valid <= '1';\n")
+            f.write("        if conf_info_rsc_ready = '1' then\n")
+            f.write("          rsc_state_next <= rsc_idle;\n")
+            f.write("        end if;\n")
+            f.write("\n")
+            f.write("      when others =>\n")
+            f.write("        rsc_state_next <= rsc_idle;\n")
+            f.write("\n")
+            f.write("    end case;\n")
+            f.write("  end process conf_done_fsm;\n")
+            f.write("\n")
+            f.write("  conf_done_state_update: process (clk, acc_rst) is\n")
+            f.write("  begin  -- process conf_done_state_update\n")
+            f.write("    if clk'event and clk = '1' then    -- rising clock edge\n")
+            f.write("      if acc_rst = '0' then            -- synchronous active low\n")
+            f.write("        rsc_state <= rsc_idle;\n")
+            f.write("      else\n")
+            f.write("        rsc_state <= rsc_state_next;\n")
+            f.write("      end if;\n")
+            f.write("    end if;\n")
+            f.write("  end process conf_done_state_update;\n")
+            f.write("\n")
+            f.write("  end generate impl_" +  impl.name + "_gen;\n\n")
+          f.write("end mapping;\n\n")
+        elif acc.hls_tool == 'catapult_hls_sysc':
+          f.write("library ieee;\n")
+          f.write("use ieee.std_logic_1164.all;\n")
+          f.write("use work.sld_devices.all;\n")
+          f.write("use work.allacc.all;\n")
+          f.write("\n")
+          f.write("entity " + acc.name + "_rtl is\n\n")
+          f.write("    generic (\n")
+          f.write("      hls_conf  : hlscfg_t\n")
+          f.write("    );\n")
+          f.write("\n")
+          f.write("    port (\n")
+          write_acc_interface(f, acc, dma_width, "", "acc_rst", False, False, False)
+          f.write("    );\n")
+          f.write("\n")
+          f.write("end entity " + acc.name + "_rtl;\n\n")
+          f.write("\n")
+          f.write("architecture mapping of " + acc.name + "_rtl is\n\n")
+          f.write("begin  -- mapping\n\n")
+          for impl in acc.hlscfg:
+            f.write("\n")
+            f.write("  impl_" + impl.name + "_gen: if hls_conf = HLSCFG_" + acc.name.upper() + "_" + impl.name.upper() + " generate\n")
+            f.write("    " + acc.name + "_" + impl.name + "_i: " + acc.name + "_" + impl.name + "\n")
+            write_acc_port_map(f, acc, dma_width, impl.datatype, "rst", False, False, False, True)
+            f.write("  end generate impl_" +  impl.name + "_gen;\n\n")
+          f.write("end mapping;\n\n")
+        else:
+          f.write("library ieee;\n")
+          f.write("use ieee.std_logic_1164.all;\n")
+          f.write("use work.sld_devices.all;\n")
+          f.write("use work.allacc.all;\n")
+          f.write("\n")
+          f.write("entity " + acc.name + "_rtl is\n\n")
+          f.write("    generic (\n")
+          f.write("      hls_conf  : hlscfg_t\n")
+          f.write("    );\n")
+          f.write("\n")
+          f.write("    port (\n")
+          write_acc_interface(f, acc, dma_width, "", "acc_rst", False, False, False)
+          f.write("    );\n")
+          f.write("\n")
+          f.write("end entity " + acc.name + "_rtl;\n\n")
+          f.write("\n")
+          f.write("architecture mapping of " + acc.name + "_rtl is\n\n")
+          if acc.hls_tool == 'vivado_hls':
+            write_ap_acc_signals(f)
+          f.write("begin  -- mapping\n\n")
+          for impl in acc.hlscfg:
+            f.write("\n")
+            f.write("  impl_" + impl.name + "_gen: if hls_conf = HLSCFG_" + acc.name.upper() + "_" + impl.name.upper() + " generate\n")
+            if acc.hls_tool == 'stratus_hls':
+              f.write("    " + acc.name + "_" + impl.name + "_i: " + acc.name + "_" + impl.name + "\n")
+              write_acc_port_map(f, acc, dma_width, impl.datatype, "rst", False, False, False, False)
+            else:
+              f.write("    " + acc.name + "_" + impl.name + "_top_i: " + acc.name + "_" + impl.name + "_top\n")
+              write_acc_port_map(f, acc, dma_width, impl.datatype, "rst", False, True, False, False)
+            f.write("  end generate impl_" +  impl.name + "_gen;\n\n")
+          f.write("end mapping;\n\n")
   f.close()
   ftemplate.close()
   f = open(out_dir + '/caches.vhd', 'w')
@@ -977,19 +1249,12 @@ def gen_interfaces(accelerator_list, axi_accelerator_list, dma_width, template_d
         f.write("    generic (\n")
         f.write("      hls_conf       : hlscfg_t;\n")
         f.write("      tech           : integer;\n")
-        f.write("      local_y        : local_yx;\n")
-        f.write("      local_x        : local_yx;\n")
         f.write("      mem_num        : integer;\n")
         f.write("      cacheable_mem_num : integer;\n")
         f.write("      mem_info       : tile_mem_info_vector(0 to CFG_NMEM_TILE + CFG_NSLM_TILE);\n")
         f.write("      io_y           : local_yx;\n")
         f.write("      io_x           : local_yx;\n")
         f.write("      pindex         : integer;\n")
-        f.write("      paddr          : integer;\n")
-        f.write("      pmask          : integer;\n")
-        f.write("      paddr_ext      : integer;\n")
-        f.write("      pmask_ext      : integer;\n")
-        f.write("      pirq           : integer;\n")
         f.write("      irq_type       : integer := 0;\n")
         f.write("      scatter_gather : integer := 1;\n")
         f.write("      sets           : integer;\n")
@@ -1000,8 +1265,7 @@ def gen_interfaces(accelerator_list, axi_accelerator_list, dma_width, template_d
         f.write("      has_l2         : integer := 1;\n")
         f.write("      has_dvfs       : integer := 1;\n")
         f.write("      has_pll        : integer;\n")
-        f.write("      extra_clk_buf  : integer;\n")
-        f.write("      local_apb_en   : std_logic_vector(0 to NAPBSLV - 1)\n")
+        f.write("      extra_clk_buf  : integer\n")
         f.write("    );\n")
         f.write("\n")
         f.write("    port (\n")
@@ -1010,6 +1274,16 @@ def gen_interfaces(accelerator_list, axi_accelerator_list, dma_width, template_d
         f.write("      refclk            : in  std_ulogic;\n")
         f.write("      pllbypass         : in  std_ulogic;\n")
         f.write("      pllclk            : out std_ulogic;\n")
+        f.write("      local_y           : in  local_yx;\n")
+        f.write("      local_x           : in  local_yx;\n")
+        f.write("      paddr             : in  integer;\n")
+        f.write("      pmask             : in  integer;\n")
+        f.write("      paddr_ext         : in  integer;\n")
+        f.write("      pmask_ext         : in  integer;\n")
+        f.write("      pirq              : in  integer;\n")
+        f.write("      apbi              : in apb_slv_in_type;\n")
+        f.write("      apbo              : out apb_slv_out_type;\n")
+        f.write("      pready            : out std_ulogic;\n")
         f.write("      coherence_req_wrreq        : out std_ulogic;\n")
         f.write("      coherence_req_data_in      : out noc_flit_type;\n")
         f.write("      coherence_req_full         : in  std_ulogic;\n")
@@ -1040,12 +1314,6 @@ def gen_interfaces(accelerator_list, axi_accelerator_list, dma_width, template_d
         f.write("      interrupt_ack_rdreq    : out std_ulogic;\n")
         f.write("      interrupt_ack_data_out : in misc_noc_flit_type;\n")
         f.write("      interrupt_ack_empty    : in  std_ulogic;\n")
-        f.write("      apb_snd_wrreq     : out std_ulogic;\n")
-        f.write("      apb_snd_data_in   : out misc_noc_flit_type;\n")
-        f.write("      apb_snd_full      : in  std_ulogic;\n")
-        f.write("      apb_rcv_rdreq     : out std_ulogic;\n")
-        f.write("      apb_rcv_data_out  : in  misc_noc_flit_type;\n")
-        f.write("      apb_rcv_empty     : in  std_ulogic;\n")
         f.write("      mon_dvfs_in       : in  monitor_dvfs_type;\n")
         f.write("      mon_acc           : out monitor_acc_type;\n")
         f.write("      mon_cache         : out monitor_cache_type;\n")
@@ -1104,7 +1372,7 @@ def gen_noc_interface(acc, dma_width, template_dir, out_dir, is_axi):
           f.write("    generic map (\n")
           f.write("      hls_conf => hls_conf\n")
           f.write("    )\n")
-          write_acc_port_map(f, acc, dma_width, "acc_rst", True, False)
+          write_acc_port_map(f, acc, dma_width, "", "acc_rst", True, False, False, False)
       else:
         f.write(tline)
 
@@ -1120,19 +1388,12 @@ def gen_tile_acc(accelerator_list, axi_acceleratorlist, template_dir, out_dir):
           f.write("      generic map (\n")
           f.write("        hls_conf       => this_hls_conf,\n")
           f.write("        tech           => CFG_MEMTECH,\n")
-          f.write("        local_y        => this_local_y,\n")
-          f.write("        local_x        => this_local_x,\n")
           f.write("        mem_num        => CFG_NMEM_TILE + CFG_NSLM_TILE + CFG_SVGA_ENABLE,\n")
           f.write("        cacheable_mem_num => CFG_NMEM_TILE,\n")
           f.write("        mem_info       => tile_acc_mem_list,\n")
           f.write("        io_y           => io_y,\n")
           f.write("        io_x           => io_x,\n")
-          f.write("        pindex         => this_pindex,\n")
-          f.write("        paddr          => this_paddr,\n")
-          f.write("        pmask          => this_pmask,\n")
-          f.write("        paddr_ext      => this_paddr_ext,\n")
-          f.write("        pmask_ext      => this_pmask_ext,\n")
-          f.write("        pirq           => this_pirq,\n")
+          f.write("        pindex         => 1,\n")
           f.write("        irq_type       => this_irq_type,\n")
           f.write("        scatter_gather => this_scatter_gather,\n")
           f.write("        sets           => CFG_ACC_L2_SETS,\n")
@@ -1143,14 +1404,23 @@ def gen_tile_acc(accelerator_list, axi_acceleratorlist, template_dir, out_dir):
           f.write("        has_l2         => this_has_l2,\n")
           f.write("        has_dvfs       => this_has_dvfs,\n")
           f.write("        has_pll        => this_has_pll,\n")
-          f.write("        extra_clk_buf  => this_extra_clk_buf,\n")
-          f.write("        local_apb_en   => this_local_apb_mask)\n")
+          f.write("        extra_clk_buf  => this_extra_clk_buf)\n")
           f.write("      port map (\n")
           f.write("        rst               => rst,\n")
           f.write("        clk               => clk_feedthru,\n")
           f.write("        refclk            => refclk,\n")
           f.write("        pllbypass         => pllbypass,\n")
           f.write("        pllclk            => clk_feedthru,\n")
+          f.write("        local_y           => this_local_y,\n")
+          f.write("        local_x           => this_local_x,\n")
+          f.write("        paddr             => this_paddr,\n")
+          f.write("        pmask             => this_pmask,\n")
+          f.write("        paddr_ext         => this_paddr_ext,\n")
+          f.write("        pmask_ext         => this_pmask_ext,\n")
+          f.write("        pirq              => this_pirq,\n")
+          f.write("        apbi              => apbi,\n")
+          f.write("        apbo              => apbo(1),\n")
+          f.write("        pready            => pready,\n")
           f.write("        coherence_req_wrreq        => coherence_req_wrreq,\n")
           f.write("        coherence_req_data_in      => coherence_req_data_in,\n")
           f.write("        coherence_req_full         => coherence_req_full,\n")
@@ -1181,17 +1451,11 @@ def gen_tile_acc(accelerator_list, axi_acceleratorlist, template_dir, out_dir):
           f.write("        interrupt_ack_rdreq    => interrupt_ack_rdreq,\n")
           f.write("        interrupt_ack_data_out => interrupt_ack_data_out,\n")
           f.write("        interrupt_ack_empty    => interrupt_ack_empty,\n")
-          f.write("        apb_snd_wrreq     => apb_snd_wrreq,\n")
-          f.write("        apb_snd_data_in   => apb_snd_data_in,\n")
-          f.write("        apb_snd_full      => apb_snd_full,\n")
-          f.write("        apb_rcv_rdreq     => apb_rcv_rdreq,\n")
-          f.write("        apb_rcv_data_out  => apb_rcv_data_out,\n")
-          f.write("        apb_rcv_empty     => apb_rcv_empty,\n")
           f.write("        mon_dvfs_in       => mon_dvfs_in,\n")
           f.write("        -- Monitor signals\n")
-          f.write("        mon_acc           => mon_acc,\n")
-          f.write("        mon_cache         => mon_cache,\n")
-          f.write("        mon_dvfs          => mon_dvfs\n")
+          f.write("        mon_acc           => mon_acc_int,\n")
+          f.write("        mon_cache         => mon_cache_int,\n")
+          f.write("        mon_dvfs          => mon_dvfs_int\n")
           f.write("      );\n")
           f.write("  end generate " + acc.name + "_gen;\n\n")
       else:
@@ -1297,12 +1561,20 @@ for acc in accelerators:
     dp = dp_str.replace(acc + "_", "")
     dp_info = dp.split("_")
     skip = False
+    datatype = ""
     for item in dp_info:
       if re.match(r'dma[1-9]+', item, re.M|re.I):
         dp_dma_width = int(item.replace("dma", ""))
         if dp_dma_width != dma_width:
           skip = True
           break;
+      if re.fullmatch(r'fl32in', item):
+        datatype = "float_in"
+      elif re.fullmatch(r'fl32out', item):
+        datatype = "float_out"
+      elif re.fullmatch(r'fl32', item):
+        datatype = "float"
+
     if skip:
       print("    INFO: System DMA_WIDTH is " + str(dma_width) + "; skipping " + acc + "_" + dp)
       continue
@@ -1310,6 +1582,7 @@ for acc in accelerators:
     impl = Implementation()
     impl.name = dp
     impl.dma_width = dma_width
+    impl.datatype = datatype
     accd.hlscfg.append(impl)
 
   # Read accelerator parameters and info
@@ -1349,7 +1622,7 @@ for acc in accelerators:
       # hls4ml accelerators are implemented as Vivado HLS accelerators
       if accd.hls_tool in ('hls4ml'):
         accd.hls_tool = 'vivado_hls'
-      if not accd.hls_tool in ('stratus_hls', 'vivado_hls'):
+      if not accd.hls_tool in ('stratus_hls', 'vivado_hls', 'catapult_hls_cxx', 'catapult_hls_sysc'):
         print("    ERROR: Wrong HLS tool for " + acc)
         sys.exit(1)
 
