@@ -22,16 +22,16 @@ public:
         this->do_relu = 0;
         this->window_size = 4;
         this->batches_perload = 1;
-        this->learning_rate = 0.01;
+        this->learning_rate = a_write(0.01);
         this->neurons_perwin = 1;
         this->tsamps_perbatch = 32;
-        this->detect_threshold = 0.9;
+        this->detect_threshold = a_write(0.9);
         this->num_windows = 8;
         this->iters_perbatch = 1;
         this->num_loads = 128;
-        this->rate_spike = 0.01;
-        this->rate_noise = 0.01;
-        this->spike_weight = 0.5;
+        this->rate_spike = a_write(0.01);
+        this->rate_noise = a_write(0.01);
+        this->spike_weight = a_write(0.5);
     }
 
     conf_info_t(
@@ -39,16 +39,16 @@ public:
         int32_t do_relu, 
         int32_t window_size, 
         int32_t batches_perload, 
-        TYPE learning_rate, 
+        int32_t learning_rate, 
         int32_t neurons_perwin, 
         int32_t tsamps_perbatch, 
-        TYPE detect_threshold, 
+        int32_t detect_threshold, 
         int32_t num_windows, 
         int32_t iters_perbatch, 
         int32_t num_loads,
-        TYPE rate_spike,
-        TYPE rate_noise,
-        TYPE spike_weight
+        int32_t rate_spike,
+        int32_t rate_noise,
+        int32_t spike_weight
         )
     {
         /* <<--ctor-custom-->> */
@@ -119,16 +119,16 @@ public:
         os << "do_relu = " << conf_info.do_relu << ", ";
         os << "window_size = " << conf_info.window_size << ", ";
         os << "batches_perload = " << conf_info.batches_perload << ", ";
-        os << "learning_rate = " << conf_info.learning_rate << ", ";
+        os << "learning_rate = " << a_read(conf_info.learning_rate) << ", ";
         os << "neurons_perwin = " << conf_info.neurons_perwin << ", ";
         os << "tsamps_perbatch = " << conf_info.tsamps_perbatch << ", ";
-        os << "detect_threshold = " << conf_info.detect_threshold << ", ";
+        os << "detect_threshold = " << a_read(conf_info.detect_threshold) << ", ";
         os << "num_windows = " << conf_info.num_windows << ", ";
         os << "iters_perbatch = " << conf_info.iters_perbatch << ", ";
         os << "num_loads = " << conf_info.num_loads << "";
-        os << "rate_spike = " << conf_info.rate_spike << "";
-        os << "rate_noise = " << conf_info.rate_noise << "";
-        os << "spike_weight = " << conf_info.spike_weight << "";
+        os << "rate_spike = " << a_read(conf_info.rate_spike) << "";
+        os << "rate_noise = " << a_read(conf_info.rate_noise) << "";
+        os << "spike_weight = " << a_read(conf_info.spike_weight) << "";
         os << "}";
         return os;
     }
@@ -137,16 +137,16 @@ public:
         int32_t do_relu;
         int32_t window_size;
         int32_t batches_perload;
-        TYPE learning_rate;
+        int32_t learning_rate;
         int32_t neurons_perwin;
         int32_t tsamps_perbatch;
-        TYPE detect_threshold;
+        int32_t detect_threshold;
         int32_t num_windows;
         int32_t iters_perbatch;
         int32_t num_loads;
-        TYPE rate_spike;
-        TYPE rate_noise;
-        TYPE spike_weight;
+        int32_t rate_spike;
+        int32_t rate_noise;
+        int32_t spike_weight;
 };
 
 #endif // __MINDFUZZ_CONF_INFO_HPP__

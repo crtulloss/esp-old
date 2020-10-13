@@ -8,6 +8,11 @@
 #include "mindfuzz_directives.hpp"
 #include "fpdata.hpp"
 
+// useful macros for accessing PLMs
+// these are needed for conf info
+#define a_write(x) (fp2int<TYPE, WORD_SIZE>(x))
+#define a_read(x) (int2fp<TYPE, WORD_SIZE>(x))
+
 #include "mindfuzz_conf_info.hpp"
 #include "mindfuzz_debug_info.hpp"
 
@@ -18,10 +23,6 @@
 /* <<--defines-->> */
 #define DATA_WIDTH 32
 #define DMA_SIZE SIZE_HWORD
-
-// useful macros for accessing PLMs
-#define a_write(x) (fp2int<TYPE, WORD_SIZE>(x))
-#define a_read(x) (int2fp<TYPE, WORD_SIZE>(x))
 
 //#define PLM_OUT_WORD 2432
 //#define PLM_IN_WORD 65536

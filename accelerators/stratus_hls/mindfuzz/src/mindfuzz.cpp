@@ -58,16 +58,16 @@ void mindfuzz::load_input()
         do_relu = config.do_relu;
         window_size = config.window_size;
         batches_perload = config.batches_perload;
-        learning_rate = config.learning_rate;
+        learning_rate = a_read(config.learning_rate);
         neurons_perwin = config.neurons_perwin;
         tsamps_perbatch = config.tsamps_perbatch;
-        detect_threshold = config.detect_threshold;
+        detect_threshold = a_read(config.detect_threshold);
         num_windows = config.num_windows;
         iters_perbatch = config.iters_perbatch;
         num_loads = config.num_loads;
-        rate_spike = config.rate_spike;
-        rate_noise = config.rate_noise;
-        spike_weight = config.spike_weight;
+        rate_spike = a_read(config.rate_spike);
+        rate_noise = a_read(config.rate_noise);
+        spike_weight = a_read(config.spike_weight);
     }
 
     // Load
@@ -209,16 +209,16 @@ void mindfuzz::detect_kernel()
         do_relu = config.do_relu;
         window_size = config.window_size;
         batches_perload = config.batches_perload;
-        learning_rate = config.learning_rate;
+        learning_rate = a_read(config.learning_rate);
         neurons_perwin = config.neurons_perwin;
         tsamps_perbatch = config.tsamps_perbatch;
-        detect_threshold = config.detect_threshold;
+        detect_threshold = a_read(config.detect_threshold);
         num_windows = config.num_windows;
         iters_perbatch = config.iters_perbatch;
         num_loads = config.num_loads;
-        rate_spike = config.rate_spike;
-        rate_noise = config.rate_noise;
-        spike_weight = config.spike_weight;
+        rate_spike = a_read(config.rate_spike);
+        rate_noise = a_read(config.rate_noise);
+        spike_weight = a_read(config.spike_weight);
     }
 
 
@@ -343,16 +343,16 @@ void mindfuzz::compute_kernel()
         do_relu = config.do_relu;
         window_size = config.window_size;
         batches_perload = config.batches_perload;
-        learning_rate = config.learning_rate;
+        learning_rate = a_read(config.learning_rate);
         neurons_perwin = config.neurons_perwin;
         tsamps_perbatch = config.tsamps_perbatch;
-        detect_threshold = config.detect_threshold;
+        detect_threshold = a_read(config.detect_threshold);
         num_windows = config.num_windows;
         iters_perbatch = config.iters_perbatch;
         num_loads = config.num_loads;
-        rate_spike = config.rate_spike;
-        rate_noise = config.rate_noise;
-        spike_weight = config.spike_weight;
+        rate_spike = a_read(config.rate_spike);
+        rate_noise = a_read(config.rate_noise);
+        spike_weight = a_read(config.spike_weight);
         
         // total size of a load batch is useful for relevancy check
         total_tsamps = tsamps_perbatch * batches_perload;
@@ -550,16 +550,16 @@ void mindfuzz::store_output()
         do_relu = config.do_relu;
         window_size = config.window_size;
         batches_perload = config.batches_perload;
-        learning_rate = config.learning_rate;
+        learning_rate = a_read(config.learning_rate);
         neurons_perwin = config.neurons_perwin;
         tsamps_perbatch = config.tsamps_perbatch;
-        detect_threshold = config.detect_threshold;
+        detect_threshold = a_read(config.detect_threshold);
         num_windows = config.num_windows;
         iters_perbatch = config.iters_perbatch;
         num_loads = config.num_loads;
-        rate_spike = config.rate_spike;
-        rate_noise = config.rate_noise;
-        spike_weight = config.spike_weight;
+        rate_spike = a_read(config.rate_spike);
+        rate_noise = a_read(config.rate_noise);
+        spike_weight = a_read(config.spike_weight);
     }
 
     // Store
