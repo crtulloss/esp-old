@@ -32,16 +32,16 @@ void system_t::config_proc()
         config.do_relu = do_relu;
         config.window_size = window_size;
         config.batches_perload = batches_perload;
-        config.learning_rate = learning_rate;
+        config.learning_rate = a_write(learning_rate);
         config.neurons_perwin = neurons_perwin;
         config.tsamps_perbatch = tsamps_perbatch;
-        config.detect_threshold = detect_threshold;
+        config.detect_threshold = a_write(detect_threshold);
         config.num_windows = num_windows;
         config.iters_perbatch = iters_perbatch;
         config.num_loads = num_loads;
-        config.rate_spike = rate_spike;
-        config.rate_noise = rate_noise;
-        config.spike_weight = spike_weight;
+        config.rate_spike = a_write(rate_spike);
+        config.rate_noise = a_write(rate_noise);
+        config.spike_weight = a_write(spike_weight);
 
         wait(); conf_info.write(config);
         conf_done.write(true);
