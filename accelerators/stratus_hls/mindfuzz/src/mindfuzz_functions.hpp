@@ -219,14 +219,9 @@ void mindfuzz::relevant(int32_t total_tsamps,
 
     uint32_t num_electrodes = num_windows*window_size;
 
-    // TODO fix this to not use an arbitarily sized array
-/*
-    TYPE max[num_electrodes];
-    TYPE min[num_electrodes];
-*/
-    // sized using fixed magic numbers based on max accel config
-    TYPE max[PLM_ELEC_WORD];
-    TYPE min[PLM_ELEC_WORD];
+    // TODO sized using fixed magic numbers based on max accel config
+    sc_dt::sc_int<DATA_WIDTH> max[PLM_ELEC_WORD];
+    sc_dt::sc_int<DATA_WIDTH> min[PLM_ELEC_WORD];
 
     uint32_t samp_offset;
     uint32_t window_offset;
@@ -285,6 +280,7 @@ void mindfuzz::relevant(int32_t total_tsamps,
           
             // calculate max-min
             maxmin = a_read(max[window_offset + elec]) - a_read(min[window_offset + elec]);
+
             // update in plm
             plm_maxmin[window_offset + elec] = a_write(maxmin);
 
@@ -324,11 +320,7 @@ void mindfuzz::backprop(bool do_relu,
     uint32_t num_electrodes = num_windows*input_dimension;
     
     // TODO FLATTEN THIS?
-/*
-    TYPE elecdata[num_electrodes];
-*/
-    const uint32_t const_num_electrodes = CONST_NUM_WINDOWS*CONST_WINDOW_SIZE;
-    TYPE elecdata[const_num_electrodes];
+    sc_dt::sc_int<DATA_WIDTH> elecdata[PLM_ELEC_WORD];
 
     // some offsets useful for indexing
     uint32_t samp_offset;
@@ -361,41 +353,28 @@ void mindfuzz::backprop(bool do_relu,
     uint32_t W2_singlewindow = output_dimension*layer1_dimension;
 
     // iter accumulation variables for batched backprop
-/*
-    TYPE dW2[W2_size];
-    TYPE dW1[W1_size];
-    TYPE dB2[B2_size];
-    TYPE dB1[B1_size];
-*/
     // TODO rewrite to not use arbitrarily sized arrasy
     const uint32_t const_W2_size = CONST_NUM_WINDOWS * CONST_WINDOW_SIZE * CONST_NEURONS_PERWIN;
     const uint32_t const_W1_size = const_W2_size;
     const uint32_t const_B2_size = CONST_NUM_WINDOWS * CONST_WINDOW_SIZE;
     const uint32_t const_B1_size = CONST_NUM_WINDOWS * CONST_NEURONS_PERWIN;
     
-    TYPE dW2[const_W2_size];
-    TYPE dW1[const_W1_size];
+    sc_dt::sc_int<DATA_WIDTH> dW2[const_W2_size];
+    sc_dt::sc_int<DATA_WIDTH> dW1[const_W1_size];
 #ifdef do_bias
-    TYPE dB2[const_B2_size];
-    TYPE dB1[const_B1_size];
+    sc_dt::sc_int<DATA_WIDTH> dB2[const_B2_size];
+    sc_dt::sc_int<DATA_WIDTH> dB1[const_B1_size];
 #endif
 
     // temporary variables to store some results
     // forward pass: activation of layer 1 and difference between out and in
-/*
-    TYPE act1[num_windows*layer1_dimension];
-    TYPE diff[num_windows*output_dimension];
-*/
     // TODO rewrite to not use arbitrarily sized arrays
-    TYPE act1[const_B1_size];
-    TYPE diff[const_B2_size];
+    sc_dt::sc_int<DATA_WIDTH> act1[const_B1_size];
+    sc_dt::sc_int<DATA_WIDTH> diff[const_B2_size];
 
     // backward pass: sample accum variable W2(x2-x0) used for backprop
-/*
-    TYPE W2xdiff[num_windows*layer1_dimension];
-*/
     // TODO rewrite to not use arbitrarily sized arrays
-    TYPE W2xdiff[const_B1_size];
+    sc_dt::sc_int<DATA_WIDTH> W2xdiff[const_B1_size];
 
     for (uint32_t iter = 0; iter < iters_perbatch; iter++) {
         

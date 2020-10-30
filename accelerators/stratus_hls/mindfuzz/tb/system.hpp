@@ -59,14 +59,17 @@ public:
         batches_perload = 1;
         neurons_perwin = 1;
         tsamps_perbatch = 70;
-        detect_threshold = 100.0;
+        detect_threshold = TYPE(100.0);
+// edited for mindfuzz unit testing
         num_windows = 1;
         iters_perbatch = 1;
         num_loads = 500;
-        learning_rate = ((TYPE)0.000001) / ((TYPE)tsamps_perbatch) / ((TYPE)window_size);
-        rate_spike = 0.01;
-        rate_noise = 0.01;
-        spike_weight = 0.5;
+        learning_rate = TYPE(((float)0.000001) / ((float)tsamps_perbatch) / ((float)window_size));
+// for testing with fixed point. this ^ learning rate won't fit in precision
+        //learning_rate = TYPE(((float)0.001) / ((float)tsamps_perbatch) / ((float)window_size));
+        rate_spike = TYPE(0.01);
+        rate_noise = TYPE(0.01);
+        spike_weight = TYPE(0.5);
 
     }
 

@@ -375,9 +375,9 @@ void mindfuzz::compute_kernel()
     {
         // initial value for each
         // TODO fix these
-        TYPE initial_mean_noise = 1.0;
-        TYPE initial_mean_spike = 3.0;
-        TYPE initial_thresh = 2.0;
+        TYPE initial_mean_noise = (TYPE)1.0;
+        TYPE initial_mean_spike = (TYPE)3.0;
+        TYPE initial_thresh = (TYPE)2.0;
 
         for (uint32_t window = 0; window < num_windows; window++) {
             uint32_t window_offset = window * window_size;
@@ -392,8 +392,8 @@ void mindfuzz::compute_kernel()
     // initialize weights and biases
     {
         // initial value for each weight/bias
-        TYPE initial_weight = 1.0;
-        TYPE initial_bias = 0.0;
+        TYPE initial_weight = (TYPE)1.0;
+        TYPE initial_bias = (TYPE)0.0;
 
         // PLM access offsets for weights and biases
         uint32_t plm_offset_W1 = 0;
@@ -404,22 +404,22 @@ void mindfuzz::compute_kernel()
         // initialize W1
         for (uint32_t weight = 0; weight < W1_size; weight++) {
             plm_out[plm_offset_W1 + weight] =
-                fp2int<TYPE, WORD_SIZE>(initial_weight);
+                a_write(initial_weight);
         }
         // initialize W2
         for (uint32_t weight = 0; weight < W2_size; weight++) {
             plm_out[plm_offset_W2 + weight] =
-                fp2int<TYPE, WORD_SIZE>(initial_weight);
+                a_write(initial_weight);
         }
         // initialize B1
         for (uint32_t weight = 0; weight < B1_size; weight++) {
             plm_out[plm_offset_B1 + weight] =
-                fp2int<TYPE, WORD_SIZE>(initial_bias);
+                a_write(initial_bias);
         }
         // initialize B2
         for (uint32_t weight = 0; weight < B2_size; weight++) {
             plm_out[plm_offset_B2 + weight] =
-                fp2int<TYPE, WORD_SIZE>(initial_bias);
+                a_write(initial_bias);
         }
     }
     
