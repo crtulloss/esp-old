@@ -45,23 +45,10 @@ void system_t::config_proc()
 
         wait(); conf_info.write(config);
         conf_done.write(true);
-        ESP_REPORT_INFO("learning rate in config is %.15f", (float)a_read(config.learning_rate));
     }
 
     ESP_REPORT_INFO("config done");
     ESP_REPORT_INFO("learning rate is %.15f", (float)learning_rate);
-
-/*
-    float test_float = 0.001;
-    TYPE test_type = TYPE(test_float);
-    int32_t test_int = a_write(test_type);
-    float test_refloat = (float)test_type;
-    TYPE test_retype = a_read(test_int);
-    float test_rerefloat = (float)test_retype;
-    ESP_REPORT_INFO("floating test is %.15f", test_float);
-    ESP_REPORT_INFO("floating test is %.15f", test_refloat);
-    ESP_REPORT_INFO("floating test after int write/read is %.15f", test_rerefloat);
-*/
 
     // Compute
     {
