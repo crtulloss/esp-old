@@ -92,17 +92,13 @@ public:
                   bool flag[],
                   bool ping);
 
-    void backprop(bool do_relu,
-                  TYPE learning_rate,
-                  TYPE learning_rate_scaled,
+    void backprop(TYPE learning_rate,
                   int32_t tsamps_perbatch,
                   int32_t num_windows,
                   int32_t iters_perbatch,
                   int32_t input_dimension,
                   int32_t layer1_dimension,
-                  int32_t output_dimension,
                   int32_t W1_size,
-                  int32_t W2_size,
                   int32_t B1_size,
                   int32_t B2_size,
                   int32_t batch,

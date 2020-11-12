@@ -299,17 +299,13 @@ void mindfuzz::relevant(int32_t total_tsamps,
 }
 
 // backprop function used in computational kernel
-void mindfuzz::backprop(bool do_relu,
-                        TYPE learning_rate,
-                        TYPE learning_rate_scaled,
+void mindfuzz::backprop(TYPE learning_rate,
                         int32_t tsamps_perbatch,
                         int32_t num_windows,
                         int32_t iters_perbatch,
                         int32_t input_dimension,
                         int32_t layer1_dimension,
-                        int32_t output_dimension,
                         int32_t W1_size,
-                        int32_t W2_size,
                         int32_t B1_size,
                         int32_t B2_size,
                         int32_t batch,
@@ -325,10 +321,7 @@ void mindfuzz::backprop(bool do_relu,
     // some offsets useful for indexing
     uint32_t samp_offset;
     uint32_t window_offset_dW1;
-    uint32_t window_offset_dW2;
-    uint32_t window_offset_weights2;
     uint32_t window_offset_weights1;
-    uint32_t window_offset_output;
     uint32_t window_offset_layer1;
     uint32_t window_offset_input;
 #ifdef do_bias
@@ -338,9 +331,8 @@ void mindfuzz::backprop(bool do_relu,
 
     // PLM access offsets for weights and biases
     uint32_t plm_offset_W1 = 0;
-    uint32_t plm_offset_W2 = plm_offset_W1 + W1_size;
 #ifdef do_bias
-    uint32_t plm_offset_B1 = plm_offset_W2 + W2_size;
+    uint32_t plm_offset_B1 = plm_offset_W1 + W1_size;
     uint32_t plm_offset_B2 = plm_offset_B1 + B1_size;
 #endif
 
@@ -350,16 +342,13 @@ void mindfuzz::backprop(bool do_relu,
 
     // useful for arithmetic
     uint32_t W1_singlewindow = layer1_dimension*input_dimension;
-    uint32_t W2_singlewindow = output_dimension*layer1_dimension;
 
     // iter accumulation variables for batched backprop
     // TODO rewrite to not use arbitrarily sized arrasy
-    const uint32_t const_W2_size = CONST_NUM_WINDOWS * CONST_WINDOW_SIZE * CONST_NEURONS_PERWIN;
-    const uint32_t const_W1_size = const_W2_size;
+    const uint32_t const_W1_size = CONST_NUM_WINDOWS * CONST_WINDOW_SIZE * CONST_NEURONS_PERWIN;
     const uint32_t const_B2_size = CONST_NUM_WINDOWS * CONST_WINDOW_SIZE;
     const uint32_t const_B1_size = CONST_NUM_WINDOWS * CONST_NEURONS_PERWIN;
     
-    sc_dt::sc_int<DATA_WIDTH> dW2[const_W2_size];
     sc_dt::sc_int<DATA_WIDTH> dW1[const_W1_size];
 #ifdef do_bias
     sc_dt::sc_int<DATA_WIDTH> dB2[const_B2_size];
@@ -372,17 +361,18 @@ void mindfuzz::backprop(bool do_relu,
     sc_dt::sc_int<DATA_WIDTH> act1[const_B1_size];
     sc_dt::sc_int<DATA_WIDTH> diff[const_B2_size];
 
+#ifdef do_bias
     // backward pass: sample accum variable W2(x2-x0) used for backprop
+    // would be used by dW1 and dB1
     // TODO rewrite to not use arbitrarily sized arrays
     sc_dt::sc_int<DATA_WIDTH> W2xdiff[const_B1_size];
+#endif
 
     for (uint32_t iter = 0; iter < iters_perbatch; iter++) {
         
         // reset weight and bias delta accumulation variables
-        // assumes W2_size = W1_size
         for (uint32_t i = 0; i < W2_size; i++) {
             dW1[i] = a_write(0.0);
-            dW2[i] = a_write(0.0);
             
 #ifdef do_bias
             if (i < B2_size) {
@@ -421,16 +411,13 @@ void mindfuzz::backprop(bool do_relu,
 
                     // compute some offsets for loop indexing
                     window_offset_dW1 = window*W1_singlewindow;
-                    window_offset_dW2 = window*W2_singlewindow;
                     window_offset_weights1 = plm_offset_W1 + window_offset_dW1;
-                    window_offset_weights2 = plm_offset_W2 + window_offset_dW2;
-                    window_offset_output = window*output_dimension;
                     window_offset_layer1 = window*layer1_dimension;
                     window_offset_input = window*input_dimension;
                     
 #ifdef do_bias
                     window_offset_biases1 = plm_offset_B1 + window_offset_layer1;
-                    window_offset_biases2 = plm_offset_B2 + window_offset_output;
+                    window_offset_biases2 = plm_offset_B2 + window_offset_input;
 #endif
 
                     // forward pass
@@ -476,28 +463,27 @@ void mindfuzz::backprop(bool do_relu,
 #ifdef do_bias
                     TYPE temp_dB2;
 #endif
-                    for (uint32_t out = 0; out < output_dimension; out++) {
+                    for (uint32_t out = 0; out < input_dimension; out++) {
 
                         // reset output difference for this sample
-                        diff[window_offset_output + out] = a_write(0.0);
+                        diff[window_offset_input + out] = a_write(0.0);
 
                         // mac
                         for (uint32_t neuron = 0; neuron < layer1_dimension; neuron++) {
 
                             // acquire existing diff
-                            temp_diff = a_read(diff[window_offset_output + out]);
-                            // compute (FP) increment
-                            temp_incr = a_read(plm_out[window_offset_weights2 +
-                                    out*layer1_dimension + neuron]) *
+                            temp_diff = a_read(diff[window_offset_input + out]);
+                            // compute (FP) increment - note that we are using the same weights as layer 1
+                            temp_incr = a_read(plm_out[window_offset_weights1 +
+                                    neuron*input_dimension + out]) *
                                 a_read(act1[window_offset_layer1 + neuron]);
                             // update diff
-                            diff[window_offset_output + out] =
+                            diff[window_offset_input + out] =
                                 a_write(temp_incr + temp_diff);
-
                         }
                         
                         // acquire existing diff
-                        temp_diff = a_read(diff[window_offset_output + out]);
+                        temp_diff = a_read(diff[window_offset_input + out]);
 
                         // subtract the ground truth difference
                         // we don't need the output, only the difference
@@ -509,64 +495,67 @@ void mindfuzz::backprop(bool do_relu,
 #endif
 
                         // update diff
-                        diff[window_offset_output + out] =
+                        diff[window_offset_input + out] =
                             a_write(temp_incr + temp_diff);
 
                         // beginning of backprop for this sample
                         // this part only requires a loop over output
                         // iter-accum dB2 - simple because we just add diff
 #ifdef do_bias
-                        temp_dB2 = a_read(dB2[window_offset_output + out]);
-                        temp_incr = ((TYPE)2.0) * a_read(diff[window_offset_output + out]);
-                        dB2[window_offset_output + out] = a_write(temp_dB2 + temp_incr);
+                        temp_dB2 = a_read(dB2[window_offset_input + out]);
+                        temp_incr = ((TYPE)2.0) * a_read(diff[window_offset_input + out]);
+                        dB2[window_offset_input + out] = a_write(temp_dB2 + temp_incr);
 #endif
                     }
 
-                    TYPE temp_W2xdiff;
-                    TYPE temp_dW2;
 #ifdef do_bias
+                    TYPE temp_W2xdiff;
                     TYPE temp_dB1;
 #endif
                     TYPE temp_dW1;
                     // backprop for this sample (with no weight update yet)
                     for (uint32_t neuron = 0; neuron < layer1_dimension; neuron++) {
 
+#ifdef do_bias
                         // reset W2xdiff sample accum variable
                         W2xdiff[window_offset_layer1 + neuron] = a_write(0.0);
+#endif
 
                         // dual-purpose loop; both computations here looped over neurons and outputs
                         // they are unrelated
-                        for (uint32_t out = 0; out < output_dimension; out++) {
+                        for (uint32_t out = 0; out < input_dimension; out++) {
 
+#ifdef do_bias
                             // mac W2xdiff
 
                             // acquire existing W2xdiff
                             temp_W2xdiff = a_read(W2xdiff[window_offset_layer1 + neuron]);
                             // compute (FP) increment
-                            temp_incr = a_read(plm_out[window_offset_weights2 +
-                                    out*layer1_dimension + neuron]) *
-                                a_read(diff[window_offset_output + out]);
+                            temp_incr = a_read(plm_out[window_offset_weights1 +
+                                    neuron*input_dimension + out]) *
+                                a_read(diff[window_offset_input + out]);
                             // update W2xdiff
                             W2xdiff[window_offset_layer1 + neuron] =
                                 a_write(temp_incr + temp_W2xdiff);
+#endif
 
-                            // iter-accum dW2
+                            // iter-accum dW1
 
-                            // acquire existing dW2
-                            temp_dW2 = a_read(
-                                dW2[window_offset_dW2 + out*layer1_dimension + neuron]);
+                            // acquire existing dW1
+                            temp_dW1 = a_read(
+                                dW1[window_offset_dW1 + neuron*input_dimension + out]);
                             // compute (FP) increment
-                            temp_incr = ((TYPE)2.0) * a_read(diff[window_offset_output + out]) *
+                            temp_incr = ((TYPE)2.0) * a_read(diff[window_offset_input + out]) *
                                 a_read(act1[window_offset_layer1 + neuron]);
-                            // update dW2
-                            dW2[window_offset_dW2 + out*layer1_dimension + neuron] = 
-                                a_write(temp_incr + temp_dW2);
+                            // update dW1
+                            dW1[window_offset_dW1 + neuron*input_dimension + out] = 
+                                a_write(temp_incr + temp_dW1);
                         }
 
+#ifdef do_bias
                         // these must be done after because they depend on W2xdiff
 
                         // iter-accum dB1
-#ifdef do_bias
                         // acquire existing dB1
                         temp_dB1 = a_read(
                             dB1[window_offset_layer1 + neuron]);
@@ -576,20 +565,6 @@ void mindfuzz::backprop(bool do_relu,
                         dB1[window_offset_layer1 + neuron] = 
                             a_write(temp_incr + temp_dB1);
 #endif
-
-                        // iter-accum dW1
-                        for (uint32_t in = 0; in < input_dimension; in++) {
-
-                            // acquire existing dW1
-                            temp_dW1 = a_read(
-                                dW1[window_offset_dW1 + neuron*input_dimension + in]);
-                            // compute (FP) increment
-                            temp_incr = ((TYPE)2.0) * a_read(W2xdiff[window_offset_layer1 + neuron]) *
-                                        a_read(elecdata[window_offset_input + in]);
-                            // update dW1
-                            dW1[window_offset_dW1 + neuron*input_dimension + in] = 
-                                a_write(temp_incr + temp_dW1);
-                        }
                     }
                 }
                 // end of this window
@@ -608,21 +583,13 @@ void mindfuzz::backprop(bool do_relu,
 
                 // compute some offsets for loop indexing
                 window_offset_dW1 = window*W1_singlewindow;
-                window_offset_dW2 = window*W2_singlewindow;
                 window_offset_weights1 = plm_offset_W1 + window_offset_dW1;
-                window_offset_weights2 = plm_offset_W2 + window_offset_dW2;
-                window_offset_output = window*output_dimension;
                 window_offset_layer1 = window*layer1_dimension;
                 window_offset_input = window*input_dimension;
 #ifdef do_bias
                 window_offset_biases1 = plm_offset_B1 + window_offset_layer1;
-                window_offset_biases2 = plm_offset_B2 + window_offset_output;
+                window_offset_biases2 = plm_offset_B2 + window_offset_input;
 #endif
-
-                // these normalizations only useful for this window
-                TYPE norm, bias_norm;
-                norm = 0.0;
-                bias_norm = 0.0;
 
                 for (uint32_t neuron = 0; neuron < layer1_dimension; neuron++) {
                     
@@ -633,18 +600,12 @@ void mindfuzz::backprop(bool do_relu,
                         plm_out[window_offset_biases1 + neuron]);
                     // compute (FP) increment
                     temp_incr = a_read(dB1[window_offset_layer1 + neuron]) *
-                        (learning_rate_scaled);
+                        (learning_rate);
 
                     // update plmval
                     plm_out[window_offset_biases1 + neuron] = 
                         a_write(temp_plmval - temp_incr);
 #endif
-
-/*
-                    // add to bias normalization
-                    bias_norm += a_read(plm_out[window_offset_biases1 + neuron]) *
-                        a_read(plm_out[window_offset_biases1 + neuron]);
-*/
 
                     // update W1
                     for (uint32_t in = 0; in < input_dimension; in++) {
@@ -654,124 +615,30 @@ void mindfuzz::backprop(bool do_relu,
                             plm_out[window_offset_weights1 + neuron*input_dimension + in]);
                         // compute (FP) increment
                         temp_incr = a_read(dW1[window_offset_dW1
-                                + neuron*input_dimension + in]) * (learning_rate_scaled);
+                                + neuron*input_dimension + in]) * (learning_rate);
                         // update plmval
                         plm_out[window_offset_weights1 + neuron*input_dimension + in] = 
                             a_write(temp_plmval - temp_incr);
 
-/*
-                        // add to weight normalization
-                        norm +=
-                            a_read(plm_out[window_offset_weights1 +
-                                neuron*input_dimension + in]) *
-                            a_read(plm_out[window_offset_weights1 +
-                                neuron*input_dimension + in]);
-*/
                     }
                 }
-
-                // TODO normalization is temporarily disallowed,
-                // until we figure out how to do sqrt and
-                // whether division is ok
-                // TODO revisit normalization code above to reflect changes to PLM access += -=
-                /*               
-                norm = sqrt(norm);
-                bias_norm = sqrt(bias_norm);
-
-                // perform normalization
-                for (uint32_t neuron = 0; neuron < layer1_dimension; neuron++) {
-
-                    // bias normalization
-                    plm_out[window_offset_biases1 + neuron] =
-                        a_write(a_read(
-                            plm_out[window_offset_biases1 + neuron]) / bias_norm);
-                    
-                    // weight normalization
-                    for (uint32_t in = 0; in < input_dimension; in++) {
-
-                        plm_out[window_offset_weights1 + neuron*input_dimension + in] =
-                            a_write(a_read(
-                                plm_out[window_offset_weights1 + neuron*input_dimension + in]) / norm);
-                    }
-                }
-
-                norm = (TYPE)0.0;
-                bias_norm = (TYPE)0.0;
-                */
-
-                for (uint32_t out = 0; out < output_dimension; out++) {
-                    
-                    // update B2
 
 #ifdef do_bias
+                // update B2
+                for (uint32_t out = 0; out < input_dimension; out++) {
+                    
                     // acquire existing plmval
                     temp_plmval = a_read(
                         plm_out[window_offset_biases2 + out]);
                     // compute (FP) increment
-                    temp_incr = a_read(dB2[window_offset_output + out]) *
+                    temp_incr = a_read(dB2[window_offset_input + out]) *
                         (learning_rate);
 
                     // update plmval
                     plm_out[window_offset_biases2 + out] = 
                         a_write(temp_plmval - temp_incr);
+                }
 #endif
-
-/*
-                    // add to bias normalization
-                    bias_norm += a_read(plm_out[window_offset_biases2 + out]) *
-                        a_read(plm_out[window_offset_biases2 + out]);
-*/
-
-                    // update W2
-                    for (uint32_t neuron = 0; neuron < layer1_dimension; neuron++) {
-
-                        // acquire existing plmval
-                        temp_plmval = a_read(
-                            plm_out[window_offset_weights2 + out*layer1_dimension + neuron]);
-                        // compute (FP) increment
-                        temp_incr = a_read(dW2[window_offset_dW2
-                                + out*layer1_dimension + neuron]) *
-                            (learning_rate);
-                        // update plmval
-                        plm_out[window_offset_weights2 + out*layer1_dimension + neuron] =
-                            a_write(temp_plmval - temp_incr);
-
-
-/*
-                        // add to weight normalization
-                        norm +=
-                            a_read(plm_out[window_offset_weights2 +
-                                out*layer1_dimension + neuron]) *
-                            a_read(plm_out[window_offset_weights2 +
-                                out*layer1_dimension + neuron]);
-*/
-                    }
-                }
-                
-                // TODO normalization is temporarily disallowed,
-                // until we figure out how to do sqrt and
-                // whether division is ok
-                /*
-                norm = sqrt(norm);
-                bias_norm = sqrt(bias_norm);
-
-                // perform normalization
-                for (uint32_t out = 0; out < output_dimension; out++) {
-
-                    // bias normalization
-                    plm_out[window_offset_biases2 + out] =
-                        a_write(a_read(
-                            plm_out[window_offset_biases2 + out]) / bias_norm);
-                    
-                    // weight normalization
-                    for (uint32_t neuron = 0; neuron < layer1_dimension; neuron++) {
-
-                        plm_out[window_offset_weights2 + out*layer1_dimension + neuron] =
-                            a_write(a_read(
-                                plm_out[window_offset_weights2 + out*layer1_dimension + neuron]) / norm);
-                    }
-                }
-                */
             }
             // this window is now complete
         }

@@ -458,17 +458,13 @@ void mindfuzz::compute_kernel()
 
                 // pass relevant parameters like sizes, flag, and pingpong
                 // backprop will access weights, training data, biases directly (they are in PLMs)
-                backprop(do_relu,
-                         learning_rate,
-                         learning_rate,
+                backprop(learning_rate,
                          tsamps_perbatch,
                          num_windows,
                          iters_perbatch,
                          input_dimension,
                          layer1_dimension,
-                         output_dimension,
                          W1_size,
-                         W2_size,
                          B1_size,
                          B2_size,
                          batch,
