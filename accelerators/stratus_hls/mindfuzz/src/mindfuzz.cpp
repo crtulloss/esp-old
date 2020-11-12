@@ -32,7 +32,6 @@ void mindfuzz::load_input()
     }
 
     // Config
-    int32_t do_relu;
     int32_t window_size;
     int32_t batches_perload;
     TYPE learning_rate;
@@ -55,7 +54,6 @@ void mindfuzz::load_input()
         conf_info_t config = this->conf_info.read();
 
         // User-defined config code
-        do_relu = config.do_relu;
         window_size = config.window_size;
         batches_perload = config.batches_perload;
         learning_rate = a_read(config.learning_rate);
@@ -185,7 +183,6 @@ void mindfuzz::detect_kernel()
     }
 
     // Config
-    int32_t do_relu;
     int32_t window_size;
     int32_t batches_perload;
     TYPE learning_rate;
@@ -206,7 +203,6 @@ void mindfuzz::detect_kernel()
         conf_info_t config = this->conf_info.read();
 
         // User-defined config code
-        do_relu = config.do_relu;
         window_size = config.window_size;
         batches_perload = config.batches_perload;
         learning_rate = a_read(config.learning_rate);
@@ -309,7 +305,6 @@ void mindfuzz::compute_kernel()
     }
 
     // Config
-    int32_t do_relu;
     int32_t window_size;
     int32_t batches_perload;
     TYPE learning_rate;
@@ -327,12 +322,12 @@ void mindfuzz::compute_kernel()
     // int32_t load_batches;
     int32_t total_tsamps;
     int32_t input_dimension;
-    int32_t output_dimension;
     int32_t layer1_dimension;
-    int32_t W2_size;
     int32_t W1_size;
+#ifdef do_bias
     int32_t B2_size;
     int32_t B1_size;
+#endif
     {
         HLS_PROTO("compute-config");
 
@@ -340,7 +335,6 @@ void mindfuzz::compute_kernel()
         conf_info_t config = this->conf_info.read();
 
         // User-defined config code
-        do_relu = config.do_relu;
         window_size = config.window_size;
         batches_perload = config.batches_perload;
         learning_rate = a_read(config.learning_rate);
@@ -359,10 +353,8 @@ void mindfuzz::compute_kernel()
 
         // some dimension computation useful for backprop
         input_dimension = window_size;
-        output_dimension = input_dimension;
         layer1_dimension = neurons_perwin;
 
-        W2_size = num_windows*output_dimension*layer1_dimension;
         W1_size = num_windows*layer1_dimension*input_dimension;
         B2_size = num_windows*output_dimension;
         B1_size = num_windows*layer1_dimension;
@@ -397,8 +389,7 @@ void mindfuzz::compute_kernel()
 
         // PLM access offsets for weights and biases
         uint32_t plm_offset_W1 = 0;
-        uint32_t plm_offset_W2 = plm_offset_W1 + W1_size;
-        uint32_t plm_offset_B1 = plm_offset_W2 + W2_size;
+        uint32_t plm_offset_B1 = plm_offset_W1 + W1_size;
         uint32_t plm_offset_B2 = plm_offset_B1 + B1_size;
 
         // initialize W1
@@ -406,11 +397,7 @@ void mindfuzz::compute_kernel()
             plm_out[plm_offset_W1 + weight] =
                 a_write(initial_weight);
         }
-        // initialize W2
-        for (uint32_t weight = 0; weight < W2_size; weight++) {
-            plm_out[plm_offset_W2 + weight] =
-                a_write(initial_weight);
-        }
+#ifdef do_bias        
         // initialize B1
         for (uint32_t weight = 0; weight < B1_size; weight++) {
             plm_out[plm_offset_B1 + weight] =
@@ -421,6 +408,7 @@ void mindfuzz::compute_kernel()
             plm_out[plm_offset_B2 + weight] =
                 a_write(initial_bias);
         }
+#endif
     }
     
     bool ping = true;
@@ -520,7 +508,6 @@ void mindfuzz::store_output()
     }
 
     // Config
-    int32_t do_relu;
     int32_t window_size;
     int32_t batches_perload;
     TYPE learning_rate;
@@ -543,7 +530,6 @@ void mindfuzz::store_output()
         conf_info_t config = this->conf_info.read();
 
         // User-defined config code
-        do_relu = config.do_relu;
         window_size = config.window_size;
         batches_perload = config.batches_perload;
         learning_rate = a_read(config.learning_rate);
