@@ -407,7 +407,8 @@ void mindfuzz::backprop(TYPE learning_rate,
             for (uint32_t window = 0; window < num_windows; window++) {
                 // TODO UNROLL? - if so, need to fix the offsets
 
-                if (flag[window]) {
+                // do backprop only on noise data
+                if (!flag[window]) {
 
                     // compute some offsets for loop indexing
                     window_offset_dW1 = window*W1_singlewindow;
@@ -579,7 +580,8 @@ void mindfuzz::backprop(TYPE learning_rate,
         for (uint32_t window = 0; window < num_windows; window++) {
             // TODO UNROLL?
 
-            if (flag[window]) {
+            // update weights only for noise data
+            if (!flag[window]) {
 
                 // compute some offsets for loop indexing
                 window_offset_dW1 = window*W1_singlewindow;
