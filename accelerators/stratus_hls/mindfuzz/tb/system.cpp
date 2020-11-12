@@ -29,13 +29,11 @@ void system_t::config_proc()
         conf_info_t config;
         // Custom configuration
         /* <<--params-->> */
-        config.do_relu = do_relu;
         config.window_size = window_size;
         config.batches_perload = batches_perload;
         config.learning_rate = a_write(learning_rate);
         config.neurons_perwin = neurons_perwin;
         config.tsamps_perbatch = tsamps_perbatch;
-        config.detect_threshold = a_write(detect_threshold);
         config.num_windows = num_windows;
         config.iters_perbatch = iters_perbatch;
         config.num_loads = num_loads;

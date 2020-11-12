@@ -54,12 +54,10 @@ public:
         acc->debug(debug);
 
         /* <<--params-default-->> */
-        do_relu = 0;
         window_size = 4;
         batches_perload = 1;
         neurons_perwin = 1;
         tsamps_perbatch = 70;
-        detect_threshold = TYPE(100.0);
 // edited for mindfuzz unit testing
         num_windows = 1;
         iters_perbatch = 1;
@@ -89,13 +87,11 @@ public:
 
     // Accelerator-specific data
     /* <<--params-->> */
-    int32_t do_relu;
     int32_t window_size;
     int32_t batches_perload;
     TYPE learning_rate;
     int32_t neurons_perwin;
     int32_t tsamps_perbatch;
-    TYPE detect_threshold;
     int32_t num_windows;
     int32_t iters_perbatch;
     int32_t num_loads;

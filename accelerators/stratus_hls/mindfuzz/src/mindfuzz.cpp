@@ -37,7 +37,6 @@ void mindfuzz::load_input()
     TYPE learning_rate;
     int32_t neurons_perwin;
     int32_t tsamps_perbatch;
-    TYPE detect_threshold;
     int32_t num_windows;
     int32_t iters_perbatch;
     int32_t num_loads;
@@ -59,7 +58,6 @@ void mindfuzz::load_input()
         learning_rate = a_read(config.learning_rate);
         neurons_perwin = config.neurons_perwin;
         tsamps_perbatch = config.tsamps_perbatch;
-        detect_threshold = a_read(config.detect_threshold);
         num_windows = config.num_windows;
         iters_perbatch = config.iters_perbatch;
         num_loads = config.num_loads;
@@ -163,132 +161,6 @@ void mindfuzz::load_input()
     }
 }
 
-/*
-// TODO this needs to be rewritten since I wrote it before i had
-// the loop structure for compute, and before I figured out plm
-// access
-void mindfuzz::detect_kernel()
-{
-    // Reset
-    {
-        HLS_PROTO("detect-reset");
-
-        this->reset_detect_kernel();
-
-        // explicit PLM ports reset if any
-
-        // User-defined reset code
-
-        wait();
-    }
-
-    // Config
-    int32_t window_size;
-    int32_t batches_perload;
-    TYPE learning_rate;
-    int32_t neurons_perwin;
-    int32_t tsamps_perbatch;
-    TYPE detect_threshold;
-    int32_t num_windows;
-    int32_t iters_perbatch;
-    int32_t num_loads;
-    TYPE rate_spike;
-    TYPE rate_noise;
-    TYPE spike_weight;
-
-    {
-        HLS_PROTO("detect-config");
-
-        cfg.wait_for_config(); // config process
-        conf_info_t config = this->conf_info.read();
-
-        // User-defined config code
-        window_size = config.window_size;
-        batches_perload = config.batches_perload;
-        learning_rate = a_read(config.learning_rate);
-        neurons_perwin = config.neurons_perwin;
-        tsamps_perbatch = config.tsamps_perbatch;
-        detect_threshold = a_read(config.detect_threshold);
-        num_windows = config.num_windows;
-        iters_perbatch = config.iters_perbatch;
-        num_loads = config.num_loads;
-        rate_spike = a_read(config.rate_spike);
-        rate_noise = a_read(config.rate_noise);
-        spike_weight = a_read(config.spike_weight);
-    }
-
-
-    // for coordination about input pingpong PLM
-    bool ping = true;
-
-    // for coordination about batching circular buffer
-    uint8_t writeloc = 0;
-    this->full = "0000";
-    
-    // length of time-series data per window and per electrode per input batch
-    uint32_t len_perelec = tsamps_perbatch*batches_perload;
-    uint32_t len_perwindow = window_size*len_perelec;
-    uint32_t in_length = num_windows*len_perwindow;
-    {
-        for (uint16_t b = 0; b < num_loads; b++)
-        {
-
-            // since we have a chunking factor of 1, this only does one iteration
-            for (int in_rem = in_length; in_rem > 0; in_rem -= PLM_IN_WORD)
-            {
-
-                uint32_t in_len  = in_rem  > PLM_IN_WORD  ? PLM_IN_WORD  : in_rem;
-
-                this->detect_load_handshake();
-
-                // Computing phase implementation
-
-                // parallel computation for each window
-                for (int w = 0; w < num_windows; w++) {
-                    // UNROLL THIS LOOP
-
-                    uint32_t window_offset = len_perwindow*w;
-
-                    // flag for whether there is a spike in this window
-                    bool flag = false;
-                    int16_t data = 0;
-                    for (int elec = 0; elec < window_size; elec++) {
-                        // UNROLL?
-
-                        uint32_t elec_offset = len_perelec*elec;
-
-                        for (int samp = 0; samp < len_perelec; samp++) {
-                            if (ping)
-                                data = plm_in_ping[window_offset + elec_offset + samp];
-                            else
-                                data = plm_in_pong[window_offset + elec_offset + samp];
-                            if (data > detect_threshold) {
-                                flag = true;
-                                // if the window is flagged, we don't need to look at rest of data
-                                samp = len_perelec;
-                                elec = window_size;
-                            }
-                        }
-                    }
-                    if (flag) {
-                        // IMPLEMENT storing data in buffer
-                        // need to use fill and writeloc appropriately
-                    }
-                }
-
-                this->detect_compute_handshake();
-                ping = !ping;
-            }
-        }
-
-        // Conclude
-        {
-            this->process_done();
-        }
-    }
-}
-*/
-
 void mindfuzz::compute_kernel()
 {
     // Reset
@@ -310,7 +182,6 @@ void mindfuzz::compute_kernel()
     TYPE learning_rate;
     int32_t neurons_perwin;
     int32_t tsamps_perbatch;
-    TYPE detect_threshold;
     int32_t num_windows;
     int32_t iters_perbatch;
     int32_t num_loads;
@@ -340,7 +211,6 @@ void mindfuzz::compute_kernel()
         learning_rate = a_read(config.learning_rate);
         neurons_perwin = config.neurons_perwin;
         tsamps_perbatch = config.tsamps_perbatch;
-        detect_threshold = a_read(config.detect_threshold);
         num_windows = config.num_windows;
         iters_perbatch = config.iters_perbatch;
         num_loads = config.num_loads;
@@ -513,7 +383,6 @@ void mindfuzz::store_output()
     TYPE learning_rate;
     int32_t neurons_perwin;
     int32_t tsamps_perbatch;
-    TYPE detect_threshold;
     int32_t num_windows;
     int32_t iters_perbatch;
     int32_t num_loads;
@@ -535,7 +404,6 @@ void mindfuzz::store_output()
         learning_rate = a_read(config.learning_rate);
         neurons_perwin = config.neurons_perwin;
         tsamps_perbatch = config.tsamps_perbatch;
-        detect_threshold = a_read(config.detect_threshold);
         num_windows = config.num_windows;
         iters_perbatch = config.iters_perbatch;
         num_loads = config.num_loads;

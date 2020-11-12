@@ -19,13 +19,11 @@ public:
     conf_info_t()
     {
         /* <<--ctor-->> */
-        this->do_relu = 0;
         this->window_size = 4;
         this->batches_perload = 1;
         this->learning_rate = a_write(0.01);
         this->neurons_perwin = 1;
         this->tsamps_perbatch = 32;
-        this->detect_threshold = a_write(0.9);
         this->num_windows = 8;
         this->iters_perbatch = 1;
         this->num_loads = 128;
@@ -36,13 +34,11 @@ public:
 
     conf_info_t(
         /* <<--ctor-args-->> */
-        int32_t do_relu, 
         int32_t window_size, 
         int32_t batches_perload, 
         int32_t learning_rate, 
         int32_t neurons_perwin, 
         int32_t tsamps_perbatch, 
-        int32_t detect_threshold, 
         int32_t num_windows, 
         int32_t iters_perbatch, 
         int32_t num_loads,
@@ -52,13 +48,11 @@ public:
         )
     {
         /* <<--ctor-custom-->> */
-        this->do_relu = do_relu;
         this->window_size = window_size;
         this->batches_perload = batches_perload;
         this->learning_rate = learning_rate;
         this->neurons_perwin = neurons_perwin;
         this->tsamps_perbatch = tsamps_perbatch;
-        this->detect_threshold = detect_threshold;
         this->num_windows = num_windows;
         this->iters_perbatch = iters_perbatch;
         this->num_loads = num_loads;
@@ -71,13 +65,11 @@ public:
     inline bool operator==(const conf_info_t &rhs) const
     {
         /* <<--eq-->> */
-        if (do_relu != rhs.do_relu) return false;
         if (window_size != rhs.window_size) return false;
         if (batches_perload != rhs.batches_perload) return false;
         if (learning_rate != rhs.learning_rate) return false;
         if (neurons_perwin != rhs.neurons_perwin) return false;
         if (tsamps_perbatch != rhs.tsamps_perbatch) return false;
-        if (detect_threshold != rhs.detect_threshold) return false;
         if (num_windows != rhs.num_windows) return false;
         if (iters_perbatch != rhs.iters_perbatch) return false;
         if (num_loads != rhs.num_loads) return false;
@@ -91,13 +83,11 @@ public:
     inline conf_info_t& operator=(const conf_info_t& other)
     {
         /* <<--assign-->> */
-        do_relu = other.do_relu;
         window_size = other.window_size;
         batches_perload = other.batches_perload;
         learning_rate = other.learning_rate;
         neurons_perwin = other.neurons_perwin;
         tsamps_perbatch = other.tsamps_perbatch;
-        detect_threshold = other.detect_threshold;
         num_windows = other.num_windows;
         iters_perbatch = other.iters_perbatch;
         num_loads = other.num_loads;
@@ -116,13 +106,11 @@ public:
     {
         os << "{";
         /* <<--print-->> */
-        os << "do_relu = " << conf_info.do_relu << ", ";
         os << "window_size = " << conf_info.window_size << ", ";
         os << "batches_perload = " << conf_info.batches_perload << ", ";
         os << "learning_rate = " << a_read(conf_info.learning_rate) << ", ";
         os << "neurons_perwin = " << conf_info.neurons_perwin << ", ";
         os << "tsamps_perbatch = " << conf_info.tsamps_perbatch << ", ";
-        os << "detect_threshold = " << a_read(conf_info.detect_threshold) << ", ";
         os << "num_windows = " << conf_info.num_windows << ", ";
         os << "iters_perbatch = " << conf_info.iters_perbatch << ", ";
         os << "num_loads = " << conf_info.num_loads << "";
@@ -134,13 +122,11 @@ public:
     }
 
         /* <<--params-->> */
-        int32_t do_relu;
         int32_t window_size;
         int32_t batches_perload;
         int32_t learning_rate;
         int32_t neurons_perwin;
         int32_t tsamps_perbatch;
-        int32_t detect_threshold;
         int32_t num_windows;
         int32_t iters_perbatch;
         int32_t num_loads;
