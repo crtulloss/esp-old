@@ -40,6 +40,8 @@ void system_t::config_proc()
         config.rate_spike = a_write(rate_spike);
         config.rate_noise = a_write(rate_noise);
         config.spike_weight = a_write(spike_weight);
+        config.do_init = do_init;
+        config.do_backprop = do_backprop;
 
         wait(); conf_info.write(config);
         conf_done.write(true);

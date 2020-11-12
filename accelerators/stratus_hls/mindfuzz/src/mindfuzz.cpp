@@ -43,6 +43,8 @@ void mindfuzz::load_input()
     TYPE rate_spike;
     TYPE rate_noise;
     TYPE spike_weight;
+    bool do_init;
+    bool do_backprop;
 
     // declare some necessary variables
     // int32_t load_batches;
@@ -64,6 +66,8 @@ void mindfuzz::load_input()
         rate_spike = a_read(config.rate_spike);
         rate_noise = a_read(config.rate_noise);
         spike_weight = a_read(config.spike_weight);
+        do_init = config.do_init;
+        do_backprop = config.do_backprop;
     }
 
     // Load
@@ -188,6 +192,8 @@ void mindfuzz::compute_kernel()
     TYPE rate_spike;
     TYPE rate_noise;
     TYPE spike_weight;
+    bool do_init;
+    bool do_backprop;
 
     // declare some necessary variables
     // int32_t load_batches;
@@ -217,6 +223,8 @@ void mindfuzz::compute_kernel()
         rate_spike = a_read(config.rate_spike);
         rate_noise = a_read(config.rate_noise);
         spike_weight = a_read(config.spike_weight);
+        do_init = config.do_init;
+        do_backprop = config.do_backprop;
         
         // total size of a load batch is useful for relevancy check
         total_tsamps = tsamps_perbatch * batches_perload;
@@ -233,8 +241,10 @@ void mindfuzz::compute_kernel()
 
     // Compute
 
+    if (do_init) {
+    
     // initialize spike/noise means and thresholds
-    {
+
         // initial value for each
         // TODO fix these
         TYPE initial_mean_noise = (TYPE)1.0;
@@ -249,10 +259,9 @@ void mindfuzz::compute_kernel()
                 plm_thresh[window_offset + elec] = a_write(initial_thresh);
             }
         }
-    }
 
     // initialize weights and biases
-    {
+
         // initial value for each weight/bias
         TYPE initial_weight = (TYPE)1.0;
         TYPE initial_bias = (TYPE)0.0;
@@ -311,25 +320,27 @@ void mindfuzz::compute_kernel()
                                  rate_noise,
                                  spike_weight);
 
-            // run backprop for each compute batch in this load batch
-            for (uint16_t batch = 0; batch < batches_perload; batch++) {
+            if (do_backprop) {
+                // run backprop for each compute batch in this load batch
+                for (uint16_t batch = 0; batch < batches_perload; batch++) {
 
-                // pass relevant parameters like sizes, flag, and pingpong
-                // backprop will access weights, training data, biases directly (they are in PLMs)
-                backprop(learning_rate,
-                         tsamps_perbatch,
-                         num_windows,
-                         iters_perbatch,
-                         input_dimension,
-                         layer1_dimension,
-                         W1_size,
-                         B1_size,
-                         B2_size,
-                         batch,
-                         flag,
-                         ping);
+                    // pass relevant parameters like sizes, flag, and pingpong
+                    // backprop will access weights, training data, biases directly (they are in PLMs)
+                    backprop(learning_rate,
+                             tsamps_perbatch,
+                             num_windows,
+                             iters_perbatch,
+                             input_dimension,
+                             layer1_dimension,
+                             W1_size,
+                             B1_size,
+                             B2_size,
+                             batch,
+                             flag,
+                             ping);
 
-                // this compute batch done
+                    // this compute batch done
+                }
             }
 
             ping = !ping;
@@ -389,6 +400,8 @@ void mindfuzz::store_output()
     TYPE rate_spike;
     TYPE rate_noise;
     TYPE spike_weight;
+    bool do_init;
+    bool do_backprop;
 
     // declare some necessary variables
     // int32_t load_batches;
@@ -410,6 +423,8 @@ void mindfuzz::store_output()
         rate_spike = a_read(config.rate_spike);
         rate_noise = a_read(config.rate_noise);
         spike_weight = a_read(config.spike_weight);
+        do_init = config.do_init;
+        do_backprop = config.do_backprop;
     }
 
     // Store

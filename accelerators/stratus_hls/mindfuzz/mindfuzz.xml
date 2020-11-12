@@ -12,5 +12,7 @@
     <param name="rate_spike" desc="rate_spike" />
     <param name="rate_noise" desc="rate_noise" />
     <param name="spike_weight" desc="spike_weight" />
+    <param name="do_init" desc="do_init" />
+    <param name="do_backprop" desc="do_backprop" />
   </accelerator>
 </sld>

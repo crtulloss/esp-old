@@ -30,6 +30,8 @@ public:
         this->rate_spike = a_write(0.01);
         this->rate_noise = a_write(0.01);
         this->spike_weight = a_write(0.5);
+        this->do_init = true;
+        this->do_backprop = true;
     }
 
     conf_info_t(
@@ -44,7 +46,9 @@ public:
         int32_t num_loads,
         int32_t rate_spike,
         int32_t rate_noise,
-        int32_t spike_weight
+        int32_t spike_weight,
+        bool do_init,
+        bool do_backprop
         )
     {
         /* <<--ctor-custom-->> */
@@ -59,6 +63,8 @@ public:
         this->rate_spike = rate_spike;
         this->rate_noise = rate_noise;
         this->spike_weight = spike_weight;
+        this->do_init = do_init;
+        this->do_backprop = do_backprop;
     }
 
     // equals operator
@@ -76,6 +82,8 @@ public:
         if (rate_spike != rhs.rate_spike) return false;
         if (rate_noise != rhs.rate_noise) return false;
         if (spike_weight != rhs.spike_weight) return false;
+        if (do_init != rhs.do_init) return false;
+        if (do_backprop != rhs.do_backprop) return false;
         return true;
     }
 
@@ -94,6 +102,8 @@ public:
         rate_spike = other.rate_spike;
         rate_noise = other.rate_noise;
         spike_weight = other.spike_weight;
+        do_init = other.do_init;
+        do_backprop = other.do_backprop;
         return *this;
     }
 
@@ -117,6 +127,8 @@ public:
         os << "rate_spike = " << a_read(conf_info.rate_spike) << "";
         os << "rate_noise = " << a_read(conf_info.rate_noise) << "";
         os << "spike_weight = " << a_read(conf_info.spike_weight) << "";
+        os << "do_init = " << conf_info.do_init << "";
+        os << "do_backprop = " << conf_info.do_backprop << "";
         os << "}";
         return os;
     }
@@ -133,6 +145,8 @@ public:
         int32_t rate_spike;
         int32_t rate_noise;
         int32_t spike_weight;
+        bool do_init;
+        bool do_backprop;
 };
 
 #endif // __MINDFUZZ_CONF_INFO_HPP__
