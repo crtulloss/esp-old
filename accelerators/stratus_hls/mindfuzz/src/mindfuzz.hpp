@@ -8,6 +8,11 @@
 #include "mindfuzz_directives.hpp"
 #include "fpdata.hpp"
 
+// useful macros for accessing PLMs
+// these are needed for conf info
+#define a_write(x) (fp2int<TYPE, WORD_SIZE>(x))
+#define a_read(x) (int2fp<TYPE, WORD_SIZE>(x))
+
 #include "mindfuzz_conf_info.hpp"
 #include "mindfuzz_debug_info.hpp"
 
@@ -18,10 +23,6 @@
 /* <<--defines-->> */
 #define DATA_WIDTH 32
 #define DMA_SIZE SIZE_HWORD
-
-// useful macros for accessing PLMs
-#define a_write(x) (fp2int<TYPE, WORD_SIZE>(x))
-#define a_read(x) (int2fp<TYPE, WORD_SIZE>(x))
 
 //#define PLM_OUT_WORD 2432
 //#define PLM_IN_WORD 65536
@@ -36,7 +37,7 @@
 //#define do_bias
 
 // new sizes for one-window test
-#define PLM_OUT_WORD 2*CONST_NUM_WINDOWS*CONST_WINDOW_SIZE*CONST_NEURONS_PERWIN
+#define PLM_OUT_WORD CONST_NUM_WINDOWS*CONST_WINDOW_SIZE*CONST_NEURONS_PERWIN
 #define PLM_IN_WORD CONST_NUM_WINDOWS*CONST_WINDOW_SIZE*CONST_TSAMPS_PERBATCH*CONST_BATCHES_PERLOAD
 #define PLM_ELEC_WORD CONST_NUM_WINDOWS*CONST_WINDOW_SIZE
 
@@ -91,17 +92,13 @@ public:
                   bool flag[],
                   bool ping);
 
-    void backprop(bool do_relu,
-                  TYPE learning_rate,
-                  TYPE learning_rate_scaled,
+    void backprop(TYPE learning_rate,
                   int32_t tsamps_perbatch,
                   int32_t num_windows,
                   int32_t iters_perbatch,
                   int32_t input_dimension,
                   int32_t layer1_dimension,
-                  int32_t output_dimension,
                   int32_t W1_size,
-                  int32_t W2_size,
                   int32_t B1_size,
                   int32_t B2_size,
                   int32_t batch,

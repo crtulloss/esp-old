@@ -4,15 +4,15 @@
     <param name="num_loads" desc="num_loads" />
     <param name="iters_perbatch" desc="iters_perbatch" />
     <param name="num_windows" desc="num_windows" />
-    <param name="detect_threshold" desc="detect_threshold" />
     <param name="tsamps_perbatch" desc="tsamps_perbatch" />
     <param name="neurons_perwin" desc="neurons_perwin" />
     <param name="learning_rate" desc="learning_rate" />
     <param name="batches_perload" desc="batches_perload" />
     <param name="window_size" desc="window_size" />
-    <param name="do_relu" desc="do_relu" />
     <param name="rate_spike" desc="rate_spike" />
     <param name="rate_noise" desc="rate_noise" />
     <param name="spike_weight" desc="spike_weight" />
+    <param name="do_init" desc="do_init" />
+    <param name="do_backprop" desc="do_backprop" />
   </accelerator>
 </sld>

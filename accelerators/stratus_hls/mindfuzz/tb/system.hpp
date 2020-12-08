@@ -54,20 +54,22 @@ public:
         acc->debug(debug);
 
         /* <<--params-default-->> */
-        do_relu = 0;
         window_size = 4;
         batches_perload = 1;
         neurons_perwin = 1;
         tsamps_perbatch = 70;
-        detect_threshold = 100.0;
+// edited for mindfuzz unit testing
         num_windows = 1;
         iters_perbatch = 1;
         num_loads = 500;
-        learning_rate = ((TYPE)0.000001) / ((TYPE)tsamps_perbatch) / ((TYPE)window_size);
-        rate_spike = 0.01;
-        rate_noise = 0.01;
-        spike_weight = 0.5;
-
+        learning_rate = TYPE(((float)0.000001) / ((float)tsamps_perbatch) / ((float)window_size));
+// for testing with fixed point. this ^ learning rate won't fit in precision
+        //learning_rate = TYPE(((float)0.001) / ((float)tsamps_perbatch) / ((float)window_size));
+        rate_spike = TYPE(0.01);
+        rate_noise = TYPE(0.01);
+        spike_weight = TYPE(0.5);
+        do_init = true;
+        do_backprop = true;
     }
 
     // Processes
@@ -86,19 +88,19 @@ public:
 
     // Accelerator-specific data
     /* <<--params-->> */
-    int32_t do_relu;
     int32_t window_size;
     int32_t batches_perload;
     TYPE learning_rate;
     int32_t neurons_perwin;
     int32_t tsamps_perbatch;
-    TYPE detect_threshold;
     int32_t num_windows;
     int32_t iters_perbatch;
     int32_t num_loads;
     TYPE rate_spike;
     TYPE rate_noise;
     TYPE spike_weight;
+    bool do_init;
+    bool do_backprop;
 
     uint32_t in_words_adj;
     uint32_t out_words_adj;

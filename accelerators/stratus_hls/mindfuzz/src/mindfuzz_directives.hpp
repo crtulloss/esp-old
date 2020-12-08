@@ -19,14 +19,15 @@
 
 #define PLM_ELEC_NAME "mindfuzz_plm_block_elec_32"
 
-#if defined(STRATUS_HLS)
-
 // added by CRT - related to datatypes
-#define HLS_FP
+// use fixed point data type
 #define FX_WIDTH 32
-#define FX64_IL 42
-#define FX32_IL 24
-#define FX16_IL 12 // TODO what is the correct length?
+#define FX64_IL 2
+#define FX32_IL 12
+#define FX16_IL 8 // TODO what is the correct length?
+
+#if defined(STRATUS_HLS)
+#define HLS_FP
 
 // auto generated stuff
 #define HLS_MAP_plm(_mem, _plm_block_name)      \

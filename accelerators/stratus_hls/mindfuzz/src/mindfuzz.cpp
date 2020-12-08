@@ -32,19 +32,19 @@ void mindfuzz::load_input()
     }
 
     // Config
-    int32_t do_relu;
     int32_t window_size;
     int32_t batches_perload;
     TYPE learning_rate;
     int32_t neurons_perwin;
     int32_t tsamps_perbatch;
-    TYPE detect_threshold;
     int32_t num_windows;
     int32_t iters_perbatch;
     int32_t num_loads;
     TYPE rate_spike;
     TYPE rate_noise;
     TYPE spike_weight;
+    bool do_init;
+    bool do_backprop;
 
     // declare some necessary variables
     // int32_t load_batches;
@@ -55,19 +55,19 @@ void mindfuzz::load_input()
         conf_info_t config = this->conf_info.read();
 
         // User-defined config code
-        do_relu = config.do_relu;
         window_size = config.window_size;
         batches_perload = config.batches_perload;
-        learning_rate = config.learning_rate;
+        learning_rate = a_read(config.learning_rate);
         neurons_perwin = config.neurons_perwin;
         tsamps_perbatch = config.tsamps_perbatch;
-        detect_threshold = config.detect_threshold;
         num_windows = config.num_windows;
         iters_perbatch = config.iters_perbatch;
         num_loads = config.num_loads;
-        rate_spike = config.rate_spike;
-        rate_noise = config.rate_noise;
-        spike_weight = config.spike_weight;
+        rate_spike = a_read(config.rate_spike);
+        rate_noise = a_read(config.rate_noise);
+        spike_weight = a_read(config.spike_weight);
+        do_init = config.do_init;
+        do_backprop = config.do_backprop;
     }
 
     // Load
@@ -165,134 +165,6 @@ void mindfuzz::load_input()
     }
 }
 
-/*
-// TODO this needs to be rewritten since I wrote it before i had
-// the loop structure for compute, and before I figured out plm
-// access
-void mindfuzz::detect_kernel()
-{
-    // Reset
-    {
-        HLS_PROTO("detect-reset");
-
-        this->reset_detect_kernel();
-
-        // explicit PLM ports reset if any
-
-        // User-defined reset code
-
-        wait();
-    }
-
-    // Config
-    int32_t do_relu;
-    int32_t window_size;
-    int32_t batches_perload;
-    TYPE learning_rate;
-    int32_t neurons_perwin;
-    int32_t tsamps_perbatch;
-    TYPE detect_threshold;
-    int32_t num_windows;
-    int32_t iters_perbatch;
-    int32_t num_loads;
-    TYPE rate_spike;
-    TYPE rate_noise;
-    TYPE spike_weight;
-
-    {
-        HLS_PROTO("detect-config");
-
-        cfg.wait_for_config(); // config process
-        conf_info_t config = this->conf_info.read();
-
-        // User-defined config code
-        do_relu = config.do_relu;
-        window_size = config.window_size;
-        batches_perload = config.batches_perload;
-        learning_rate = config.learning_rate;
-        neurons_perwin = config.neurons_perwin;
-        tsamps_perbatch = config.tsamps_perbatch;
-        detect_threshold = config.detect_threshold;
-        num_windows = config.num_windows;
-        iters_perbatch = config.iters_perbatch;
-        num_loads = config.num_loads;
-        rate_spike = config.rate_spike;
-        rate_noise = config.rate_noise;
-        spike_weight = config.spike_weight;
-    }
-
-
-    // for coordination about input pingpong PLM
-    bool ping = true;
-
-    // for coordination about batching circular buffer
-    uint8_t writeloc = 0;
-    this->full = "0000";
-    
-    // length of time-series data per window and per electrode per input batch
-    uint32_t len_perelec = tsamps_perbatch*batches_perload;
-    uint32_t len_perwindow = window_size*len_perelec;
-    uint32_t in_length = num_windows*len_perwindow;
-    {
-        for (uint16_t b = 0; b < num_loads; b++)
-        {
-
-            // since we have a chunking factor of 1, this only does one iteration
-            for (int in_rem = in_length; in_rem > 0; in_rem -= PLM_IN_WORD)
-            {
-
-                uint32_t in_len  = in_rem  > PLM_IN_WORD  ? PLM_IN_WORD  : in_rem;
-
-                this->detect_load_handshake();
-
-                // Computing phase implementation
-
-                // parallel computation for each window
-                for (int w = 0; w < num_windows; w++) {
-                    // UNROLL THIS LOOP
-
-                    uint32_t window_offset = len_perwindow*w;
-
-                    // flag for whether there is a spike in this window
-                    bool flag = false;
-                    int16_t data = 0;
-                    for (int elec = 0; elec < window_size; elec++) {
-                        // UNROLL?
-
-                        uint32_t elec_offset = len_perelec*elec;
-
-                        for (int samp = 0; samp < len_perelec; samp++) {
-                            if (ping)
-                                data = plm_in_ping[window_offset + elec_offset + samp];
-                            else
-                                data = plm_in_pong[window_offset + elec_offset + samp];
-                            if (data > detect_threshold) {
-                                flag = true;
-                                // if the window is flagged, we don't need to look at rest of data
-                                samp = len_perelec;
-                                elec = window_size;
-                            }
-                        }
-                    }
-                    if (flag) {
-                        // IMPLEMENT storing data in buffer
-                        // need to use fill and writeloc appropriately
-                    }
-                }
-
-                this->detect_compute_handshake();
-                ping = !ping;
-            }
-        }
-
-        // Conclude
-        {
-            this->process_done();
-        }
-    }
-}
-*/
-
 void mindfuzz::compute_kernel()
 {
     // Reset
@@ -309,30 +181,30 @@ void mindfuzz::compute_kernel()
     }
 
     // Config
-    int32_t do_relu;
     int32_t window_size;
     int32_t batches_perload;
     TYPE learning_rate;
     int32_t neurons_perwin;
     int32_t tsamps_perbatch;
-    TYPE detect_threshold;
     int32_t num_windows;
     int32_t iters_perbatch;
     int32_t num_loads;
     TYPE rate_spike;
     TYPE rate_noise;
     TYPE spike_weight;
+    bool do_init;
+    bool do_backprop;
 
     // declare some necessary variables
     // int32_t load_batches;
     int32_t total_tsamps;
     int32_t input_dimension;
-    int32_t output_dimension;
     int32_t layer1_dimension;
-    int32_t W2_size;
     int32_t W1_size;
+#ifdef do_bias
     int32_t B2_size;
     int32_t B1_size;
+#endif
     {
         HLS_PROTO("compute-config");
 
@@ -340,29 +212,27 @@ void mindfuzz::compute_kernel()
         conf_info_t config = this->conf_info.read();
 
         // User-defined config code
-        do_relu = config.do_relu;
         window_size = config.window_size;
         batches_perload = config.batches_perload;
-        learning_rate = config.learning_rate;
+        learning_rate = a_read(config.learning_rate);
         neurons_perwin = config.neurons_perwin;
         tsamps_perbatch = config.tsamps_perbatch;
-        detect_threshold = config.detect_threshold;
         num_windows = config.num_windows;
         iters_perbatch = config.iters_perbatch;
         num_loads = config.num_loads;
-        rate_spike = config.rate_spike;
-        rate_noise = config.rate_noise;
-        spike_weight = config.spike_weight;
+        rate_spike = a_read(config.rate_spike);
+        rate_noise = a_read(config.rate_noise);
+        spike_weight = a_read(config.spike_weight);
+        do_init = config.do_init;
+        do_backprop = config.do_backprop;
         
         // total size of a load batch is useful for relevancy check
         total_tsamps = tsamps_perbatch * batches_perload;
 
         // some dimension computation useful for backprop
         input_dimension = window_size;
-        output_dimension = input_dimension;
         layer1_dimension = neurons_perwin;
 
-        W2_size = num_windows*output_dimension*layer1_dimension;
         W1_size = num_windows*layer1_dimension*input_dimension;
         B2_size = num_windows*output_dimension;
         B1_size = num_windows*layer1_dimension;
@@ -371,13 +241,15 @@ void mindfuzz::compute_kernel()
 
     // Compute
 
+    if (do_init) {
+    
     // initialize spike/noise means and thresholds
-    {
+
         // initial value for each
         // TODO fix these
-        TYPE initial_mean_noise = 1.0;
-        TYPE initial_mean_spike = 3.0;
-        TYPE initial_thresh = 2.0;
+        TYPE initial_mean_noise = (TYPE)1.0;
+        TYPE initial_mean_spike = (TYPE)3.0;
+        TYPE initial_thresh = (TYPE)2.0;
 
         for (uint32_t window = 0; window < num_windows; window++) {
             uint32_t window_offset = window * window_size;
@@ -387,40 +259,35 @@ void mindfuzz::compute_kernel()
                 plm_thresh[window_offset + elec] = a_write(initial_thresh);
             }
         }
-    }
 
     // initialize weights and biases
-    {
+
         // initial value for each weight/bias
-        TYPE initial_weight = 1.0;
-        TYPE initial_bias = 0.0;
+        TYPE initial_weight = (TYPE)1.0;
+        TYPE initial_bias = (TYPE)0.0;
 
         // PLM access offsets for weights and biases
         uint32_t plm_offset_W1 = 0;
-        uint32_t plm_offset_W2 = plm_offset_W1 + W1_size;
-        uint32_t plm_offset_B1 = plm_offset_W2 + W2_size;
+        uint32_t plm_offset_B1 = plm_offset_W1 + W1_size;
         uint32_t plm_offset_B2 = plm_offset_B1 + B1_size;
 
         // initialize W1
         for (uint32_t weight = 0; weight < W1_size; weight++) {
             plm_out[plm_offset_W1 + weight] =
-                fp2int<TYPE, WORD_SIZE>(initial_weight);
+                a_write(initial_weight);
         }
-        // initialize W2
-        for (uint32_t weight = 0; weight < W2_size; weight++) {
-            plm_out[plm_offset_W2 + weight] =
-                fp2int<TYPE, WORD_SIZE>(initial_weight);
-        }
+#ifdef do_bias        
         // initialize B1
         for (uint32_t weight = 0; weight < B1_size; weight++) {
             plm_out[plm_offset_B1 + weight] =
-                fp2int<TYPE, WORD_SIZE>(initial_bias);
+                a_write(initial_bias);
         }
         // initialize B2
         for (uint32_t weight = 0; weight < B2_size; weight++) {
             plm_out[plm_offset_B2 + weight] =
-                fp2int<TYPE, WORD_SIZE>(initial_bias);
+                a_write(initial_bias);
         }
+#endif
     }
     
     bool ping = true;
@@ -453,29 +320,27 @@ void mindfuzz::compute_kernel()
                                  rate_noise,
                                  spike_weight);
 
-            // run backprop for each compute batch in this load batch
-            for (uint16_t batch = 0; batch < batches_perload; batch++) {
+            if (do_backprop) {
+                // run backprop for each compute batch in this load batch
+                for (uint16_t batch = 0; batch < batches_perload; batch++) {
 
-                // pass relevant parameters like sizes, flag, and pingpong
-                // backprop will access weights, training data, biases directly (they are in PLMs)
-                backprop(do_relu,
-                         learning_rate,
-                         learning_rate,
-                         tsamps_perbatch,
-                         num_windows,
-                         iters_perbatch,
-                         input_dimension,
-                         layer1_dimension,
-                         output_dimension,
-                         W1_size,
-                         W2_size,
-                         B1_size,
-                         B2_size,
-                         batch,
-                         flag,
-                         ping);
+                    // pass relevant parameters like sizes, flag, and pingpong
+                    // backprop will access weights, training data, biases directly (they are in PLMs)
+                    backprop(learning_rate,
+                             tsamps_perbatch,
+                             num_windows,
+                             iters_perbatch,
+                             input_dimension,
+                             layer1_dimension,
+                             W1_size,
+                             B1_size,
+                             B2_size,
+                             batch,
+                             flag,
+                             ping);
 
-                // this compute batch done
+                    // this compute batch done
+                }
             }
 
             ping = !ping;
@@ -524,19 +389,19 @@ void mindfuzz::store_output()
     }
 
     // Config
-    int32_t do_relu;
     int32_t window_size;
     int32_t batches_perload;
     TYPE learning_rate;
     int32_t neurons_perwin;
     int32_t tsamps_perbatch;
-    TYPE detect_threshold;
     int32_t num_windows;
     int32_t iters_perbatch;
     int32_t num_loads;
     TYPE rate_spike;
     TYPE rate_noise;
     TYPE spike_weight;
+    bool do_init;
+    bool do_backprop;
 
     // declare some necessary variables
     // int32_t load_batches;
@@ -547,19 +412,19 @@ void mindfuzz::store_output()
         conf_info_t config = this->conf_info.read();
 
         // User-defined config code
-        do_relu = config.do_relu;
         window_size = config.window_size;
         batches_perload = config.batches_perload;
-        learning_rate = config.learning_rate;
+        learning_rate = a_read(config.learning_rate);
         neurons_perwin = config.neurons_perwin;
         tsamps_perbatch = config.tsamps_perbatch;
-        detect_threshold = config.detect_threshold;
         num_windows = config.num_windows;
         iters_perbatch = config.iters_perbatch;
         num_loads = config.num_loads;
-        rate_spike = config.rate_spike;
-        rate_noise = config.rate_noise;
-        spike_weight = config.spike_weight;
+        rate_spike = a_read(config.rate_spike);
+        rate_noise = a_read(config.rate_noise);
+        spike_weight = a_read(config.spike_weight);
+        do_init = config.do_init;
+        do_backprop = config.do_backprop;
     }
 
     // Store
