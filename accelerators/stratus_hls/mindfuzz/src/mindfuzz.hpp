@@ -30,9 +30,9 @@
 // TODO formalize these as the maximum sizes so they can be used for array sizing e.g. flag array
 // macro versions of some config parameters, in case we don't want them configable
 #define CONST_NUM_WINDOWS 1
-#define CONST_WINDOW_SIZE 4
-#define CONST_NEURONS_PERWIN 1
-#define CONST_TSAMPS_PERBATCH 70
+#define CONST_WINDOW_SIZE 32
+#define CONST_NEURONS_PERWIN 6
+#define CONST_TSAMPS_PERBATCH 90
 #define CONST_BATCHES_PERLOAD 1
 //#define do_bias
 

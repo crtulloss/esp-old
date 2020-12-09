@@ -104,10 +104,10 @@ void system_t::load_memory()
     // Input data and golden output (aligned to DMA_WIDTH makes your life easier)
 #if (DMA_WORD_PER_BEAT == 0)
     in_words_adj = num_windows*window_size*tsamps_perbatch*batches_perload;
-    out_words_adj = num_windows*(neurons_perwin*(window_size) + window_size*(neurons_perwin));
+    out_words_adj = num_windows*neurons_perwin*window_size;
 #else
     in_words_adj = round_up(num_windows*window_size*tsamps_perbatch*batches_perload, DMA_WORD_PER_BEAT);
-    out_words_adj = round_up(num_windows*(neurons_perwin*(window_size) + window_size*(neurons_perwin)), DMA_WORD_PER_BEAT);
+    out_words_adj = round_up(num_windows*neurons_perwin*window_size, DMA_WORD_PER_BEAT);
 #endif
 
     in_size = in_words_adj * (num_loads);
@@ -166,46 +166,19 @@ void system_t::load_memory()
     ESP_REPORT_INFO("input transferred to array");
 
     // read output (weight) data from CSV file into 2D array
-    // this works with each principle component's weights in a separate file
+    // I concatenated all the data into one file
+    std::ifstream wdata("../sw/m2/h.csv");
+    std::string wline;
     std::vector<std::vector<std::string> > parsed_weights;
-    for (uint32_t neuron = 0; neuron < neurons_perwin; neuron++) {
-        std::ifstream wdata;
-        // this is dumb
-        if (neuron == 0) {
-            std::ifstream w_data("../sw/m2/h0.csv");
-            wdata = w_data;
+    while (std::getline(wdata, wline)) {
+        std::stringstream lineStream(wline);
+        std::string cell;
+        std::vector<std::string> parsedRow;
+        while(std::getline(lineStream, cell, ',')) {
+            parsedRow.push_back(cell);
         }
-        else if (neuron == 1) {
-            std::ifstream w_data("../sw/m2/h1.csv");
-            wdata = w_data;
-        }
-        else if (neuron == 2) {
-            std::ifstream w_data("../sw/m2/h2.csv");
-            wdata = w_data;
-        }
-        else if (neuron == 3) {
-            std::ifstream w_data("../sw/m2/h3.csv");
-            wdata = w_data;
-        }
-        else if (neuron == 4) {
-            std::ifstream w_data("../sw/m2/h4.csv");
-            wdata = w_data;
-        }
-        else if (neuron == 5) {
-            std::ifstream w_data("../sw/m2/h5.csv");
-            wdata = w_data;
-        }
-        std::string wline;
-        while (std::getline(wdata, wline)) {
-            std::stringstream lineStream(wline);
-            std::string cell;
-            std::vector<std::string> parsedRow;
-            while(std::getline(lineStream, cell, ',')) {
-                parsedRow.push_back(cell);
-            }
 
-            parsed_weights.push_back(parsedRow);
-        }
+        parsed_weights.push_back(parsedRow);
     }
 
     ESP_REPORT_INFO("output CSV read");
@@ -214,7 +187,7 @@ void system_t::load_memory()
 
     // if out_size is odd, out_size will be too large for this loop
     uint32_t out_size_unround =
-        num_windows*(neurons_perwin*(window_size) + window_size*(neurons_perwin));
+        num_windows*neurons_perwin*window_size;
 
     ESP_REPORT_INFO("out size (unrounded is %d", out_size_unround);
 
@@ -240,7 +213,7 @@ void system_t::load_memory()
             sselem >> float_element;
             
             // put it in the array
-            gold[elem] = float_element;
+            gold[neuron*window_size + electrode] = float_element;
         }
     }
     
@@ -310,7 +283,7 @@ int system_t::validate()
     const float ERR_TH = 0.05;
 
     // note that this will not be affected by rounding
-    int num_weights = num_windows*(neurons_perwin*(window_size) + window_size*(neurons_perwin));
+    int num_weights = num_windows*neurons_perwin*window_size;
 
     for (int j = 0; j < num_weights; j++) {
         ESP_REPORT_INFO("index %d:\tgold %0.8f\tout %0.8f\n", j, gold[j], out[j]);

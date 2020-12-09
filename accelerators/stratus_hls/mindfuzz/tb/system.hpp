@@ -61,7 +61,7 @@ public:
 // edited for mindfuzz unit testing
         num_windows = 1;
         iters_perbatch = 1;
-        num_loads = 223;
+        num_loads = 1;
         learning_rate = TYPE(((float)0.000001) / ((float)tsamps_perbatch) / ((float)window_size));
 // for testing with fixed point. this ^ learning rate won't fit in precision
         //learning_rate = TYPE(((float)0.001) / ((float)tsamps_perbatch) / ((float)window_size));

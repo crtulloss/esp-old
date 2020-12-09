@@ -388,6 +388,8 @@ void mindfuzz::backprop(TYPE learning_rate,
 
                     // forward pass
 
+                    // dummy variable for input data to compare against
+                    TYPE temp_input;
                     // dummy variables for layer 1 activation increment
                     TYPE temp_act1;
                     TYPE temp_incr;
@@ -406,10 +408,20 @@ void mindfuzz::backprop(TYPE learning_rate,
                         // mac
                         for (uint32_t in = 0; in < input_dimension; in++) {
 
+                            // determine appropriate input for this neuron
+                            if (neuron == 0) {
+                                // neuron 0 uses electrode data
+                                temp_input = a_read(elecdata[window_offset_input + in]);
+                            }
+                            else {
+                                // subsequent neurons use output from previous neuron
+                                temp_input = a_read(output[window_offset_input + in]);
+                            }
+
                             // compute (FP) increment
                             temp_incr = a_read(plm_out[window_offset_weights1 +
                                     neuron*input_dimension + in]) *
-                                a_read(elecdata[window_offset_input + in]);
+                                temp_input;
                             // add to accum variable
                             temp_act1 = temp_act1 + temp_incr;
                         }
@@ -422,16 +434,29 @@ void mindfuzz::backprop(TYPE learning_rate,
                         // so the computation for each output is a scalar mult
                         for (uint32_t out = 0; out < input_dimension; out++) {
                         
+                            // determine appropriate ground truth for this neuron
+                            if (neuron == 0) {
+                                // neuron 0 uses electrode data
+                                temp_input = a_read(elecdata[window_offset_input + out]);
+                            }
+                            else {
+                                // subsequent neurons use output from previous neuron
+                                temp_input = a_read(output[window_offset_input + out]);
+                            }
+                       
                             // compute output
                             temp_out = 
                                 a_read(plm_out[window_offset_weights1 + neuron*input_dimension + out]) *
                                 a_read(act1[window_offset_layer1 + neuron]);
                             output[window_offset_input + out] = a_write(temp_out);
+                            if (samp == 0 && out == 0) {
+                            ESP_REPORT_INFO("sample %d, neuron %d, electrode %d input is %0.8f", samp, neuron, out, temp_input);
+                            ESP_REPORT_INFO("sample %d, neuron %d, electrode %d ouput is %0.8f", samp, neuron, out, temp_out);
+                            }
 
                             // subtract the ground truth difference
-                            diff[window_offset_input + out] = a_write(
-                                temp_out - a_read(elecdata[window_offset_input + out]));
-                       
+                            diff[window_offset_input + out] = a_write(temp_out - temp_input);
+
                             // begin backprop: accumulate weight delta
                             
                             // acquire existing dW1
@@ -451,7 +476,7 @@ void mindfuzz::backprop(TYPE learning_rate,
             }
             // this sample is complete for this iter
         }
-
+        // batch forward passes complete
         // all samples have now been processed,
         // and we are ready to perform a weight update for this iter
         TYPE temp_plmval;
@@ -478,6 +503,9 @@ void mindfuzz::backprop(TYPE learning_rate,
                         // compute (FP) increment
                         temp_incr = a_read(dW1[window_offset_weights1
                                 + neuron*input_dimension + in]) * (learning_rate);
+                        if (in == 0) {
+                        ESP_REPORT_INFO("neuron %d, input %d weight delta is %0.8f", neuron, in, temp_incr);
+                        }
                         // update plmval
                         plm_out[window_offset_weights1 + neuron*input_dimension + in] = 
                             a_write(temp_plmval - temp_incr);

@@ -265,7 +265,7 @@ void mindfuzz::compute_kernel()
     // initialize weights and biases
 
         // initial value for each weight/bias
-        TYPE initial_weight = (TYPE)1.0;
+        TYPE initial_weight = (TYPE)0.03125;
         TYPE initial_bias = (TYPE)0.0;
 
         // PLM access offsets for weights and biases
@@ -444,11 +444,10 @@ void mindfuzz::store_output()
         wait();
 // length of data to be stored
 #if (DMA_WORD_PER_BEAT == 0)
-        uint32_t length = num_windows*(neurons_perwin*(window_size+1) + window_size*(neurons_perwin+1));
+        uint32_t length = num_windows*neurons_perwin*window_size;
 #else
         // broke up this computation and added some waits in order to improve schedule
-        uint32_t length_dum = num_windows*(neurons_perwin*(window_size+1) +
-                                           window_size*(neurons_perwin+1));
+        uint32_t length_dum = num_windows*neurons_perwin*window_size;
         wait();
         uint32_t length = round_up(length_dum, DMA_WORD_PER_BEAT);
 #endif
@@ -510,6 +509,7 @@ void mindfuzz::store_output()
                 // deleted pingpong
                 dataBv.range((k+1) * DATA_WIDTH - 1, k * DATA_WIDTH) = plm_out[i + k];
             }
+
             this->dma_write_chnl.put(dataBv);
         }
 #endif
