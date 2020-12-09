@@ -116,7 +116,7 @@ void system_t::load_memory()
 
 
     // read input data into 2D array from CSV file
-    std::ifstream indata("../sw/m1/data5.csv");
+    std::ifstream indata("../sw/m2/data_32.csv");
     std::string line;
     std::vector<std::vector<std::string> > parsedCSV;
     while (std::getline(indata, line)) {
@@ -137,7 +137,7 @@ void system_t::load_memory()
 
     // dimensions of data relative to CSV 2D
     // in_size = num_loads * batches_perload * tsamps_perbatch *  // num rows
-    //           num_windows * window_size                            // num cols
+    //           num_windows * window_size                        // num cols
 
     ESP_REPORT_INFO("in size is %d", in_size);
 
@@ -166,18 +166,21 @@ void system_t::load_memory()
     ESP_REPORT_INFO("input transferred to array");
 
     // read output (weight) data from CSV file into 2D array
-    std::ifstream wdata("../sw/m1/weights5.csv");
-    std::string wline;
+    // this works with each principle component's weights in a separate file
     std::vector<std::vector<std::string> > parsed_weights;
-    while (std::getline(wdata, wline)) {
-        std::stringstream lineStream(wline);
-        std::string cell;
-        std::vector<std::string> parsedRow;
-        while(std::getline(lineStream, cell, ',')) {
-            parsedRow.push_back(cell);
-        }
+    for (uint32_t neuron = 0; neuron < neurons_perwin; neuron++) {
+        std::ifstream wdata("../sw/m2/h%d.csv", neuron);
+        std::string wline;
+        while (std::getline(wdata, wline)) {
+            std::stringstream lineStream(wline);
+            std::string cell;
+            std::vector<std::string> parsedRow;
+            while(std::getline(lineStream, cell, ',')) {
+                parsedRow.push_back(cell);
+            }
 
-        parsed_weights.push_back(parsedRow);
+            parsed_weights.push_back(parsedRow);
+        }
     }
 
     ESP_REPORT_INFO("output CSV read");
@@ -193,33 +196,29 @@ void system_t::load_memory()
     // temporary float array to store the golden output data
     gold = new float[out_size];
 
-    uint32_t W1_size = num_windows*neurons_perwin*window_size;
-    uint32_t W2_size = num_windows*neurons_perwin*window_size;
+    // data for all loads, all batches will be in the parsed array
+    uint32_t total_loads = 223;
 
-    for (uint32_t elem = 0; elem < W1_size; elem++) {
+    for (uint32_t neuron = 0; neuron < neurons_perwin; neuron++) {
 
-        std::string element = parsed_weights[elem + 1][2];
+        for (uint32_t electrode = 0; electrode < window_size; electrode++) {
 
-        // convert string to float
-        stringstream sselem(element);
-        float float_element = 0;
-        sselem >> float_element;
+            // rows to skip: total loads and header row for previous neurons
+            // row to get from this neuron: num_loads - 1 + 1
+            // -1 because 1 load would be load #0,
+            // +1 because we skip the header row
+            std::string element = parsed_weights[neuron*(total_loads+1) + num_loads][electrode + 1];
+        
+            // convert string to float
+            stringstream sselem(element);
+            float float_element = 0;
+            sselem >> float_element;
             
-        // put it in the array
-        gold[elem] = float_element;
+            // put it in the array
+            gold[elem] = float_element;
+        }
     }
-    for (uint32_t elem = 0; elem < W2_size; elem++) {
-
-        std::string element = parsed_weights[elem + 1][3];
-
-        // convert string to float
-        stringstream sselem(element);
-        float float_element = 0;
-        sselem >> float_element;
-            
-        // put it in the array
-        gold[W1_size + elem] = float_element;
-    }
+    
 #ifdef do_bias
 //TODO
 #endif

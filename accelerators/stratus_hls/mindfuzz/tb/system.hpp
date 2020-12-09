@@ -54,14 +54,14 @@ public:
         acc->debug(debug);
 
         /* <<--params-default-->> */
-        window_size = 4;
+        window_size = 32;
         batches_perload = 1;
-        neurons_perwin = 1;
-        tsamps_perbatch = 70;
+        neurons_perwin = 6;
+        tsamps_perbatch = 90;
 // edited for mindfuzz unit testing
         num_windows = 1;
         iters_perbatch = 1;
-        num_loads = 500;
+        num_loads = 223;
         learning_rate = TYPE(((float)0.000001) / ((float)tsamps_perbatch) / ((float)window_size));
 // for testing with fixed point. this ^ learning rate won't fit in precision
         //learning_rate = TYPE(((float)0.001) / ((float)tsamps_perbatch) / ((float)window_size));

@@ -288,7 +288,9 @@ void mindfuzz::relevant(int32_t total_tsamps,
 
             if (maxmin > thresh) {
                 // flag the window
-                flag[window] = true;
+                // TODO edited for validation testing with every batch processed
+                // flag[window] = true;
+                flag[window] = false;
             }
         }
         // done with this window
