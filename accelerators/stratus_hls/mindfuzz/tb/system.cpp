@@ -169,7 +169,32 @@ void system_t::load_memory()
     // this works with each principle component's weights in a separate file
     std::vector<std::vector<std::string> > parsed_weights;
     for (uint32_t neuron = 0; neuron < neurons_perwin; neuron++) {
-        std::ifstream wdata("../sw/m2/h%d.csv", neuron);
+        std::ifstream wdata;
+        // this is dumb
+        if (neuron == 0) {
+            std::ifstream w_data("../sw/m2/h0.csv");
+            wdata = w_data;
+        }
+        else if (neuron == 1) {
+            std::ifstream w_data("../sw/m2/h1.csv");
+            wdata = w_data;
+        }
+        else if (neuron == 2) {
+            std::ifstream w_data("../sw/m2/h2.csv");
+            wdata = w_data;
+        }
+        else if (neuron == 3) {
+            std::ifstream w_data("../sw/m2/h3.csv");
+            wdata = w_data;
+        }
+        else if (neuron == 4) {
+            std::ifstream w_data("../sw/m2/h4.csv");
+            wdata = w_data;
+        }
+        else if (neuron == 5) {
+            std::ifstream w_data("../sw/m2/h5.csv");
+            wdata = w_data;
+        }
         std::string wline;
         while (std::getline(wdata, wline)) {
             std::stringstream lineStream(wline);

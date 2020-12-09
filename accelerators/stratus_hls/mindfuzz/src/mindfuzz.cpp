@@ -234,8 +234,10 @@ void mindfuzz::compute_kernel()
         layer1_dimension = neurons_perwin;
 
         W1_size = num_windows*layer1_dimension*input_dimension;
+#ifdef do_bias
         B2_size = num_windows*output_dimension;
         B1_size = num_windows*layer1_dimension;
+#endif
     }
 
 
@@ -268,8 +270,6 @@ void mindfuzz::compute_kernel()
 
         // PLM access offsets for weights and biases
         uint32_t plm_offset_W1 = 0;
-        uint32_t plm_offset_B1 = plm_offset_W1 + W1_size;
-        uint32_t plm_offset_B2 = plm_offset_B1 + B1_size;
 
         // initialize W1
         for (uint32_t weight = 0; weight < W1_size; weight++) {
@@ -277,6 +277,8 @@ void mindfuzz::compute_kernel()
                 a_write(initial_weight);
         }
 #ifdef do_bias        
+        uint32_t plm_offset_B1 = plm_offset_W1 + W1_size;
+        uint32_t plm_offset_B2 = plm_offset_B1 + B1_size;
         // initialize B1
         for (uint32_t weight = 0; weight < B1_size; weight++) {
             plm_out[plm_offset_B1 + weight] =
@@ -333,8 +335,6 @@ void mindfuzz::compute_kernel()
                              input_dimension,
                              layer1_dimension,
                              W1_size,
-                             B1_size,
-                             B2_size,
                              batch,
                              flag,
                              ping);

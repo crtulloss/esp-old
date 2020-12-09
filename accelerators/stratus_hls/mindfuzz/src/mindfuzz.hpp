@@ -98,9 +98,7 @@ public:
                   int32_t iters_perbatch,
                   int32_t input_dimension,
                   int32_t layer1_dimension,
-                  int32_t W1_size,
-                  int32_t B1_size,
-                  int32_t B2_size,
+                  int32_t W_size,
                   int32_t batch,
                   bool flag[],
                   bool ping);

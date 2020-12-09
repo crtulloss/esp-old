@@ -344,6 +344,7 @@ void mindfuzz::backprop(TYPE learning_rate,
     // TODO rewrite to not use arbitrarily sized arrays
     sc_dt::sc_int<DATA_WIDTH> act1[const_act1_size];
     sc_dt::sc_int<DATA_WIDTH> out[const_diff_size];
+    sc_dt::sc_int<DATA_WIDTH> output[const_diff_size];
     sc_dt::sc_int<DATA_WIDTH> diff[const_diff_size];
 
     for (uint32_t iter = 0; iter < iters_perbatch; iter++) {
@@ -393,7 +394,7 @@ void mindfuzz::backprop(TYPE learning_rate,
                     // dummy variable for output activation
                     TYPE temp_out;
                     // dummy variable for weight delta
-                    TYPE temp_dW1
+                    TYPE temp_dW1;
 
                     // processing for each "neuron" is done in series
                     for (uint32_t neuron = 0; neuron < layer1_dimension; neuron++) {
@@ -425,7 +426,7 @@ void mindfuzz::backprop(TYPE learning_rate,
                             temp_out = 
                                 a_read(plm_out[window_offset_weights1 + neuron*input_dimension + out]) *
                                 a_read(act1[window_offset_layer1 + neuron]);
-                            out[window_offset_input + out] = a_write(temp_out);
+                            output[window_offset_input + out] = a_write(temp_out);
 
                             // subtract the ground truth difference
                             diff[window_offset_input + out] = a_write(
@@ -437,7 +438,7 @@ void mindfuzz::backprop(TYPE learning_rate,
                             temp_dW1 = a_read(
                                 dW1[window_offset_weights1 + neuron*input_dimension + out]);
                             // compute increment
-                            temp_incr = ((type)2.0) * a_read(diff[window_offset_input + out]) *
+                            temp_incr = ((TYPE)2.0) * a_read(diff[window_offset_input + out]) *
                                 a_read(act1[window_offset_layer1 + neuron]);
                             // update dW1
                             dW1[window_offset_weights1 + neuron*input_dimension + out] = 
