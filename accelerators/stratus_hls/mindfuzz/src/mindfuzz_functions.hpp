@@ -344,7 +344,6 @@ void mindfuzz::backprop(TYPE learning_rate,
     // TODO rewrite to not use arbitrarily sized arrays
     sc_dt::sc_int<DATA_WIDTH> act1[const_act1_size];
     sc_dt::sc_int<DATA_WIDTH> out[const_diff_size];
-    sc_dt::sc_int<DATA_WIDTH> output[const_diff_size];
     sc_dt::sc_int<DATA_WIDTH> diff[const_diff_size];
 
     for (uint32_t iter = 0; iter < iters_perbatch; iter++) {
@@ -414,8 +413,8 @@ void mindfuzz::backprop(TYPE learning_rate,
                                 temp_input = a_read(elecdata[window_offset_input + in]);
                             }
                             else {
-                                // subsequent neurons use output from previous neuron
-                                temp_input = a_read(output[window_offset_input + in]);
+                                // subsequent neurons use error from previous neuron
+                                temp_input = a_read(diff[window_offset_input + in]);
                             }
 
                             // compute (FP) increment
@@ -440,34 +439,58 @@ void mindfuzz::backprop(TYPE learning_rate,
                                 temp_input = a_read(elecdata[window_offset_input + out]);
                             }
                             else {
-                                // subsequent neurons use output from previous neuron
-                                temp_input = a_read(output[window_offset_input + out]);
+                                // subsequent neurons use error from previous neuron
+                                temp_input = a_read(diff[window_offset_input + out]);
                             }
                        
                             // compute output
                             temp_out = 
                                 a_read(plm_out[window_offset_weights1 + neuron*input_dimension + out]) *
                                 a_read(act1[window_offset_layer1 + neuron]);
-                            output[window_offset_input + out] = a_write(temp_out);
+/*
                             if (samp == 0 && out == 0) {
-                            ESP_REPORT_INFO("sample %d, neuron %d, electrode %d input is %0.8f", samp, neuron, out, temp_input);
-                            ESP_REPORT_INFO("sample %d, neuron %d, electrode %d ouput is %0.8f", samp, neuron, out, temp_out);
+                                ESP_REPORT_INFO("sample %d, neuron %d, electrode %d input is %0.16f", samp, neuron, out, float(temp_input));
+                                ESP_REPORT_INFO("sample %d, neuron %d, electrode %d ouput is %0.16f", samp, neuron, out, float(temp_out));
                             }
+*/
 
                             // subtract the ground truth difference
                             diff[window_offset_input + out] = a_write(temp_out - temp_input);
+/*
+                            if (samp == 0 && out == 0) {
+                                ESP_REPORT_INFO("sample %d, neuron %d, electrode %d diff  is %0.16f", samp, neuron, out, float(a_read(diff[window_offset_input + out])));
+                                ESP_REPORT_INFO("sample %d, neuron %d, electrode %d dW1   is %0.16f", samp, neuron, out, float(a_read(dW1[window_offset_weights1 + neuron*input_dimension + out])));
+                            }
+*/
 
                             // begin backprop: accumulate weight delta
                             
                             // acquire existing dW1
                             temp_dW1 = a_read(
                                 dW1[window_offset_weights1 + neuron*input_dimension + out]);
+
                             // compute increment
-                            temp_incr = ((TYPE)2.0) * a_read(diff[window_offset_input + out]) *
+                            // LEARNING RATE LOCATION A
+#ifdef split_LR
+                            // bit shift the dW1 for this sample
+                            temp_incr = shift_A * (a_read(diff[window_offset_input + out]) *
+                                a_read(act1[window_offset_layer1 + neuron]));
+#else
+                            // regular version
+                            // learning rate will be applied later during weight update
+                            temp_incr = a_read(diff[window_offset_input + out]) *
                                 a_read(act1[window_offset_layer1 + neuron]);
+#endif
+
                             // update dW1
                             dW1[window_offset_weights1 + neuron*input_dimension + out] = 
                                 a_write(temp_incr + temp_dW1);
+/*
+                            if (samp == 0 && out == 0) {
+                                ESP_REPORT_INFO("sample %d, neuron %d, electrode %d incr  is %0.16f", samp, neuron, out, float(temp_incr));
+                                ESP_REPORT_INFO("sample %d, neuron %d, electrode %d dW1_n is %0.16f", samp, neuron, out, float(a_read(dW1[window_offset_weights1 + neuron*input_dimension + out])));
+                            }
+*/
 
                         }
                     }
@@ -500,15 +523,55 @@ void mindfuzz::backprop(TYPE learning_rate,
                         // acquire existing plmval
                         temp_plmval = a_read(
                             plm_out[window_offset_weights1 + neuron*input_dimension + in]);
+
                         // compute (FP) increment
+                        // LEARNING RATE LOCATION B
+                        // this one is the same whether we use split LR or not
+                        // but value of learning_rate will be different
                         temp_incr = a_read(dW1[window_offset_weights1
                                 + neuron*input_dimension + in]) * (learning_rate);
+/*
                         if (in == 0) {
-                        ESP_REPORT_INFO("neuron %d, input %d weight delta is %0.8f", neuron, in, temp_incr);
+                            ESP_REPORT_INFO("neuron %d, input %d        weight is %0.16f", neuron, in, float(temp_plmval));
+                            ESP_REPORT_INFO("neuron %d, input %d        deltaW is %0.16f", neuron, in, float(a_read(dW1[window_offset_weights1 + neuron*input_dimension + in])));
+                            ESP_REPORT_INFO("neuron %d, input %d        dW*l_r is %0.16f", neuron, in, float(temp_incr));
                         }
+*/
+#ifdef split_LR
+                        // LEARNING RATE LOCATION C
+                        // scale up the current weight
+                        temp_plmval = temp_plmval * shift_up_C;
+/*
+                        if (in == 0) {
+                            ESP_REPORT_INFO("neuron %d, input %d scaled weight is %0.16f", neuron, in, float(temp_plmval));
+                        }
+*/
+                        // do the increment
+                        temp_plmval = temp_plmval - temp_incr;
+/*
+                        if (in == 0) {
+                            ESP_REPORT_INFO("neuron %d, input %d incred weight is %0.16f", neuron, in, float(temp_plmval));
+                        }
+*/
+                        // scale back down
+                        temp_plmval = temp_plmval * shift_down_C;
+/*
+                        if (in == 0) {
+                            ESP_REPORT_INFO("neuron %d, input %d new    weight is %0.16f", neuron, in, float(temp_plmval));
+                        }
+*/
+#else
+                        // calculate new weight
+                        temp_plmval = temp_plmval - temp_incr;
+/*
+                        if (in == 0) {
+                            ESP_REPORT_INFO("neuron %d, input %d new    weight is %0.16f", neuron, in, float(temp_plmval));
+                        }
+*/
+#endif
                         // update plmval
                         plm_out[window_offset_weights1 + neuron*input_dimension + in] = 
-                            a_write(temp_plmval - temp_incr);
+                            a_write(temp_plmval);
 
                     }
                 }

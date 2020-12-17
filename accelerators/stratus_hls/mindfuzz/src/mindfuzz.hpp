@@ -41,6 +41,23 @@
 #define PLM_IN_WORD CONST_NUM_WINDOWS*CONST_WINDOW_SIZE*CONST_TSAMPS_PERBATCH*CONST_BATCHES_PERLOAD
 #define PLM_ELEC_WORD CONST_NUM_WINDOWS*CONST_WINDOW_SIZE
 
+// useful macros for splitting up learning rate multiplications to preserve dynamic range
+#ifdef split_LR
+#define frac_4 ((TYPE)0.25)
+#define frac_64 ((TYPE)0.015625)
+#define frac_128 ((TYPE)0.0078125)
+#define frac_256 ((TYPE)0.00390625)
+#define frac_512 ((TYPE)0.001953125)
+#define frac_1024 ((TYPE)0.0009765625)
+#define frac_2048 ((TYPE)0.00048828125)
+#define frac_4096 ((TYPE)0.0002441406125)
+//#define shift_A ((TYPE)0.0078125)
+//#define shift_A ((TYPE)0.00390625)
+#define shift_A frac_2048
+#define numerator_B 128
+#define shift_up_C ((TYPE)128)
+#define shift_down_C frac_128
+#endif
 
 class mindfuzz : public esp_accelerator_3P<DMA_WIDTH>
 {

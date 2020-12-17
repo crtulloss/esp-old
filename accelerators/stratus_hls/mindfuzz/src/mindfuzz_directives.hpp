@@ -23,11 +23,17 @@
 // use fixed point data type
 #define FX_WIDTH 32
 #define FX64_IL 2
-#define FX32_IL 12
+#define FX32_IL 15
 #define FX16_IL 8 // TODO what is the correct length?
 
-#if defined(STRATUS_HLS)
+// to test whether applying learning rate in stages gives same result
+// as single learning rate
+#define split_LR
+
+// testing beh using fixed point
 #define HLS_FP
+
+#if defined(STRATUS_HLS)
 
 // auto generated stuff
 #define HLS_MAP_plm(_mem, _plm_block_name)      \

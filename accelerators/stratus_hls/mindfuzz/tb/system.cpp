@@ -48,7 +48,14 @@ void system_t::config_proc()
     }
 
     ESP_REPORT_INFO("config done");
+#ifdef split_LR
+    ESP_REPORT_INFO("learning rate location A is %.15f", (float)shift_A);
+    ESP_REPORT_INFO("learning rate location B is %.15f", (float)learning_rate);
+    ESP_REPORT_INFO("learning rate location C is %.15f", (float)shift_down_C);
+    ESP_REPORT_INFO("learning rate overall    is %.15f", (float)(shift_A * learning_rate * shift_down_C));
+#else
     ESP_REPORT_INFO("learning rate is %.15f", (float)learning_rate);
+#endif
 
     // Compute
     {
@@ -286,7 +293,7 @@ int system_t::validate()
     int num_weights = num_windows*neurons_perwin*window_size;
 
     for (int j = 0; j < num_weights; j++) {
-        ESP_REPORT_INFO("index %d:\tgold %0.8f\tout %0.8f\n", j, gold[j], out[j]);
+        ESP_REPORT_INFO("index %d:\tgold %0.16f\tout %0.16f\n", j, gold[j], out[j]);
         if ((fabs(gold[j] - out[j]) / fabs(gold[j])) > ERR_TH) {
             errors++;
         }

@@ -61,8 +61,16 @@ public:
 // edited for mindfuzz unit testing
         num_windows = 1;
         iters_perbatch = 1;
-        num_loads = 1;
-        learning_rate = TYPE(((float)0.000001) / ((float)tsamps_perbatch) / ((float)window_size));
+        num_loads = 223;
+#ifdef split_LR
+        // version with split learning rate. shift_A = 1/128, shift_down_C = 1/512
+        // learning_rate * shift_A * shift_down_C = non-split learning rate
+        learning_rate = TYPE(((float)numerator_B) / ((float)703125));
+#else
+        // version with single learning rate.
+        // note that calculus factor of 2 has been manually applied here
+        learning_rate = TYPE(((float)0.000002) / ((float)tsamps_perbatch) / ((float)window_size));
+#endif
 // for testing with fixed point. this ^ learning rate won't fit in precision
         //learning_rate = TYPE(((float)0.001) / ((float)tsamps_perbatch) / ((float)window_size));
         rate_spike = TYPE(0.01);
