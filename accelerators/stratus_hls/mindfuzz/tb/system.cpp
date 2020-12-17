@@ -224,9 +224,6 @@ void system_t::load_memory()
         }
     }
     
-#ifdef do_bias
-//TODO
-#endif
     ESP_REPORT_INFO("output transferred to array");
 
     // Memory initialization:

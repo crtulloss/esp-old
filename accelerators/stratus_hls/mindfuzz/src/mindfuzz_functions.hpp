@@ -584,7 +584,7 @@ void mindfuzz::backprop(TYPE learning_rate,
 }
 
 // backprop function used in computational kernel
-// legacy version with multiple components in parallel
+// legacy version with multiple components in parallel and bias
 /*
 void mindfuzz::backprop(TYPE learning_rate,
                         int32_t tsamps_perbatch,

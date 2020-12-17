@@ -201,10 +201,6 @@ void mindfuzz::compute_kernel()
     int32_t input_dimension;
     int32_t layer1_dimension;
     int32_t W1_size;
-#ifdef do_bias
-    int32_t B2_size;
-    int32_t B1_size;
-#endif
     {
         HLS_PROTO("compute-config");
 
@@ -234,10 +230,6 @@ void mindfuzz::compute_kernel()
         layer1_dimension = neurons_perwin;
 
         W1_size = num_windows*layer1_dimension*input_dimension;
-#ifdef do_bias
-        B2_size = num_windows*output_dimension;
-        B1_size = num_windows*layer1_dimension;
-#endif
     }
 
 
@@ -262,13 +254,12 @@ void mindfuzz::compute_kernel()
             }
         }
 
-    // initialize weights and biases
+    // initialize weights 
 
-        // initial value for each weight/bias
+        // initial value for each weight
         TYPE initial_weight = (TYPE)0.03125;
-        TYPE initial_bias = (TYPE)0.0;
 
-        // PLM access offsets for weights and biases
+        // PLM access offsets for weights
         uint32_t plm_offset_W1 = 0;
 
         // initialize W1
@@ -276,20 +267,6 @@ void mindfuzz::compute_kernel()
             plm_out[plm_offset_W1 + weight] =
                 a_write(initial_weight);
         }
-#ifdef do_bias        
-        uint32_t plm_offset_B1 = plm_offset_W1 + W1_size;
-        uint32_t plm_offset_B2 = plm_offset_B1 + B1_size;
-        // initialize B1
-        for (uint32_t weight = 0; weight < B1_size; weight++) {
-            plm_out[plm_offset_B1 + weight] =
-                a_write(initial_bias);
-        }
-        // initialize B2
-        for (uint32_t weight = 0; weight < B2_size; weight++) {
-            plm_out[plm_offset_B2 + weight] =
-                a_write(initial_bias);
-        }
-#endif
     }
     
     bool ping = true;
@@ -327,7 +304,7 @@ void mindfuzz::compute_kernel()
                 for (uint16_t batch = 0; batch < batches_perload; batch++) {
 
                     // pass relevant parameters like sizes, flag, and pingpong
-                    // backprop will access weights, training data, biases directly (they are in PLMs)
+                    // backprop will access weights, training data, directly (they are in PLMs)
                     backprop(learning_rate,
                              tsamps_perbatch,
                              num_windows,

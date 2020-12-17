@@ -34,7 +34,6 @@
 #define CONST_NEURONS_PERWIN 6
 #define CONST_TSAMPS_PERBATCH 90
 #define CONST_BATCHES_PERLOAD 1
-//#define do_bias
 
 // new sizes for one-window test
 #define PLM_OUT_WORD CONST_NUM_WINDOWS*CONST_WINDOW_SIZE*CONST_NEURONS_PERWIN
