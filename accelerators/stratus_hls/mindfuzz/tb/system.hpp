@@ -78,6 +78,7 @@ public:
         spike_weight = TYPE(0.5);
         do_init = true;
         do_backprop = true;
+        do_thresh_update = true;
     }
 
     // Processes
@@ -109,6 +110,7 @@ public:
     TYPE spike_weight;
     bool do_init;
     bool do_backprop;
+    bool do_thresh_update;
 
     uint32_t in_words_adj;
     uint32_t out_words_adj;

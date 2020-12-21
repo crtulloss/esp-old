@@ -42,6 +42,7 @@ void system_t::config_proc()
         config.spike_weight = a_write(spike_weight);
         config.do_init = do_init;
         config.do_backprop = do_backprop;
+        config.do_thresh_update = do_thresh_update;
 
         wait(); conf_info.write(config);
         conf_done.write(true);

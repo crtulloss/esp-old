@@ -32,6 +32,7 @@ public:
         this->spike_weight = a_write(0.5);
         this->do_init = true;
         this->do_backprop = true;
+        this->do_thresh_update = true;
     }
 
     conf_info_t(
@@ -48,7 +49,8 @@ public:
         int32_t rate_noise,
         int32_t spike_weight,
         bool do_init,
-        bool do_backprop
+        bool do_backprop,
+        bool do_thresh_update
         )
     {
         /* <<--ctor-custom-->> */
@@ -65,6 +67,7 @@ public:
         this->spike_weight = spike_weight;
         this->do_init = do_init;
         this->do_backprop = do_backprop;
+        this->do_thresh_update = do_thresh_update;
     }
 
     // equals operator
@@ -84,6 +87,7 @@ public:
         if (spike_weight != rhs.spike_weight) return false;
         if (do_init != rhs.do_init) return false;
         if (do_backprop != rhs.do_backprop) return false;
+        if (do_thresh_update != rhs.do_thresh_update) return false;
         return true;
     }
 
@@ -104,6 +108,7 @@ public:
         spike_weight = other.spike_weight;
         do_init = other.do_init;
         do_backprop = other.do_backprop;
+        do_thresh_update = other.do_thresh_update;
         return *this;
     }
 
@@ -129,6 +134,7 @@ public:
         os << "spike_weight = " << a_read(conf_info.spike_weight) << "";
         os << "do_init = " << conf_info.do_init << "";
         os << "do_backprop = " << conf_info.do_backprop << "";
+        os << "do_thresh_update = " << conf_info.do_thresh_update << "";
         os << "}";
         return os;
     }
@@ -147,6 +153,7 @@ public:
         int32_t spike_weight;
         bool do_init;
         bool do_backprop;
+        bool do_thresh_update;
 };
 
 #endif // __MINDFUZZ_CONF_INFO_HPP__

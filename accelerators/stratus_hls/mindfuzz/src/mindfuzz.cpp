@@ -45,6 +45,7 @@ void mindfuzz::load_input()
     TYPE spike_weight;
     bool do_init;
     bool do_backprop;
+    bool do_thresh_update;
 
     // declare some necessary variables
     // int32_t load_batches;
@@ -68,6 +69,7 @@ void mindfuzz::load_input()
         spike_weight = a_read(config.spike_weight);
         do_init = config.do_init;
         do_backprop = config.do_backprop;
+        do_thresh_update = config.do_thresh_update;
     }
 
     // Load
@@ -194,6 +196,7 @@ void mindfuzz::compute_kernel()
     TYPE spike_weight;
     bool do_init;
     bool do_backprop;
+    bool do_thresh_update;
 
     // declare some necessary variables
     // int32_t load_batches;
@@ -221,6 +224,7 @@ void mindfuzz::compute_kernel()
         spike_weight = a_read(config.spike_weight);
         do_init = config.do_init;
         do_backprop = config.do_backprop;
+        do_thresh_update = config.do_thresh_update;
         
         // total size of a load batch is useful for relevancy check
         total_tsamps = tsamps_perbatch * batches_perload;
@@ -292,10 +296,15 @@ void mindfuzz::compute_kernel()
             // run threshold update
             // this will take the max-min computed in relevant for each electrode
             // and update the variance estimate accordingly
-            thresh_update_scalar(num_windows,
-                                 window_size,
-                                 rate_mean,
-                                 rate_variance);
+            // NOTE do_thresh_update is a variable local to this function
+            // so in addition to being configable, it can be shut off here
+            // after some number of batches
+            if (do_thresh_update) {
+                thresh_update_scalar(num_windows,
+                                     window_size,
+                                     rate_mean,
+                                     rate_variance);
+            }
 
             if (do_backprop) {
                 // run backprop for each compute batch in this load batch
@@ -377,6 +386,7 @@ void mindfuzz::store_output()
     TYPE spike_weight;
     bool do_init;
     bool do_backprop;
+    bool do_thresh_update;
 
     // declare some necessary variables
     // int32_t load_batches;
@@ -400,6 +410,7 @@ void mindfuzz::store_output()
         spike_weight = a_read(config.spike_weight);
         do_init = config.do_init;
         do_backprop = config.do_backprop;
+        do_thresh_update = config.do_thresh_update;
     }
 
     // Store
