@@ -19,6 +19,57 @@ void RELU(TYPE activations[layer1_dimension], TYPE dactivations[layer1_dimension
 */
 
 // updates threshold between spike and noise for a given time window
+// variance-based version
+void mindfuzz::thresh_update_variance(int32_t num_windows,
+                                      int32_t window_size,
+                                      TYPE rate_mean,
+                                      TYPE rate_variance) {
+
+    TYPE data;
+    TYPE current_mean;
+    TYPE next_mean;
+    TYPE current_thresh;
+    TYPE next_thresh;
+    TYPE delta_current;
+
+    uint32_t total_offset;
+    uint32_t this_index;
+
+    for (uint32_t window = 0; window < num_windows; window++) {
+        
+        total_offset = window * window_size;
+
+        for (uint32_t elec = 0; elec < window_size; elec++) {
+
+            // acquire sample for this electrode
+            // note that in current version, this data will be max-min for a time window
+            data = a_read(plm_maxmin[this_index]);
+
+            // acquire current mean and thresh
+            current_mean = a_read(plm_mean[this_index]);
+            current_thresh = a_read(plm_thresh[this_index]);
+
+            // calculate next mean
+            delta_current = data - current_mean;
+            next_mean = current_mean + delta_current*rate_mean;
+
+            // update mean
+            plm_mean[this_index] = a_write(next_mean);
+
+            // calculate variance estimate
+            // rate_variance includes the actual learning rate
+            // and the weight to determine the threshold e.g. 9s^2 for 3sigma
+            next_thresh = current_thresh + delta_current*rate_variance;
+
+            // update thresh
+            plm_thresh = a_write(next_thresh);
+
+            // done with this electrode
+        }
+        // done with this window
+    }
+}
+// updates threshold between spike and noise for a given time window
 // scalar version
 void mindfuzz::thresh_update_scalar(int32_t num_windows,
                                     int32_t window_size,

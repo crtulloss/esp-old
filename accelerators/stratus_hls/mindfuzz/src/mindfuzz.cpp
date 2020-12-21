@@ -291,13 +291,11 @@ void mindfuzz::compute_kernel()
 
             // run threshold update
             // this will take the max-min computed in relevant for each electrode
-            // and cluster the time window as either a spike or noise,
-            // updating the means and thresholds accordingly
+            // and update the variance estimate accordingly
             thresh_update_scalar(num_windows,
                                  window_size,
-                                 rate_spike,
-                                 rate_noise,
-                                 spike_weight);
+                                 rate_mean,
+                                 rate_variance);
 
             if (do_backprop) {
                 // run backprop for each compute batch in this load batch

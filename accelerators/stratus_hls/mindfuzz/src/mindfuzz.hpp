@@ -79,8 +79,7 @@ public:
         // PLMs sized by number of electrodes
         // useful for relevancy detection
         HLS_MAP_plm(plm_maxmin, PLM_ELEC_NAME);
-        HLS_MAP_plm(plm_mean_noise, PLM_ELEC_NAME);
-        HLS_MAP_plm(plm_mean_spike, PLM_ELEC_NAME);
+        HLS_MAP_plm(plm_mean, PLM_ELEC_NAME);
         HLS_MAP_plm(plm_thresh, PLM_ELEC_NAME);
 
         // flatten the flag array into registers
@@ -130,6 +129,11 @@ public:
                               TYPE rate_spike,
                               TYPE rate_noise,
                               TYPE spike_weight);
+
+    void thresh_update_variance(int32_t num_windows,
+                                int32_t window_size.
+                                TYPE rate_mean,
+                                TYPE rate_variance);
     // Private local memories
     sc_dt::sc_int<DATA_WIDTH> plm_in_ping[PLM_IN_WORD];
     sc_dt::sc_int<DATA_WIDTH> plm_in_pong[PLM_IN_WORD];
@@ -137,8 +141,7 @@ public:
     sc_dt::sc_int<DATA_WIDTH> plm_out[PLM_OUT_WORD];
     // for relevancy detection
     sc_dt::sc_int<DATA_WIDTH> plm_maxmin[PLM_ELEC_WORD];
-    sc_dt::sc_int<DATA_WIDTH> plm_mean_spike[PLM_ELEC_WORD];
-    sc_dt::sc_int<DATA_WIDTH> plm_mean_noise[PLM_ELEC_WORD];
+    sc_dt::sc_int<DATA_WIDTH> plm_mean[PLM_ELEC_WORD];
     sc_dt::sc_int<DATA_WIDTH> plm_thresh[PLM_ELEC_WORD];
 
     // flattened arrays
