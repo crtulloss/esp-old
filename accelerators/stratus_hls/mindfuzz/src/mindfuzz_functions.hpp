@@ -59,7 +59,7 @@ void mindfuzz::thresh_update_variance(int32_t num_windows,
             // calculate variance estimate
             // rate_variance includes the actual learning rate
             // and the weight to determine the threshold e.g. 9s^2 for 3sigma
-            next_thresh = current_thresh + delta_current*rate_variance;
+            next_thresh = current_thresh + (delta_current*delta_current)*rate_variance;
 
             // update thresh
             plm_thresh = a_write(next_thresh);
