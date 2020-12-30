@@ -9,9 +9,8 @@
     <param name="learning_rate" desc="learning_rate" />
     <param name="batches_perload" desc="batches_perload" />
     <param name="window_size" desc="window_size" />
-    <param name="rate_spike" desc="rate_spike" />
-    <param name="rate_noise" desc="rate_noise" />
-    <param name="spike_weight" desc="spike_weight" />
+    <param name="rate_mean" desc="rate_mean" />
+    <param name="rate_variance" desc="rate_variance" />
     <param name="do_init" desc="do_init" />
     <param name="do_backprop" desc="do_backprop" />
     <param name="do_thresh_update" desc="do_thresh_update" />

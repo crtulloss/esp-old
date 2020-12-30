@@ -7,16 +7,17 @@
 // Bioelectronic Systems Lab
 // helper functions for autoencoder weight updates, threshold updates, detection
 
-// TODO figure out RELU implementation
-/*
-void RELU(TYPE activations[layer1_dimension], TYPE dactivations[layer1_dimension], int size) {
-    int i;
-    for( i = 0; i < size; i++) {
-        dactivations[i] = activations[i]*(1.0-activations[i]);
-        activations[i] = 1.0/(1.0+exp(-activations[i]));
-    }
+inline TYPE bit_shift_right(TYPE value, uint8_t shift) {
+
+    return value >> shift;
+
 }
-*/
+
+inline TYPE bit_shift_left(TYPE value, uint8_t shift) {
+
+    return value << shift;
+
+}
 
 // updates threshold between spike and noise for a given time window
 // variance-based version
@@ -62,13 +63,16 @@ void mindfuzz::thresh_update_variance(int32_t num_windows,
             next_thresh = current_thresh + (delta_current*delta_current)*rate_variance;
 
             // update thresh
-            plm_thresh = a_write(next_thresh);
+            plm_thresh[this_index] = a_write(next_thresh);
 
             // done with this electrode
         }
         // done with this window
     }
 }
+
+
+/*
 // updates threshold between spike and noise for a given time window
 // scalar version
 void mindfuzz::thresh_update_scalar(int32_t num_windows,
@@ -254,6 +258,7 @@ void mindfuzz::thresh_update_vector(int32_t num_windows,
         // done with this window
     }
 }
+*/
 
 // relavancy detection used to choose input data
 void mindfuzz::relevant(int32_t total_tsamps,
@@ -523,9 +528,14 @@ void mindfuzz::backprop(TYPE learning_rate,
                             // compute increment
                             // LEARNING RATE LOCATION A
 #ifdef split_LR
-                            // bit shift the dW1 for this sample
-                            temp_incr = shift_A * (a_read(diff[window_offset_input + out]) *
-                                a_read(act1[window_offset_layer1 + neuron]));
+/*
+                            // bit shift the dW1 for this sample - mult version
+                            temp_incr = a_read(diff[window_offset_input + out]) *
+                                TYPE(shift_A * a_read(act1[window_offset_layer1 + neuron]));
+*/
+                            // bit shift the dW1 for this sample - bit shift version
+                            temp_incr = (a_read(diff[window_offset_input + out]) >> bs_A) *
+                                a_read(act1[window_offset_layer1 + neuron]);
 #else
                             // regular version
                             // learning rate will be applied later during weight update
@@ -590,8 +600,10 @@ void mindfuzz::backprop(TYPE learning_rate,
 */
 #ifdef split_LR
                         // LEARNING RATE LOCATION C
-                        // scale up the current weight
-                        temp_plmval = temp_plmval * shift_up_C;
+                        // scale up the current weight - mult version
+                        //temp_plmval = temp_plmval * shift_up_C;
+                        // scale up the current weight - bit shift version
+                        temp_plmval = temp_plmval << bs_C;
 /*
                         if (in == 0) {
                             ESP_REPORT_INFO("neuron %d, input %d scaled weight is %0.16f", neuron, in, float(temp_plmval));
@@ -604,8 +616,10 @@ void mindfuzz::backprop(TYPE learning_rate,
                             ESP_REPORT_INFO("neuron %d, input %d incred weight is %0.16f", neuron, in, float(temp_plmval));
                         }
 */
-                        // scale back down
-                        temp_plmval = temp_plmval * shift_down_C;
+                        // scale back down - mult version
+                        //temp_plmval = temp_plmval * shift_down_C;
+                        // scale back down - bit shift version
+                        temp_plmval = temp_plmval >> bs_C;
 /*
                         if (in == 0) {
                             ESP_REPORT_INFO("neuron %d, input %d new    weight is %0.16f", neuron, in, float(temp_plmval));

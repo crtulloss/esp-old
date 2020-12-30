@@ -27,9 +27,8 @@ public:
         this->num_windows = 8;
         this->iters_perbatch = 1;
         this->num_loads = 128;
-        this->rate_spike = a_write(0.01);
-        this->rate_noise = a_write(0.01);
-        this->spike_weight = a_write(0.5);
+        this->rate_mean = a_write(0.01);
+        this->rate_variance = a_write(0.01);
         this->do_init = true;
         this->do_backprop = true;
         this->do_thresh_update = true;
@@ -45,9 +44,8 @@ public:
         int32_t num_windows, 
         int32_t iters_perbatch, 
         int32_t num_loads,
-        int32_t rate_spike,
-        int32_t rate_noise,
-        int32_t spike_weight,
+        int32_t rate_mean,
+        int32_t rate_variance,
         bool do_init,
         bool do_backprop,
         bool do_thresh_update
@@ -62,9 +60,8 @@ public:
         this->num_windows = num_windows;
         this->iters_perbatch = iters_perbatch;
         this->num_loads = num_loads;
-        this->rate_spike = rate_spike;
-        this->rate_noise = rate_noise;
-        this->spike_weight = spike_weight;
+        this->rate_mean = rate_mean;
+        this->rate_variance = rate_variance;
         this->do_init = do_init;
         this->do_backprop = do_backprop;
         this->do_thresh_update = do_thresh_update;
@@ -82,9 +79,8 @@ public:
         if (num_windows != rhs.num_windows) return false;
         if (iters_perbatch != rhs.iters_perbatch) return false;
         if (num_loads != rhs.num_loads) return false;
-        if (rate_spike != rhs.rate_spike) return false;
-        if (rate_noise != rhs.rate_noise) return false;
-        if (spike_weight != rhs.spike_weight) return false;
+        if (rate_mean != rhs.rate_mean) return false;
+        if (rate_variance != rhs.rate_variance) return false;
         if (do_init != rhs.do_init) return false;
         if (do_backprop != rhs.do_backprop) return false;
         if (do_thresh_update != rhs.do_thresh_update) return false;
@@ -103,9 +99,8 @@ public:
         num_windows = other.num_windows;
         iters_perbatch = other.iters_perbatch;
         num_loads = other.num_loads;
-        rate_spike = other.rate_spike;
-        rate_noise = other.rate_noise;
-        spike_weight = other.spike_weight;
+        rate_mean = other.rate_mean;
+        rate_variance = other.rate_variance;
         do_init = other.do_init;
         do_backprop = other.do_backprop;
         do_thresh_update = other.do_thresh_update;
@@ -129,9 +124,8 @@ public:
         os << "num_windows = " << conf_info.num_windows << ", ";
         os << "iters_perbatch = " << conf_info.iters_perbatch << ", ";
         os << "num_loads = " << conf_info.num_loads << "";
-        os << "rate_spike = " << a_read(conf_info.rate_spike) << "";
-        os << "rate_noise = " << a_read(conf_info.rate_noise) << "";
-        os << "spike_weight = " << a_read(conf_info.spike_weight) << "";
+        os << "rate_mean = " << a_read(conf_info.rate_mean) << "";
+        os << "rate_variance = " << a_read(conf_info.rate_variance) << "";
         os << "do_init = " << conf_info.do_init << "";
         os << "do_backprop = " << conf_info.do_backprop << "";
         os << "do_thresh_update = " << conf_info.do_thresh_update << "";
@@ -148,9 +142,8 @@ public:
         int32_t num_windows;
         int32_t iters_perbatch;
         int32_t num_loads;
-        int32_t rate_spike;
-        int32_t rate_noise;
-        int32_t spike_weight;
+        int32_t rate_mean;
+        int32_t rate_variance;
         bool do_init;
         bool do_backprop;
         bool do_thresh_update;

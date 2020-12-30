@@ -42,6 +42,7 @@
 
 // useful macros for splitting up learning rate multiplications to preserve dynamic range
 #ifdef split_LR
+// define fractional powers of 2
 #define frac_4 ((TYPE)0.25)
 #define frac_64 ((TYPE)0.015625)
 #define frac_128 ((TYPE)0.0078125)
@@ -50,12 +51,15 @@
 #define frac_1024 ((TYPE)0.0009765625)
 #define frac_2048 ((TYPE)0.00048828125)
 #define frac_4096 ((TYPE)0.0002441406125)
-//#define shift_A ((TYPE)0.0078125)
-//#define shift_A ((TYPE)0.00390625)
+// choose which shifts to use
 #define shift_A frac_2048
 #define numerator_B 128
 #define shift_up_C ((TYPE)128)
 #define shift_down_C frac_128
+// actual bit shift versions
+#define bs_A 11
+#define bs_C 7
+
 #endif
 
 class mindfuzz : public esp_accelerator_3P<DMA_WIDTH>
@@ -117,7 +121,7 @@ public:
                   int32_t batch,
                   bool flag[],
                   bool ping);
-
+/*
     void thresh_update_scalar(int32_t num_windows,
                               int32_t window_size,
                               TYPE rate_spike,
@@ -129,11 +133,12 @@ public:
                               TYPE rate_spike,
                               TYPE rate_noise,
                               TYPE spike_weight);
-
+*/
     void thresh_update_variance(int32_t num_windows,
-                                int32_t window_size.
+                                int32_t window_size,
                                 TYPE rate_mean,
                                 TYPE rate_variance);
+
     // Private local memories
     sc_dt::sc_int<DATA_WIDTH> plm_in_ping[PLM_IN_WORD];
     sc_dt::sc_int<DATA_WIDTH> plm_in_pong[PLM_IN_WORD];

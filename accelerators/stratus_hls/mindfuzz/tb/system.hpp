@@ -73,9 +73,8 @@ public:
 #endif
 // for testing with fixed point. this ^ learning rate won't fit in precision
         //learning_rate = TYPE(((float)0.001) / ((float)tsamps_perbatch) / ((float)window_size));
-        rate_spike = TYPE(0.01);
-        rate_noise = TYPE(0.01);
-        spike_weight = TYPE(0.5);
+        rate_mean = TYPE(0.01);
+        rate_variance = TYPE(0.01);
         do_init = true;
         do_backprop = true;
         do_thresh_update = true;
@@ -105,9 +104,8 @@ public:
     int32_t num_windows;
     int32_t iters_perbatch;
     int32_t num_loads;
-    TYPE rate_spike;
-    TYPE rate_noise;
-    TYPE spike_weight;
+    TYPE rate_mean;
+    TYPE rate_variance;
     bool do_init;
     bool do_backprop;
     bool do_thresh_update;

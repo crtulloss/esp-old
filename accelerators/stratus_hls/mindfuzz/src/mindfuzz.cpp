@@ -40,9 +40,8 @@ void mindfuzz::load_input()
     int32_t num_windows;
     int32_t iters_perbatch;
     int32_t num_loads;
-    TYPE rate_spike;
-    TYPE rate_noise;
-    TYPE spike_weight;
+    TYPE rate_mean;
+    TYPE rate_variance;
     bool do_init;
     bool do_backprop;
     bool do_thresh_update;
@@ -64,9 +63,8 @@ void mindfuzz::load_input()
         num_windows = config.num_windows;
         iters_perbatch = config.iters_perbatch;
         num_loads = config.num_loads;
-        rate_spike = a_read(config.rate_spike);
-        rate_noise = a_read(config.rate_noise);
-        spike_weight = a_read(config.spike_weight);
+        rate_mean = a_read(config.rate_mean);
+        rate_variance = a_read(config.rate_variance);
         do_init = config.do_init;
         do_backprop = config.do_backprop;
         do_thresh_update = config.do_thresh_update;
@@ -191,9 +189,8 @@ void mindfuzz::compute_kernel()
     int32_t num_windows;
     int32_t iters_perbatch;
     int32_t num_loads;
-    TYPE rate_spike;
-    TYPE rate_noise;
-    TYPE spike_weight;
+    TYPE rate_mean;
+    TYPE rate_variance;
     bool do_init;
     bool do_backprop;
     bool do_thresh_update;
@@ -219,9 +216,8 @@ void mindfuzz::compute_kernel()
         num_windows = config.num_windows;
         iters_perbatch = config.iters_perbatch;
         num_loads = config.num_loads;
-        rate_spike = a_read(config.rate_spike);
-        rate_noise = a_read(config.rate_noise);
-        spike_weight = a_read(config.spike_weight);
+        rate_mean = a_read(config.rate_mean);
+        rate_variance = a_read(config.rate_variance);
         do_init = config.do_init;
         do_backprop = config.do_backprop;
         do_thresh_update = config.do_thresh_update;
@@ -241,24 +237,22 @@ void mindfuzz::compute_kernel()
 
     if (do_init) {
     
-    // initialize spike/noise means and thresholds
+        // initialize spike/noise means and thresholds
 
         // initial value for each
         // TODO fix these
-        TYPE initial_mean_noise = (TYPE)1.0;
-        TYPE initial_mean_spike = (TYPE)3.0;
-        TYPE initial_thresh = (TYPE)2.0;
+        TYPE initial_mean = (TYPE)1.0;
+        TYPE initial_thresh = (TYPE)0.5;
 
         for (uint32_t window = 0; window < num_windows; window++) {
             uint32_t window_offset = window * window_size;
             for (uint32_t elec = 0; elec < window_size; elec++) {
-                plm_mean_noise[window_offset + elec] = a_write(initial_mean_noise);
-                plm_mean_spike[window_offset + elec] = a_write(initial_mean_spike);
+                plm_mean[window_offset + elec] = a_write(initial_mean);
                 plm_thresh[window_offset + elec] = a_write(initial_thresh);
             }
         }
 
-    // initialize weights 
+        // initialize weights 
 
         // initial value for each weight
         TYPE initial_weight = (TYPE)0.03125;
@@ -300,10 +294,10 @@ void mindfuzz::compute_kernel()
             // so in addition to being configable, it can be shut off here
             // after some number of batches
             if (do_thresh_update) {
-                thresh_update_scalar(num_windows,
-                                     window_size,
-                                     rate_mean,
-                                     rate_variance);
+                thresh_update_variance(num_windows,
+                                       window_size,
+                                       rate_mean,
+                                       rate_variance);
             }
 
             if (do_backprop) {
@@ -381,9 +375,8 @@ void mindfuzz::store_output()
     int32_t num_windows;
     int32_t iters_perbatch;
     int32_t num_loads;
-    TYPE rate_spike;
-    TYPE rate_noise;
-    TYPE spike_weight;
+    TYPE rate_mean;
+    TYPE rate_variance;
     bool do_init;
     bool do_backprop;
     bool do_thresh_update;
@@ -405,9 +398,8 @@ void mindfuzz::store_output()
         num_windows = config.num_windows;
         iters_perbatch = config.iters_perbatch;
         num_loads = config.num_loads;
-        rate_spike = a_read(config.rate_spike);
-        rate_noise = a_read(config.rate_noise);
-        spike_weight = a_read(config.spike_weight);
+        rate_mean = a_read(config.rate_mean);
+        rate_variance = a_read(config.rate_variance);
         do_init = config.do_init;
         do_backprop = config.do_backprop;
         do_thresh_update = config.do_thresh_update;

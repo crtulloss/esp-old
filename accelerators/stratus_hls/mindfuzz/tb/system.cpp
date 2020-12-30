@@ -37,9 +37,8 @@ void system_t::config_proc()
         config.num_windows = num_windows;
         config.iters_perbatch = iters_perbatch;
         config.num_loads = num_loads;
-        config.rate_spike = a_write(rate_spike);
-        config.rate_noise = a_write(rate_noise);
-        config.spike_weight = a_write(spike_weight);
+        config.rate_mean = a_write(rate_mean);
+        config.rate_variance = a_write(rate_variance);
         config.do_init = do_init;
         config.do_backprop = do_backprop;
         config.do_thresh_update = do_thresh_update;
@@ -54,6 +53,7 @@ void system_t::config_proc()
     ESP_REPORT_INFO("learning rate location B is %.15f", (float)learning_rate);
     ESP_REPORT_INFO("learning rate location C is %.15f", (float)shift_down_C);
     ESP_REPORT_INFO("learning rate overall    is %.15f", (float)(shift_A * learning_rate * shift_down_C));
+    
 #else
     ESP_REPORT_INFO("learning rate is %.15f", (float)learning_rate);
 #endif
