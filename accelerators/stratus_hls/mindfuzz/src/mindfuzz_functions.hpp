@@ -7,18 +7,6 @@
 // Bioelectronic Systems Lab
 // helper functions for autoencoder weight updates, threshold updates, detection
 
-inline TYPE bit_shift_right(TYPE value, uint8_t shift) {
-
-    return value >> shift;
-
-}
-
-inline TYPE bit_shift_left(TYPE value, uint8_t shift) {
-
-    return value << shift;
-
-}
-
 // updates threshold between spike and noise for a given time window
 // variance-based version
 void mindfuzz::thresh_update_variance(int32_t num_windows,
@@ -32,6 +20,9 @@ void mindfuzz::thresh_update_variance(int32_t num_windows,
     TYPE current_thresh;
     TYPE next_thresh;
     TYPE delta_current;
+    TYPE delta_squared;
+    TYPE thresh_update;
+    TYPE mean_update;
 
     uint32_t total_offset;
     uint32_t this_index;
@@ -52,7 +43,8 @@ void mindfuzz::thresh_update_variance(int32_t num_windows,
 
             // calculate next mean
             delta_current = data - current_mean;
-            next_mean = current_mean + delta_current*rate_mean;
+            mean_update = delta_current * rate_mean;
+            next_mean = current_mean + mean_update;
 
             // update mean
             plm_mean[this_index] = a_write(next_mean);
@@ -60,7 +52,9 @@ void mindfuzz::thresh_update_variance(int32_t num_windows,
             // calculate variance estimate
             // rate_variance includes the actual learning rate
             // and the weight to determine the threshold e.g. 9s^2 for 3sigma
-            next_thresh = current_thresh + (delta_current*delta_current)*rate_variance;
+            delta_squared = delta_current * delta_current;
+            thresh_update = delta_squared * rate_variance;
+            next_thresh = current_thresh + thresh_update;
 
             // update thresh
             plm_thresh[this_index] = a_write(next_thresh);
