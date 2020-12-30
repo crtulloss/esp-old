@@ -9,8 +9,8 @@
 
 // updates threshold between spike and noise for a given time window
 // variance-based version
-void mindfuzz::thresh_update_variance(int32_t num_windows,
-                                      int32_t window_size,
+void mindfuzz::thresh_update_variance(uint16_t num_windows,
+                                      uint8_t window_size,
                                       TYPE rate_mean,
                                       TYPE rate_variance) {
 
@@ -24,14 +24,17 @@ void mindfuzz::thresh_update_variance(int32_t num_windows,
     TYPE thresh_update;
     TYPE mean_update;
 
-    uint32_t total_offset;
-    uint32_t this_index;
+    uint16_t total_offset;
+    uint16_t this_index;
 
-    for (uint32_t window = 0; window < num_windows; window++) {
+    for (uint16_t window = 0; window < num_windows; window++) {
         
         total_offset = window * window_size;
 
-        for (uint32_t elec = 0; elec < window_size; elec++) {
+        for (uint8_t elec = 0; elec < window_size; elec++) {
+
+            // determine electrode index
+            this_index = total_offset + elec;
 
             // acquire sample for this electrode
             // note that in current version, this data will be max-min for a time window
@@ -255,9 +258,9 @@ void mindfuzz::thresh_update_vector(int32_t num_windows,
 */
 
 // relavancy detection used to choose input data
-void mindfuzz::relevant(int32_t total_tsamps,
-                        int32_t num_windows,
-                        int32_t window_size,
+void mindfuzz::relevant(uint8_t total_tsamps,
+                        uint16_t num_windows,
+                        uint8_t window_size,
                         bool flag[],
                         bool ping) {
 
@@ -265,7 +268,7 @@ void mindfuzz::relevant(int32_t total_tsamps,
     TYPE maxmin;
     TYPE thresh;
 
-    uint32_t num_electrodes = num_windows*window_size;
+    uint16_t num_electrodes = num_windows*window_size;
 
     // TODO sized using fixed magic numbers based on max accel config
     // need to define arrays using the sc_int datatype because they are mapped to PLMs
@@ -273,20 +276,20 @@ void mindfuzz::relevant(int32_t total_tsamps,
     sc_dt::sc_int<DATA_WIDTH> min[PLM_ELEC_WORD];
 
     uint32_t samp_offset;
-    uint32_t window_offset;
+    uint16_t window_offset;
     uint32_t total_offset;
 
     // first, process all time samples to find max and min for each elec
-    for (uint32_t samp = 0; samp < total_tsamps; samp++) {
+    for (uint8_t samp = 0; samp < total_tsamps; samp++) {
 
         samp_offset = samp * num_electrodes;
         
-        for (uint32_t window = 0; window < num_windows; window++) {
+        for (uint16_t window = 0; window < num_windows; window++) {
 
             window_offset = window * window_size;
             total_offset = samp_offset + window_offset;
 
-            for (uint32_t elec = 0; elec < window_size; elec++) {
+            for (uint8_t elec = 0; elec < window_size; elec++) {
 
                 // on first sample for each elec, reset the max and min
                 if (samp == 0) {
@@ -317,7 +320,7 @@ void mindfuzz::relevant(int32_t total_tsamps,
     }
 
     // now post-process each window to check max and min
-    for (uint32_t window = 0; window < num_windows; window++) {
+    for (uint16_t window = 0; window < num_windows; window++) {
 
         window_offset = window * window_size;
 
@@ -325,7 +328,7 @@ void mindfuzz::relevant(int32_t total_tsamps,
         flag[window] = false;
 
         // check max and min for each elec
-        for (uint32_t elec = 0; elec < window_size; elec++) {
+        for (uint8_t elec = 0; elec < window_size; elec++) {
           
             // calculate max-min
             maxmin = a_read(max[window_offset + elec]) - a_read(min[window_offset + elec]);
@@ -351,18 +354,18 @@ void mindfuzz::relevant(int32_t total_tsamps,
 
 // backprop function with multiple hidden components in series
 void mindfuzz::backprop(TYPE learning_rate,
-                        int32_t tsamps_perbatch,
-                        int32_t num_windows,
-                        int32_t iters_perbatch,
-                        int32_t input_dimension,
-                        int32_t layer1_dimension,
-                        int32_t W_size,
-                        int32_t batch,
+                        uint8_t tsamps_perbatch,
+                        uint16_t num_windows,
+                        uint8_t iters_perbatch,
+                        uint8_t input_dimension,
+                        uint8_t layer1_dimension,
+                        uint32_t W_size,
+                        uint8_t batch,
                         bool flag[],
                         bool ping) {
 
     // single-tsamp data for all electrodes - size e.g. 4 * 32 = 256
-    uint32_t num_electrodes = num_windows*input_dimension;
+    uint16_t num_electrodes = num_windows*input_dimension;
     
     // TODO FLATTEN THIS?
     // if so, need to add a_read to where input is read
@@ -371,21 +374,21 @@ void mindfuzz::backprop(TYPE learning_rate,
     // some offsets useful for indexing
     uint32_t samp_offset;
     uint32_t window_offset_weights1;
-    uint32_t window_offset_layer1;
-    uint32_t window_offset_input;
+    uint16_t window_offset_layer1;
+    uint16_t window_offset_input;
 
     // PLM access offset for input data
     // for sw-only version, added offset to take into account load batch
     uint32_t batch_offset = num_electrodes * tsamps_perbatch * batch;
 
     // useful for arithmetic
-    uint32_t W1_singlewindow = layer1_dimension*input_dimension;
+    uint16_t W1_singlewindow = layer1_dimension*input_dimension;
 
     // iter accumulation variables for batched backprop
     // TODO rewrite to not use arbitrarily sized arrasy
     const uint32_t const_W1_size = CONST_NUM_WINDOWS * CONST_WINDOW_SIZE * CONST_NEURONS_PERWIN;
-    const uint32_t const_diff_size = CONST_NUM_WINDOWS * CONST_WINDOW_SIZE;
-    const uint32_t const_act1_size = CONST_NUM_WINDOWS * CONST_NEURONS_PERWIN;
+    const uint16_t const_diff_size = CONST_NUM_WINDOWS * CONST_WINDOW_SIZE;
+    const uint16_t const_act1_size = CONST_NUM_WINDOWS * CONST_NEURONS_PERWIN;
     
     sc_dt::sc_int<DATA_WIDTH> dW1[const_W1_size];
 
@@ -396,14 +399,14 @@ void mindfuzz::backprop(TYPE learning_rate,
     sc_dt::sc_int<DATA_WIDTH> out[const_diff_size];
     sc_dt::sc_int<DATA_WIDTH> diff[const_diff_size];
 
-    for (uint32_t iter = 0; iter < iters_perbatch; iter++) {
+    for (uint8_t iter = 0; iter < iters_perbatch; iter++) {
         
         // reset weight delta accumulation variables
         for (uint32_t i = 0; i < W_size; i++) {
             dW1[i] = a_write(0.0);
         }
 
-        for (uint32_t samp = 0; samp < tsamps_perbatch; samp++) {
+        for (uint8_t samp = 0; samp < tsamps_perbatch; samp++) {
 
             // offset to access input data for this time samp
             samp_offset = batch_offset + samp*num_electrodes;
@@ -411,19 +414,19 @@ void mindfuzz::backprop(TYPE learning_rate,
             // access input data for all windows from PLM
             // only place we need to worry about pingpong
             if (ping) {
-                for (uint32_t elec = 0; elec < num_electrodes; elec++) {
+                for (uint16_t elec = 0; elec < num_electrodes; elec++) {
                     // this is a PLM access - can only UNROLL if has multiple ports
                     elecdata[elec] = plm_in_ping[samp_offset + elec];
                 }
             }
             else {
-                for (uint32_t elec = 0; elec < num_electrodes; elec++) {
+                for (uint16_t elec = 0; elec < num_electrodes; elec++) {
                     // this is a PLM access - can only UNROLL if has multiple ports
                     elecdata[elec] = plm_in_pong[samp_offset + elec];
                 }
             }
 
-            for (uint32_t window = 0; window < num_windows; window++) {
+            for (uint16_t window = 0; window < num_windows; window++) {
                 // TODO UNROLL? - if so, need to fix the offsets
 
                 // do backprop only on noise data
@@ -448,14 +451,14 @@ void mindfuzz::backprop(TYPE learning_rate,
                     TYPE temp_dW1;
 
                     // processing for each "neuron" is done in series
-                    for (uint32_t neuron = 0; neuron < layer1_dimension; neuron++) {
+                    for (uint8_t neuron = 0; neuron < layer1_dimension; neuron++) {
 
                         // compute layer1 activation for this window
                         // reset activation accumulation variable for this sample
                         temp_act1 = (TYPE)0.0;
 
                         // mac
-                        for (uint32_t in = 0; in < input_dimension; in++) {
+                        for (uint8_t in = 0; in < input_dimension; in++) {
 
                             // determine appropriate input for this neuron
                             if (neuron == 0) {
@@ -481,7 +484,7 @@ void mindfuzz::backprop(TYPE learning_rate,
                         // compute outputs and differences (out - in)
                         // note no mac here bc the outputs are computed in series
                         // so the computation for each output is a scalar mult
-                        for (uint32_t out = 0; out < input_dimension; out++) {
+                        for (uint8_t out = 0; out < input_dimension; out++) {
                         
                             // determine appropriate ground truth for this neuron
                             if (neuron == 0) {
@@ -559,7 +562,7 @@ void mindfuzz::backprop(TYPE learning_rate,
         // and we are ready to perform a weight update for this iter
         TYPE temp_plmval;
         TYPE temp_incr;
-        for (uint32_t window = 0; window < num_windows; window++) {
+        for (uint16_t window = 0; window < num_windows; window++) {
             // TODO UNROLL?
 
             // update weights only for noise data
@@ -570,10 +573,10 @@ void mindfuzz::backprop(TYPE learning_rate,
                 window_offset_layer1 = window*layer1_dimension;
                 window_offset_input = window*input_dimension;
 
-                for (uint32_t neuron = 0; neuron < layer1_dimension; neuron++) {
+                for (uint8_t neuron = 0; neuron < layer1_dimension; neuron++) {
                     
                     // update W1
-                    for (uint32_t in = 0; in < input_dimension; in++) {
+                    for (uint8_t in = 0; in < input_dimension; in++) {
 
                         // acquire existing plmval
                         temp_plmval = a_read(

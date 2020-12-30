@@ -105,20 +105,20 @@ public:
     esp_config_proc cfg;
 
     // Functions
-    void relevant(int32_t total_tsamps,
-                  int32_t num_windows,
-                  int32_t window_size,
+    void relevant(uint8_t total_tsamps,
+                  uint16_t num_windows,
+                  uint8_t window_size,
                   bool flag[],
                   bool ping);
 
     void backprop(TYPE learning_rate,
-                  int32_t tsamps_perbatch,
-                  int32_t num_windows,
-                  int32_t iters_perbatch,
-                  int32_t input_dimension,
-                  int32_t layer1_dimension,
-                  int32_t W_size,
-                  int32_t batch,
+                  uint8_t tsamps_perbatch,
+                  uint16_t num_windows,
+                  uint8_t iters_perbatch,
+                  uint8_t input_dimension,
+                  uint8_t layer1_dimension,
+                  uint32_t W_size,
+                  uint8_t batch,
                   bool flag[],
                   bool ping);
 /*
@@ -134,8 +134,8 @@ public:
                               TYPE rate_noise,
                               TYPE spike_weight);
 */
-    void thresh_update_variance(int32_t num_windows,
-                                int32_t window_size,
+    void thresh_update_variance(uint16_t num_windows,
+                                uint8_t window_size,
                                 TYPE rate_mean,
                                 TYPE rate_variance);
 
