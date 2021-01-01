@@ -386,9 +386,9 @@ void mindfuzz::backprop(TYPE learning_rate,
 
     // iter accumulation variables for batched backprop
     // TODO rewrite to not use arbitrarily sized arrasy
-    const uint32_t const_W1_size = CONST_NUM_WINDOWS * CONST_WINDOW_SIZE * CONST_NEURONS_PERWIN;
+    const uint32_t const_W1_size = CONST_NUM_WINDOWS * CONST_WINDOW_SIZE * CONST_HIDDENS_PERWIN;
     const uint16_t const_diff_size = CONST_NUM_WINDOWS * CONST_WINDOW_SIZE;
-    const uint16_t const_act1_size = CONST_NUM_WINDOWS * CONST_NEURONS_PERWIN;
+    const uint16_t const_act1_size = CONST_NUM_WINDOWS * CONST_HIDDENS_PERWIN;
     
     sc_dt::sc_int<DATA_WIDTH> dW1[const_W1_size];
 
@@ -450,8 +450,8 @@ void mindfuzz::backprop(TYPE learning_rate,
                     // dummy variable for weight delta
                     TYPE temp_dW1;
 
-                    // processing for each "neuron" is done in series
-                    for (uint8_t neuron = 0; neuron < layer1_dimension; neuron++) {
+                    // processing for each "hidden" is done in series
+                    for (uint8_t hidden = 0; hidden < layer1_dimension; hidden++) {
 
                         // compute layer1 activation for this window
                         // reset activation accumulation variable for this sample
@@ -460,50 +460,50 @@ void mindfuzz::backprop(TYPE learning_rate,
                         // mac
                         for (uint8_t in = 0; in < input_dimension; in++) {
 
-                            // determine appropriate input for this neuron
-                            if (neuron == 0) {
-                                // neuron 0 uses electrode data
+                            // determine appropriate input for this hidden
+                            if (hidden == 0) {
+                                // hidden 0 uses electrode data
                                 temp_input = a_read(elecdata[window_offset_input + in]);
                             }
                             else {
-                                // subsequent neurons use error from previous neuron
+                                // subsequent hiddens use error from previous hidden
                                 temp_input = a_read(diff[window_offset_input + in]);
                             }
 
                             // compute (FP) increment
                             temp_incr = a_read(plm_out[window_offset_weights1 +
-                                    neuron*input_dimension + in]) *
+                                    hidden*input_dimension + in]) *
                                 temp_input;
                             // add to accum variable
                             temp_act1 = temp_act1 + temp_incr;
                         }
                      
                         // update act1
-                        act1[window_offset_layer1 + neuron] = a_write(temp_act1);
+                        act1[window_offset_layer1 + hidden] = a_write(temp_act1);
 
                         // compute outputs and differences (out - in)
                         // note no mac here bc the outputs are computed in series
                         // so the computation for each output is a scalar mult
                         for (uint8_t out = 0; out < input_dimension; out++) {
                         
-                            // determine appropriate ground truth for this neuron
-                            if (neuron == 0) {
-                                // neuron 0 uses electrode data
+                            // determine appropriate ground truth for this hidden
+                            if (hidden == 0) {
+                                // hidden 0 uses electrode data
                                 temp_input = a_read(elecdata[window_offset_input + out]);
                             }
                             else {
-                                // subsequent neurons use error from previous neuron
+                                // subsequent hiddens use error from previous hidden
                                 temp_input = a_read(diff[window_offset_input + out]);
                             }
                        
                             // compute output
                             temp_out = 
-                                a_read(plm_out[window_offset_weights1 + neuron*input_dimension + out]) *
-                                a_read(act1[window_offset_layer1 + neuron]);
+                                a_read(plm_out[window_offset_weights1 + hidden*input_dimension + out]) *
+                                a_read(act1[window_offset_layer1 + hidden]);
 /*
                             if (samp == 0 && out == 0) {
-                                ESP_REPORT_INFO("sample %d, neuron %d, electrode %d input is %0.16f", samp, neuron, out, float(temp_input));
-                                ESP_REPORT_INFO("sample %d, neuron %d, electrode %d ouput is %0.16f", samp, neuron, out, float(temp_out));
+                                ESP_REPORT_INFO("sample %d, hidden %d, electrode %d input is %0.16f", samp, hidden, out, float(temp_input));
+                                ESP_REPORT_INFO("sample %d, hidden %d, electrode %d ouput is %0.16f", samp, hidden, out, float(temp_out));
                             }
 */
 
@@ -511,8 +511,8 @@ void mindfuzz::backprop(TYPE learning_rate,
                             diff[window_offset_input + out] = a_write(temp_out - temp_input);
 /*
                             if (samp == 0 && out == 0) {
-                                ESP_REPORT_INFO("sample %d, neuron %d, electrode %d diff  is %0.16f", samp, neuron, out, float(a_read(diff[window_offset_input + out])));
-                                ESP_REPORT_INFO("sample %d, neuron %d, electrode %d dW1   is %0.16f", samp, neuron, out, float(a_read(dW1[window_offset_weights1 + neuron*input_dimension + out])));
+                                ESP_REPORT_INFO("sample %d, hidden %d, electrode %d diff  is %0.16f", samp, hidden, out, float(a_read(diff[window_offset_input + out])));
+                                ESP_REPORT_INFO("sample %d, hidden %d, electrode %d dW1   is %0.16f", samp, hidden, out, float(a_read(dW1[window_offset_weights1 + hidden*input_dimension + out])));
                             }
 */
 
@@ -520,7 +520,7 @@ void mindfuzz::backprop(TYPE learning_rate,
                             
                             // acquire existing dW1
                             temp_dW1 = a_read(
-                                dW1[window_offset_weights1 + neuron*input_dimension + out]);
+                                dW1[window_offset_weights1 + hidden*input_dimension + out]);
 
                             // compute increment
                             // LEARNING RATE LOCATION A
@@ -528,25 +528,25 @@ void mindfuzz::backprop(TYPE learning_rate,
 /*
                             // bit shift the dW1 for this sample - mult version
                             temp_incr = a_read(diff[window_offset_input + out]) *
-                                TYPE(shift_A * a_read(act1[window_offset_layer1 + neuron]));
+                                TYPE(shift_A * a_read(act1[window_offset_layer1 + hidden]));
 */
                             // bit shift the dW1 for this sample - bit shift version
                             temp_incr = (a_read(diff[window_offset_input + out]) >> bs_A) *
-                                a_read(act1[window_offset_layer1 + neuron]);
+                                a_read(act1[window_offset_layer1 + hidden]);
 #else
                             // regular version
                             // learning rate will be applied later during weight update
                             temp_incr = a_read(diff[window_offset_input + out]) *
-                                a_read(act1[window_offset_layer1 + neuron]);
+                                a_read(act1[window_offset_layer1 + hidden]);
 #endif
 
                             // update dW1
-                            dW1[window_offset_weights1 + neuron*input_dimension + out] = 
+                            dW1[window_offset_weights1 + hidden*input_dimension + out] = 
                                 a_write(temp_incr + temp_dW1);
 /*
                             if (samp == 0 && out == 0) {
-                                ESP_REPORT_INFO("sample %d, neuron %d, electrode %d incr  is %0.16f", samp, neuron, out, float(temp_incr));
-                                ESP_REPORT_INFO("sample %d, neuron %d, electrode %d dW1_n is %0.16f", samp, neuron, out, float(a_read(dW1[window_offset_weights1 + neuron*input_dimension + out])));
+                                ESP_REPORT_INFO("sample %d, hidden %d, electrode %d incr  is %0.16f", samp, hidden, out, float(temp_incr));
+                                ESP_REPORT_INFO("sample %d, hidden %d, electrode %d dW1_n is %0.16f", samp, hidden, out, float(a_read(dW1[window_offset_weights1 + hidden*input_dimension + out])));
                             }
 */
 
@@ -573,26 +573,26 @@ void mindfuzz::backprop(TYPE learning_rate,
                 window_offset_layer1 = window*layer1_dimension;
                 window_offset_input = window*input_dimension;
 
-                for (uint8_t neuron = 0; neuron < layer1_dimension; neuron++) {
+                for (uint8_t hidden = 0; hidden < layer1_dimension; hidden++) {
                     
                     // update W1
                     for (uint8_t in = 0; in < input_dimension; in++) {
 
                         // acquire existing plmval
                         temp_plmval = a_read(
-                            plm_out[window_offset_weights1 + neuron*input_dimension + in]);
+                            plm_out[window_offset_weights1 + hidden*input_dimension + in]);
 
                         // compute (FP) increment
                         // LEARNING RATE LOCATION B
                         // this one is the same whether we use split LR or not
                         // but value of learning_rate will be different
                         temp_incr = a_read(dW1[window_offset_weights1
-                                + neuron*input_dimension + in]) * (learning_rate);
+                                + hidden*input_dimension + in]) * (learning_rate);
 /*
                         if (in == 0) {
-                            ESP_REPORT_INFO("neuron %d, input %d        weight is %0.16f", neuron, in, float(temp_plmval));
-                            ESP_REPORT_INFO("neuron %d, input %d        deltaW is %0.16f", neuron, in, float(a_read(dW1[window_offset_weights1 + neuron*input_dimension + in])));
-                            ESP_REPORT_INFO("neuron %d, input %d        dW*l_r is %0.16f", neuron, in, float(temp_incr));
+                            ESP_REPORT_INFO("hidden %d, input %d        weight is %0.16f", hidden, in, float(temp_plmval));
+                            ESP_REPORT_INFO("hidden %d, input %d        deltaW is %0.16f", hidden, in, float(a_read(dW1[window_offset_weights1 + hidden*input_dimension + in])));
+                            ESP_REPORT_INFO("hidden %d, input %d        dW*l_r is %0.16f", hidden, in, float(temp_incr));
                         }
 */
 #ifdef split_LR
@@ -603,14 +603,14 @@ void mindfuzz::backprop(TYPE learning_rate,
                         temp_plmval = temp_plmval << bs_C;
 /*
                         if (in == 0) {
-                            ESP_REPORT_INFO("neuron %d, input %d scaled weight is %0.16f", neuron, in, float(temp_plmval));
+                            ESP_REPORT_INFO("hidden %d, input %d scaled weight is %0.16f", hidden, in, float(temp_plmval));
                         }
 */
                         // do the increment
                         temp_plmval = temp_plmval - temp_incr;
 /*
                         if (in == 0) {
-                            ESP_REPORT_INFO("neuron %d, input %d incred weight is %0.16f", neuron, in, float(temp_plmval));
+                            ESP_REPORT_INFO("hidden %d, input %d incred weight is %0.16f", hidden, in, float(temp_plmval));
                         }
 */
                         // scale back down - mult version
@@ -619,7 +619,7 @@ void mindfuzz::backprop(TYPE learning_rate,
                         temp_plmval = temp_plmval >> bs_C;
 /*
                         if (in == 0) {
-                            ESP_REPORT_INFO("neuron %d, input %d new    weight is %0.16f", neuron, in, float(temp_plmval));
+                            ESP_REPORT_INFO("hidden %d, input %d new    weight is %0.16f", hidden, in, float(temp_plmval));
                         }
 */
 #else
@@ -627,12 +627,12 @@ void mindfuzz::backprop(TYPE learning_rate,
                         temp_plmval = temp_plmval - temp_incr;
 /*
                         if (in == 0) {
-                            ESP_REPORT_INFO("neuron %d, input %d new    weight is %0.16f", neuron, in, float(temp_plmval));
+                            ESP_REPORT_INFO("hidden %d, input %d new    weight is %0.16f", hidden, in, float(temp_plmval));
                         }
 */
 #endif
                         // update plmval
-                        plm_out[window_offset_weights1 + neuron*input_dimension + in] = 
+                        plm_out[window_offset_weights1 + hidden*input_dimension + in] = 
                             a_write(temp_plmval);
 
                     }
@@ -695,9 +695,9 @@ void mindfuzz::backprop(TYPE learning_rate,
 
     // iter accumulation variables for batched backprop
     // TODO rewrite to not use arbitrarily sized arrasy
-    const uint32_t const_W1_size = CONST_NUM_WINDOWS * CONST_WINDOW_SIZE * CONST_NEURONS_PERWIN;
+    const uint32_t const_W1_size = CONST_NUM_WINDOWS * CONST_WINDOW_SIZE * CONST_HIDDENS_PERWIN;
     const uint32_t const_B2_size = CONST_NUM_WINDOWS * CONST_WINDOW_SIZE;
-    const uint32_t const_B1_size = CONST_NUM_WINDOWS * CONST_NEURONS_PERWIN;
+    const uint32_t const_B1_size = CONST_NUM_WINDOWS * CONST_HIDDENS_PERWIN;
     
     sc_dt::sc_int<DATA_WIDTH> dW1[const_W1_size];
 #ifdef do_bias
@@ -777,7 +777,7 @@ void mindfuzz::backprop(TYPE learning_rate,
                     // dummy variable for activation increment
                     TYPE temp_act1;
                     TYPE temp_incr;
-                    for (uint32_t neuron = 0; neuron < layer1_dimension; neuron++) {
+                    for (uint32_t hidden = 0; hidden < layer1_dimension; hidden++) {
 
                         // reset activation accumulation variable for this sample
                         temp_act1 = (TYPE)0.0;
@@ -787,7 +787,7 @@ void mindfuzz::backprop(TYPE learning_rate,
 
                             // compute (FP) increment
                             temp_incr = a_read(plm_out[window_offset_weights1 +
-                                    neuron*input_dimension + in]) *
+                                    hidden*input_dimension + in]) *
                                 a_read(elecdata[window_offset_input + in]);
                             // add to accum variable
                             temp_act1 = temp_act1 + temp_incr;
@@ -796,12 +796,12 @@ void mindfuzz::backprop(TYPE learning_rate,
                         // bias
 #ifdef do_bias
                         // compute (FP) increment
-                        temp_incr = a_read(plm_out[window_offset_biases1 + neuron]);
+                        temp_incr = a_read(plm_out[window_offset_biases1 + hidden]);
                         // add to accum variable
                         temp_act1 = temp_act1 + temp_incr;
 #endif
                         // update act1
-                        act1[window_offset_layer1 + neuron] = a_write(temp_act1);
+                        act1[window_offset_layer1 + hidden] = a_write(temp_act1);
                     }
 
                     // compute output activations
@@ -815,12 +815,12 @@ void mindfuzz::backprop(TYPE learning_rate,
                         temp_diff = (TYPE)0.0;
 
                         // mac
-                        for (uint32_t neuron = 0; neuron < layer1_dimension; neuron++) {
+                        for (uint32_t hidden = 0; hidden < layer1_dimension; hidden++) {
 
                             // compute (FP) increment - note that we are using the same weights as layer 1
                             temp_incr = a_read(plm_out[window_offset_weights1 +
-                                    neuron*input_dimension + out]) *
-                                a_read(act1[window_offset_layer1 + neuron]);
+                                    hidden*input_dimension + out]) *
+                                a_read(act1[window_offset_layer1 + hidden]);
                             // add to accum variable
                             temp_diff = temp_diff + temp_incr;
                         }
@@ -854,14 +854,14 @@ void mindfuzz::backprop(TYPE learning_rate,
 #endif
                     TYPE temp_dW1;
                     // backprop for this sample (with no weight update yet)
-                    for (uint32_t neuron = 0; neuron < layer1_dimension; neuron++) {
+                    for (uint32_t hidden = 0; hidden < layer1_dimension; hidden++) {
 
 #ifdef do_bias
                         // reset W2xdiff sample accum variable
-                        W2xdiff[window_offset_layer1 + neuron] = a_write(0.0);
+                        W2xdiff[window_offset_layer1 + hidden] = a_write(0.0);
 #endif
 
-                        // dual-purpose loop; both computations here looped over neurons and outputs
+                        // dual-purpose loop; both computations here looped over hiddens and outputs
                         // they are unrelated
                         for (uint32_t out = 0; out < input_dimension; out++) {
 
@@ -869,13 +869,13 @@ void mindfuzz::backprop(TYPE learning_rate,
                             // mac W2xdiff
 
                             // acquire existing W2xdiff
-                            temp_W2xdiff = a_read(W2xdiff[window_offset_layer1 + neuron]);
+                            temp_W2xdiff = a_read(W2xdiff[window_offset_layer1 + hidden]);
                             // compute (FP) increment
                             temp_incr = a_read(plm_out[window_offset_weights1 +
-                                    neuron*input_dimension + out]) *
+                                    hidden*input_dimension + out]) *
                                 a_read(diff[window_offset_input + out]);
                             // update W2xdiff
-                            W2xdiff[window_offset_layer1 + neuron] =
+                            W2xdiff[window_offset_layer1 + hidden] =
                                 a_write(temp_incr + temp_W2xdiff);
 #endif
 
@@ -883,12 +883,12 @@ void mindfuzz::backprop(TYPE learning_rate,
 
                             // acquire existing dW1
                             temp_dW1 = a_read(
-                                dW1[window_offset_dW1 + neuron*input_dimension + out]);
+                                dW1[window_offset_dW1 + hidden*input_dimension + out]);
                             // compute (FP) increment
                             temp_incr = ((TYPE)2.0) * a_read(diff[window_offset_input + out]) *
-                                a_read(act1[window_offset_layer1 + neuron]);
+                                a_read(act1[window_offset_layer1 + hidden]);
                             // update dW1
-                            dW1[window_offset_dW1 + neuron*input_dimension + out] = 
+                            dW1[window_offset_dW1 + hidden*input_dimension + out] = 
                                 a_write(temp_incr + temp_dW1);
                         }
 
@@ -898,11 +898,11 @@ void mindfuzz::backprop(TYPE learning_rate,
                         // iter-accum dB1
                         // acquire existing dB1
                         temp_dB1 = a_read(
-                            dB1[window_offset_layer1 + neuron]);
+                            dB1[window_offset_layer1 + hidden]);
                         // compute (FP) increment
-                        temp_incr = ((TYPE)2.0) * a_read(W2xdiff[window_offset_layer1 + neuron]);
+                        temp_incr = ((TYPE)2.0) * a_read(W2xdiff[window_offset_layer1 + hidden]);
                         // update dB1
-                        dB1[window_offset_layer1 + neuron] = 
+                        dB1[window_offset_layer1 + hidden] = 
                             a_write(temp_incr + temp_dB1);
 #endif
                     }
@@ -932,19 +932,19 @@ void mindfuzz::backprop(TYPE learning_rate,
                 window_offset_biases2 = plm_offset_B2 + window_offset_input;
 #endif
 
-                for (uint32_t neuron = 0; neuron < layer1_dimension; neuron++) {
+                for (uint32_t hidden = 0; hidden < layer1_dimension; hidden++) {
                     
                     // update B1
 #ifdef do_bias
                     // acquire existing plmval
                     temp_plmval = a_read(
-                        plm_out[window_offset_biases1 + neuron]);
+                        plm_out[window_offset_biases1 + hidden]);
                     // compute (FP) increment
-                    temp_incr = a_read(dB1[window_offset_layer1 + neuron]) *
+                    temp_incr = a_read(dB1[window_offset_layer1 + hidden]) *
                         (learning_rate);
 
                     // update plmval
-                    plm_out[window_offset_biases1 + neuron] = 
+                    plm_out[window_offset_biases1 + hidden] = 
                         a_write(temp_plmval - temp_incr);
 #endif
 
@@ -953,12 +953,12 @@ void mindfuzz::backprop(TYPE learning_rate,
 
                         // acquire existing plmval
                         temp_plmval = a_read(
-                            plm_out[window_offset_weights1 + neuron*input_dimension + in]);
+                            plm_out[window_offset_weights1 + hidden*input_dimension + in]);
                         // compute (FP) increment
                         temp_incr = a_read(dW1[window_offset_dW1
-                                + neuron*input_dimension + in]) * (learning_rate);
+                                + hidden*input_dimension + in]) * (learning_rate);
                         // update plmval
-                        plm_out[window_offset_weights1 + neuron*input_dimension + in] = 
+                        plm_out[window_offset_weights1 + hidden*input_dimension + in] = 
                             a_write(temp_plmval - temp_incr);
 
                     }

@@ -56,7 +56,7 @@ public:
         /* <<--params-default-->> */
         window_size = 32;
         batches_perload = 1;
-        neurons_perwin = 6;
+        hiddens_perwin = 6;
         tsamps_perbatch = 90;
 // edited for mindfuzz unit testing
         num_windows = 1;
@@ -99,7 +99,7 @@ public:
     int32_t window_size;
     int32_t batches_perload;
     TYPE learning_rate;
-    int32_t neurons_perwin;
+    int32_t hiddens_perwin;
     int32_t tsamps_perbatch;
     int32_t num_windows;
     int32_t iters_perbatch;

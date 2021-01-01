@@ -22,7 +22,7 @@ public:
         this->window_size = 4;
         this->batches_perload = 1;
         this->learning_rate = a_write(0.01);
-        this->neurons_perwin = 1;
+        this->hiddens_perwin = 1;
         this->tsamps_perbatch = 32;
         this->num_windows = 8;
         this->iters_perbatch = 1;
@@ -39,7 +39,7 @@ public:
         int32_t window_size, 
         int32_t batches_perload, 
         int32_t learning_rate, 
-        int32_t neurons_perwin, 
+        int32_t hiddens_perwin, 
         int32_t tsamps_perbatch, 
         int32_t num_windows, 
         int32_t iters_perbatch, 
@@ -55,7 +55,7 @@ public:
         this->window_size = window_size;
         this->batches_perload = batches_perload;
         this->learning_rate = learning_rate;
-        this->neurons_perwin = neurons_perwin;
+        this->hiddens_perwin = hiddens_perwin;
         this->tsamps_perbatch = tsamps_perbatch;
         this->num_windows = num_windows;
         this->iters_perbatch = iters_perbatch;
@@ -74,7 +74,7 @@ public:
         if (window_size != rhs.window_size) return false;
         if (batches_perload != rhs.batches_perload) return false;
         if (learning_rate != rhs.learning_rate) return false;
-        if (neurons_perwin != rhs.neurons_perwin) return false;
+        if (hiddens_perwin != rhs.hiddens_perwin) return false;
         if (tsamps_perbatch != rhs.tsamps_perbatch) return false;
         if (num_windows != rhs.num_windows) return false;
         if (iters_perbatch != rhs.iters_perbatch) return false;
@@ -94,7 +94,7 @@ public:
         window_size = other.window_size;
         batches_perload = other.batches_perload;
         learning_rate = other.learning_rate;
-        neurons_perwin = other.neurons_perwin;
+        hiddens_perwin = other.hiddens_perwin;
         tsamps_perbatch = other.tsamps_perbatch;
         num_windows = other.num_windows;
         iters_perbatch = other.iters_perbatch;
@@ -119,7 +119,7 @@ public:
         os << "window_size = " << conf_info.window_size << ", ";
         os << "batches_perload = " << conf_info.batches_perload << ", ";
         os << "learning_rate = " << a_read(conf_info.learning_rate) << ", ";
-        os << "neurons_perwin = " << conf_info.neurons_perwin << ", ";
+        os << "hiddens_perwin = " << conf_info.hiddens_perwin << ", ";
         os << "tsamps_perbatch = " << conf_info.tsamps_perbatch << ", ";
         os << "num_windows = " << conf_info.num_windows << ", ";
         os << "iters_perbatch = " << conf_info.iters_perbatch << ", ";
@@ -137,7 +137,7 @@ public:
         int32_t window_size;
         int32_t batches_perload;
         int32_t learning_rate;
-        int32_t neurons_perwin;
+        int32_t hiddens_perwin;
         int32_t tsamps_perbatch;
         int32_t num_windows;
         int32_t iters_perbatch;

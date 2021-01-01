@@ -35,7 +35,7 @@ void mindfuzz::load_input()
     uint8_t window_size;
     uint8_t batches_perload;
     TYPE learning_rate;
-    uint8_t neurons_perwin;
+    uint8_t hiddens_perwin;
     uint8_t tsamps_perbatch;
     uint16_t num_windows;
     uint8_t iters_perbatch;
@@ -58,7 +58,7 @@ void mindfuzz::load_input()
         window_size = config.window_size;
         batches_perload = config.batches_perload;
         learning_rate = a_read(config.learning_rate);
-        neurons_perwin = config.neurons_perwin;
+        hiddens_perwin = config.hiddens_perwin;
         tsamps_perbatch = config.tsamps_perbatch;
         num_windows = config.num_windows;
         iters_perbatch = config.iters_perbatch;
@@ -184,7 +184,7 @@ void mindfuzz::compute_kernel()
     uint8_t window_size;
     uint8_t batches_perload;
     TYPE learning_rate;
-    uint8_t neurons_perwin;
+    uint8_t hiddens_perwin;
     uint8_t tsamps_perbatch;
     uint16_t num_windows;
     uint8_t iters_perbatch;
@@ -211,7 +211,7 @@ void mindfuzz::compute_kernel()
         window_size = config.window_size;
         batches_perload = config.batches_perload;
         learning_rate = a_read(config.learning_rate);
-        neurons_perwin = config.neurons_perwin;
+        hiddens_perwin = config.hiddens_perwin;
         tsamps_perbatch = config.tsamps_perbatch;
         num_windows = config.num_windows;
         iters_perbatch = config.iters_perbatch;
@@ -227,7 +227,7 @@ void mindfuzz::compute_kernel()
 
         // some dimension computation useful for backprop
         input_dimension = window_size;
-        layer1_dimension = neurons_perwin;
+        layer1_dimension = hiddens_perwin;
 
         W1_size = num_windows*layer1_dimension*input_dimension;
     }
@@ -367,7 +367,7 @@ void mindfuzz::store_output()
     uint8_t window_size;
     uint8_t batches_perload;
     TYPE learning_rate;
-    uint8_t neurons_perwin;
+    uint8_t hiddens_perwin;
     uint8_t tsamps_perbatch;
     uint16_t num_windows;
     uint8_t iters_perbatch;
@@ -390,7 +390,7 @@ void mindfuzz::store_output()
         window_size = config.window_size;
         batches_perload = config.batches_perload;
         learning_rate = a_read(config.learning_rate);
-        neurons_perwin = config.neurons_perwin;
+        hiddens_perwin = config.hiddens_perwin;
         tsamps_perbatch = config.tsamps_perbatch;
         num_windows = config.num_windows;
         iters_perbatch = config.iters_perbatch;
@@ -419,10 +419,10 @@ void mindfuzz::store_output()
         wait();
 // length of data to be stored
 #if (DMA_WORD_PER_BEAT == 0)
-        uint32_t length = num_windows*neurons_perwin*window_size;
+        uint32_t length = num_windows*hiddens_perwin*window_size;
 #else
         // broke up this computation and added some waits in order to improve schedule
-        uint32_t length_dum = num_windows*neurons_perwin*window_size;
+        uint32_t length_dum = num_windows*hiddens_perwin*window_size;
         wait();
         uint32_t length = round_up(length_dum, DMA_WORD_PER_BEAT);
 #endif

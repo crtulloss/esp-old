@@ -5,7 +5,7 @@
     <param name="iters_perbatch" desc="iters_perbatch" />
     <param name="num_windows" desc="num_windows" />
     <param name="tsamps_perbatch" desc="tsamps_perbatch" />
-    <param name="neurons_perwin" desc="neurons_perwin" />
+    <param name="hiddens_perwin" desc="hiddens_perwin" />
     <param name="learning_rate" desc="learning_rate" />
     <param name="batches_perload" desc="batches_perload" />
     <param name="window_size" desc="window_size" />
