@@ -32,14 +32,14 @@ void mindfuzz::load_input()
     }
 
     // Config
-    int32_t window_size;
-    int32_t batches_perload;
+    uint8_t window_size;
+    uint8_t batches_perload;
     TYPE learning_rate;
-    int32_t neurons_perwin;
-    int32_t tsamps_perbatch;
-    int32_t num_windows;
-    int32_t iters_perbatch;
-    int32_t num_loads;
+    uint8_t neurons_perwin;
+    uint8_t tsamps_perbatch;
+    uint16_t num_windows;
+    uint8_t iters_perbatch;
+    uint16_t num_loads;
     TYPE rate_mean;
     TYPE rate_variance;
     bool do_init;
@@ -181,14 +181,14 @@ void mindfuzz::compute_kernel()
     }
 
     // Config
-    int32_t window_size;
-    int32_t batches_perload;
+    uint8_t window_size;
+    uint8_t batches_perload;
     TYPE learning_rate;
-    int32_t neurons_perwin;
-    int32_t tsamps_perbatch;
-    int32_t num_windows;
-    int32_t iters_perbatch;
-    int32_t num_loads;
+    uint8_t neurons_perwin;
+    uint8_t tsamps_perbatch;
+    uint16_t num_windows;
+    uint8_t iters_perbatch;
+    uint16_t num_loads;
     TYPE rate_mean;
     TYPE rate_variance;
     bool do_init;
@@ -197,10 +197,10 @@ void mindfuzz::compute_kernel()
 
     // declare some necessary variables
     // int32_t load_batches;
-    int32_t total_tsamps;
-    int32_t input_dimension;
-    int32_t layer1_dimension;
-    int32_t W1_size;
+    uint8_t total_tsamps;
+    uint8_t input_dimension;
+    uint8_t layer1_dimension;
+    uint32_t W1_size;
     {
         HLS_PROTO("compute-config");
 
@@ -244,9 +244,9 @@ void mindfuzz::compute_kernel()
         TYPE initial_mean = (TYPE)1.0;
         TYPE initial_thresh = (TYPE)0.5;
 
-        for (uint32_t window = 0; window < num_windows; window++) {
-            uint32_t window_offset = window * window_size;
-            for (uint32_t elec = 0; elec < window_size; elec++) {
+        for (uint16_t window = 0; window < num_windows; window++) {
+            uint16_t window_offset = window * window_size;
+            for (uint8_t elec = 0; elec < window_size; elec++) {
                 plm_mean[window_offset + elec] = a_write(initial_mean);
                 plm_thresh[window_offset + elec] = a_write(initial_thresh);
             }
@@ -257,12 +257,9 @@ void mindfuzz::compute_kernel()
         // initial value for each weight
         TYPE initial_weight = (TYPE)0.03125;
 
-        // PLM access offsets for weights
-        uint32_t plm_offset_W1 = 0;
-
         // initialize W1
         for (uint32_t weight = 0; weight < W1_size; weight++) {
-            plm_out[plm_offset_W1 + weight] =
+            plm_out[weight] =
                 a_write(initial_weight);
         }
     }
@@ -367,14 +364,14 @@ void mindfuzz::store_output()
     }
 
     // Config
-    int32_t window_size;
-    int32_t batches_perload;
+    uint8_t window_size;
+    uint8_t batches_perload;
     TYPE learning_rate;
-    int32_t neurons_perwin;
-    int32_t tsamps_perbatch;
-    int32_t num_windows;
-    int32_t iters_perbatch;
-    int32_t num_loads;
+    uint8_t neurons_perwin;
+    uint8_t tsamps_perbatch;
+    uint16_t num_windows;
+    uint8_t iters_perbatch;
+    uint16_t num_loads;
     TYPE rate_mean;
     TYPE rate_variance;
     bool do_init;
