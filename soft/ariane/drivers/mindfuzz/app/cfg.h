@@ -1,0 +1,1 @@
+../../../../leon3/drivers/mindfuzz/app/cfg.h
