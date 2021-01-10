@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <sld>
-  <accelerator name="mindfuzz" desc="Accelerator MINDFUZZ" data_size="67" device_id="433" hls_tool="stratus_hls">
+  <accelerator name="mindfuzz" desc="Accelerator MINDFUZZ" data_size="67" device_id="101" hls_tool="stratus_hls">
     <param name="num_loads" desc="num_loads" />
     <param name="iters_perbatch" desc="iters_perbatch" />
     <param name="num_windows" desc="num_windows" />

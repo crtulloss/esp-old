@@ -30,6 +30,7 @@
 #include <esp_accelerator.h>
 
 // <<--esp-include-->>
+#include "mindfuzz.h"
 #include "FFTAccelerator.h"
 #include "AdderAccelerator.h"
 #include "fft.h"
@@ -46,6 +47,7 @@ unsigned DMA_WORD_PER_BEAT(unsigned _st);
 
 enum esp_accelerator_type {
 	// <<--esp-enum-->>
+	mindfuzz,
 	fftaccelerator,
 	adderaccelerator,
 	fft,
@@ -61,6 +63,7 @@ enum esp_accelerator_type {
 
 union esp_accelerator_descriptor {
 	// <<--esp-descriptor-->>
+	struct mindfuzz_access mindfuzz_desc;
 	struct fftaccelerator_access fftaccelerator_desc;
 	struct adderaccelerator_access adderaccelerator_desc;
 	struct fft_access fft_desc;
