@@ -1,4 +1,4 @@
-# Copyright (c) 2011-2019 Columbia University, System Level Design Group
+# Copyright (c) 2011-2021 Columbia University, System Level Design Group
 # SPDX-License-Identifier: Apache-2.0
 
 ############################################################
@@ -8,7 +8,7 @@
 #
 # Source the common configurations
 #
-source ../../common/stratus/project.tcl
+source ../../../common/hls/project.tcl
 
 
 #
@@ -22,7 +22,7 @@ use_hls_lib "./memlib"
 #
 if {$TECH eq "virtex7"} {
     # Library is in ns, but simulation uses ps!
-    set CLOCK_PERIOD 12.5
+    set CLOCK_PERIOD 10.0
     set SIM_CLOCK_PERIOD 10000.0
     set_attr default_input_delay      0.1
 }
@@ -48,6 +48,11 @@ if {$TECH eq "cmos32soi"} {
     set CLOCK_PERIOD 1000.0
     set SIM_CLOCK_PERIOD 1000.0
     set_attr default_input_delay      100.0
+}
+if {$TECH eq "gf12"} {
+    set CLOCK_PERIOD 1.0
+    set SIM_CLOCK_PERIOD 1.0
+    set_attr default_input_delay      0.1
 }
 set_attr clock_period $CLOCK_PERIOD
 
