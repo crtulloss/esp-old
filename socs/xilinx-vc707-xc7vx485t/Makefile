@@ -1,3 +1,5 @@
+# Copyright (c) 2011-2021 Columbia University, System Level Design Group
+# SPDX-License-Identifier: Apache-2.0
 ##########################
 ### ESP Local Makefile ###
 ##########################
@@ -23,8 +25,7 @@ SIMTOP = testbench
 ### Modelsim Simulation Options ###
 
 # Compile flags
-# VHDL-93 is required by some GRLIB source files
-VCOMOPT += -93
+VCOMOPT +=
 VLOGOPT +=
 
 XCOMOPT +=
@@ -35,7 +36,7 @@ VSIMOPT +=
 
 ### Additional design files ###
 TOP_VHDL_RTL_PKGS +=
-TOP_VHDL_RTL_SRCS += $(ESP_ROOT)/socs/common/sgmii_vc707.vhd
+TOP_VHDL_RTL_SRCS +=
 TOP_VLOG_RTL_SRCS +=
 TOP_VHDL_SIM_PKGS +=
 TOP_VHDL_SIM_SRCS +=

@@ -1,6 +1,7 @@
 *.old
 
 .cxl.*
+logs
 *.log
 *.bak
 *.jou
@@ -10,6 +11,7 @@ modelsim.ini
 xilinx_lib
 
 modelsim
+questa
 vsim.mk
 *.wlf
 *.do
@@ -35,7 +37,9 @@ socmap.h
 mmi64_regs.h
 power.h
 cache_cfg.svh
-sldgen
+plic_regmap.sv
+socketgen
+socgen
 
 *.exe
 *.bin
@@ -53,6 +57,8 @@ moc_predefs.h
 .qmake.stash
 
 boards
+
+soft-build/
 
 linux-build/
 linux.dsu
@@ -92,3 +98,5 @@ esplink
 
 mem_tile_floorplanning.xdc
 S64esp
+
+zynq/
