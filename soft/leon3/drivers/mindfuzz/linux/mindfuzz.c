@@ -36,7 +36,7 @@ static struct of_device_id mindfuzz_device_ids[] = {
 		.name = "SLD_MINDFUZZ",
 	},
 	{
-		.name = "eb_433",
+		.name = "eb_101",
 	},
 	{
 		.compatible = "sld,mindfuzz",

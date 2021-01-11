@@ -18,7 +18,7 @@ static unsigned DMA_WORD_PER_BEAT(unsigned _st)
 }
 
 
-#define SLD_MINDFUZZ 0x433
+#define SLD_MINDFUZZ 0x101
 #define DEV_NAME "sld,mindfuzz"
 
 /* <<--params-->> */
