@@ -1,5 +1,3 @@
-# Copyright (c) 2011-2021 Columbia University, System Level Design Group
-# SPDX-License-Identifier: Apache-2.0
 create_ip -name gig_ethernet_pcs_pma -vendor xilinx.com -library ip -version 16.1 -module_name sgmii
 
 

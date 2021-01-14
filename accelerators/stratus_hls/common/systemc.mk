@@ -1,6 +1,4 @@
-# Copyright (c) 2011-2021 Columbia University, System Level Design Group
-# SPDX-License-Identifier: Apache-2.0
-include ../../../common/common.mk
+include ../../common/common.mk
 
 ifeq ("$(STRATUS_PATH)", "")
 $(error please define STRATUS_PATH required for FlexChannels and FixedPoint library headers)
@@ -19,7 +17,7 @@ INCDIR += -I../src
 INCDIR += -I../tb
 INCDIR += -I$(SYSTEMC)/include
 INCDIR += -I$(STRATUS_PATH)/share/stratus/include
-INCDIR += -I$(ESP_ROOT)/accelerators/stratus_hls/common/inc
+INCDIR += -I$(ESP_ROOT)/accelerators/stratus_hls/common/syn-templates
 
 CXXFLAGS ?=
 CXXFLAGS += -O3

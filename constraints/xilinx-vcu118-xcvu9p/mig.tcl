@@ -1,5 +1,3 @@
-# Copyright (c) 2011-2021 Columbia University, System Level Design Group
-# SPDX-License-Identifier: Apache-2.0
 create_ip -name ddr4 -vendor xilinx.com -library ip -version 2.2 -module_name mig
 
 set_property -dict [list \

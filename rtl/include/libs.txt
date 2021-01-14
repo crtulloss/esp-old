@@ -1,0 +1,9 @@
+grlib
+common
+techmap
+eth
+opencores
+sld
+gaisler
+esa
+ariane

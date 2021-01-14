@@ -1,0 +1,1 @@
+../../accelerators/stratus_hls/common/common.mk

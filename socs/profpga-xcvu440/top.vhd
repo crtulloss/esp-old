@@ -1,4 +1,4 @@
--- Copyright (c) 2011-2021 Columbia University, System Level Design Group
+-- Copyright (c) 2011-2020 Columbia University, System Level Design Group
 -- SPDX-License-Identifier: Apache-2.0
 
 ------------------------------------------------------------------------------
@@ -13,26 +13,26 @@ use work.amba.all;
 use work.stdlib.all;
 use work.devices.all;
 use work.gencomp.all;
+use work.memoryctrl.all;
 use work.leon3.all;
 use work.uart.all;
 use work.misc.all;
 use work.net.all;
-use work.svga_pkg.all;
+use work.jtag.all;
 library unisim;
 -- pragma translate_off
 use work.sim.all;
 -- pragma translate_on
 use unisim.VCOMPONENTS.all;
-use work.monitor_pkg.all;
+use work.sldcommon.all;
 use work.sldacc.all;
 use work.tile.all;
 use work.nocpackage.all;
-use work.cachepackage.all;
 use work.coretypes.all;
 use work.config.all;
 use work.esp_global.all;
 use work.socmap.all;
-use work.tiles_pkg.all;
+use work.soctiles.all;
 
 entity top is
   generic (
@@ -211,8 +211,8 @@ architecture rtl of top is
     constant n : integer range 0 to 3)
     return integer is
   begin
-    if n > (MEM_ID_RANGE_MSB) then
-      return MEM_ID_RANGE_MSB;
+    if n > (CFG_NMEM_TILE - 1) then
+      return CFG_NMEM_TILE - 1;
     else
       return n;
     end if;
@@ -224,6 +224,28 @@ architecture rtl of top is
     2 => set_ddr_index(2),
     3 => set_ddr_index(3)
     );
+
+-- pragma translate_off
+-- Memory model for simulation purposes only
+  component ahbram_sim
+    generic (
+      hindex : integer := 0;
+      haddr  : integer := 0;
+      hmask  : integer := 16#fff#;
+      tech   : integer := DEFMEMTECH;
+      kbytes : integer := 1;
+      pipe   : integer := 0;
+      maccsz : integer := AHBDW;
+      fname  : string  := "ram.dat"
+      );
+    port (
+      rst   : in  std_ulogic;
+      clk   : in  std_ulogic;
+      ahbsi : in  ahb_slv_in_type;
+      ahbso : out ahb_slv_out_type
+      );
+  end component;
+-- pragma translate_on
 
 -- Switches
   signal sel0, sel1, sel2, sel3, sel4 : std_ulogic;
@@ -257,13 +279,6 @@ architecture rtl of top is
   signal etho : eth_out_type;
 
 -- Tiles
-
--- UART
-  signal uart_rxd_int  : std_logic;       -- UART1_RX (u1i.rxd)
-  signal uart_txd_int  : std_logic;       -- UART1_TX (u1o.txd)
-  signal uart_ctsn_int : std_logic;       -- UART1_RTSN (u1i.ctsn)
-  signal uart_rtsn_int : std_logic;       -- UART1_RTSN (u1o.rtsn)
-
 constant MAX_NMEM_TILES : integer := 4;
 -- Memory controller DDR4
   signal ddr_ahbsi : ahb_slv_in_vector_type(0 to MAX_NMEM_TILES - 1);
@@ -359,8 +374,8 @@ constant CPU_FREQ : integer := 78125;  -- cpu frequency in KHz
 
 -- MMI64
   signal user_rstn      : std_ulogic;
-  signal mon_ddr        : monitor_ddr_vector(0 to MEM_ID_RANGE_MSB);
-  signal mon_ddr_reg    : monitor_ddr_vector(0 to MEM_ID_RANGE_MSB);
+  signal mon_ddr        : monitor_ddr_vector(0 to CFG_NMEM_TILE - 1);
+  signal mon_ddr_reg    : monitor_ddr_vector(0 to CFG_NMEM_TILE - 1);
   signal mon_noc        : monitor_noc_matrix(1 to 6, 0 to CFG_TILES_NUM-1);
   signal mon_noc_actual : monitor_noc_matrix(0 to 1, 0 to CFG_TILES_NUM-1);
   signal mon_mem        : monitor_mem_vector(0 to CFG_NMEM_TILE + CFG_NSLM_TILE - 1);
@@ -381,7 +396,7 @@ begin
     end if;
   end process c0_diagnostic;
   c0_diagnostic_toggle <= c0_diagnostic_count(26);
-  c0_led_diag_pad : outpad generic map (tech => CFG_FABTECH, level => cmos, voltage => x12v) port map (c0_diagnostic_led, c0_diagnostic_toggle);
+  c0_led_diag_pad : outpad generic map (tech => CFG_PADTECH, level => cmos, voltage => x12v) port map (c0_diagnostic_led, c0_diagnostic_toggle);
   
   c1_diagnostic : process (clkm_1, clkm_sync_rst_1)
   begin  -- process c1_diagnostic
@@ -392,7 +407,7 @@ begin
     end if;
   end process c1_diagnostic;
   c1_diagnostic_toggle <= c1_diagnostic_count(26);
-  c1_led_diag_pad : outpad generic map (tech => CFG_FABTECH, level => cmos, voltage => x12v) port map (c1_diagnostic_led, c1_diagnostic_toggle);
+  c1_led_diag_pad : outpad generic map (tech => CFG_PADTECH, level => cmos, voltage => x12v) port map (c1_diagnostic_led, c1_diagnostic_toggle);
 
   c2_diagnostic : process (clkm_2, clkm_sync_rst_2)
   begin  -- process c2_diagnostic
@@ -403,7 +418,7 @@ begin
     end if;
   end process c2_diagnostic;
   c2_diagnostic_toggle <= c2_diagnostic_count(26);
-  c2_led_diag_pad : outpad generic map (tech => CFG_FABTECH, level => cmos, voltage => x12v) port map (c2_diagnostic_led, c2_diagnostic_toggle);
+  c2_led_diag_pad : outpad generic map (tech => CFG_PADTECH, level => cmos, voltage => x12v) port map (c2_diagnostic_led, c2_diagnostic_toggle);
 
   c3_diagnostic : process (clkm_3, clkm_sync_rst_3)
   begin  -- process c3_diagnostic
@@ -414,7 +429,7 @@ begin
     end if;
   end process c3_diagnostic;
   c3_diagnostic_toggle <= c3_diagnostic_count(26);
-  c3_led_diag_pad : outpad generic map (tech => CFG_FABTECH, level => cmos, voltage => x12v) port map (c3_diagnostic_led, c3_diagnostic_toggle);
+  c3_led_diag_pad : outpad generic map (tech => CFG_PADTECH, level => cmos, voltage => x12v) port map (c3_diagnostic_led, c3_diagnostic_toggle);
 
 
 -------------------------------------------------------------------------------
@@ -422,10 +437,10 @@ begin
 -------------------------------------------------------------------------------
 
   -- From memory controllers' PLLs
-  lock_pad : outpad generic map (tech => CFG_FABTECH, level => cmos, voltage => x18v) port map (LED_GREEN, lock);
+  lock_pad : outpad generic map (tech => CFG_PADTECH, level => cmos, voltage => x18v) port map (LED_GREEN, lock);
 
   -- From CPU 0 (on chip)
-  cpuerr_pad : outpad generic map (tech => CFG_FABTECH, level => cmos, voltage => x18v) port map (LED_RED, cpuerr);
+  cpuerr_pad : outpad generic map (tech => CFG_PADTECH, level => cmos, voltage => x18v) port map (LED_RED, cpuerr);
   --pragma translate_off
   process(clkm, rstn)
   begin  -- process
@@ -436,29 +451,29 @@ begin
   --pragma translate_on
 
   -- From DDR controller (on FPGA)
-  calib0_complete_pad : outpad generic map (tech => CFG_FABTECH, level => cmos, voltage => x12v) port map (c0_calib_complete, c0_calib_done);
-  calib1_complete_pad : outpad generic map (tech => CFG_FABTECH, level => cmos, voltage => x12v) port map (c1_calib_complete, c1_calib_done);
-  calib2_complete_pad : outpad generic map (tech => CFG_FABTECH, level => cmos, voltage => x12v) port map (c2_calib_complete, c2_calib_done);
-  calib3_complete_pad : outpad generic map (tech => CFG_FABTECH, level => cmos, voltage => x12v) port map (c3_calib_complete, c3_calib_done);
+  calib0_complete_pad : outpad generic map (tech => CFG_PADTECH, level => cmos, voltage => x12v) port map (c0_calib_complete, c0_calib_done);
+  calib1_complete_pad : outpad generic map (tech => CFG_PADTECH, level => cmos, voltage => x12v) port map (c1_calib_complete, c1_calib_done);
+  calib2_complete_pad : outpad generic map (tech => CFG_PADTECH, level => cmos, voltage => x12v) port map (c2_calib_complete, c2_calib_done);
+  calib3_complete_pad : outpad generic map (tech => CFG_PADTECH, level => cmos, voltage => x12v) port map (c3_calib_complete, c3_calib_done);
 
 
-  led3_pad : outpad generic map (tech => CFG_FABTECH, level => cmos, voltage => x18v) port map (LED_BLUE, '0');
+  led3_pad : outpad generic map (tech => CFG_PADTECH, level => cmos, voltage => x18v) port map (LED_BLUE, '0');
 
-  led4_pad : outpad generic map (tech => CFG_FABTECH, level => cmos, voltage => x18v) port map (LED_YELLOW, '0');
+  led4_pad : outpad generic map (tech => CFG_PADTECH, level => cmos, voltage => x18v) port map (LED_YELLOW, '0');
 
 -------------------------------------------------------------------------------
 -- Switches -------------------------------------------------------------------
 -------------------------------------------------------------------------------
 
-  --sw0_pad : iopad generic map (tech => CFG_FABTECH, level => cmos, voltage => x18v)
+  --sw0_pad : iopad generic map (tech => CFG_PADTECH, level => cmos, voltage => x18v)
   --  port map (switch(0), '0', '1', sel0);
-  --sw1_pad : iopad generic map (tech => CFG_FABTECH, level => cmos, voltage => x18v)
+  --sw1_pad : iopad generic map (tech => CFG_PADTECH, level => cmos, voltage => x18v)
   --  port map (switch(1), '0', '1', sel1);
-  --sw2_pad : iopad generic map (tech => CFG_FABTECH, level => cmos, voltage => x18v)
+  --sw2_pad : iopad generic map (tech => CFG_PADTECH, level => cmos, voltage => x18v)
   --  port map (switch(2), '0', '1', sel2);
-  --sw3_pad : iopad generic map (tech => CFG_FABTECH, level => cmos, voltage => x18v)
+  --sw3_pad : iopad generic map (tech => CFG_PADTECH, level => cmos, voltage => x18v)
   --  port map (switch(3), '0', '1', sel3);
-  --sw4_pad : iopad generic map (tech => CFG_FABTECH, level => cmos, voltage => x18v)
+  --sw4_pad : iopad generic map (tech => CFG_PADTECH, level => cmos, voltage => x18v)
   --  port map (switch(4), '0', '1', sel4);
   sel0 <= '1';
   sel1 <= '0';
@@ -470,7 +485,7 @@ begin
 -- Buttons --------------------------------------------------------------------
 -------------------------------------------------------------------------------
 
-  --pio_pad : inpad generic map (tech => CFG_FABTECH, level => cmos, voltage => x18v)
+  --pio_pad : inpad generic map (tech => CFG_PADTECH, level => cmos, voltage => x18v)
   --  port map (button(i-4), gpioi.din(i));
 
 ----------------------------------------------------------------------
@@ -482,7 +497,7 @@ begin
 
   lock <= c0_calib_done and c1_calib_done and c2_calib_done and c3_calib_done and cgo.clklock;
 
-  reset_pad : inpad generic map (tech => CFG_FABTECH, level => cmos, voltage => x12v) port map (reset, rst);
+  reset_pad : inpad generic map (tech => CFG_PADTECH, level => cmos, voltage => x12v) port map (reset, rst);
   rst0      : rstgen                    -- reset generator
     generic map (acthigh => 1, syncin => 0)
     port map (rst, clkm, lock, rstn, open);
@@ -513,15 +528,6 @@ begin
   esp_clkgen : clkgen
     generic map (CFG_FABTECH, 8, 8, 0, 0, 0, 0, 0, CPU_FREQ)
     port map (esp_clk, esp_clk, chip_refclk, open, open, open, open, cgi, cgo, open, open, open);
-
------------------------------------------------------------------------------
--- UART pads
------------------------------------------------------------------------------
-
-  uart_rxd_pad   : inpad  generic map (level => cmos, voltage => x18v, tech => CFG_FABTECH) port map (uart_rxd, uart_rxd_int);
-  uart_txd_pad   : outpad generic map (level => cmos, voltage => x18v, tech => CFG_FABTECH) port map (uart_txd, uart_txd_int);
-  uart_ctsn_pad : inpad  generic map (level => cmos, voltage => x18v, tech => CFG_FABTECH) port map (uart_ctsn, uart_ctsn_int);
-  uart_rtsn_pad : outpad generic map (level => cmos, voltage => x18v, tech => CFG_FABTECH) port map (uart_rtsn, uart_rtsn_int);
 
 ----------------------------------------------------------------------
 ---  DDR4 memory controller ------------------------------------------
@@ -664,6 +670,8 @@ begin
     mig_ahbram : ahbram_sim
       generic map (
         hindex => 0,
+        haddr  => ddr_haddr(this_ddr_index(0)),
+        hmask  => ddr_hmask(this_ddr_index(0)),
         tech   => 0,
         kbytes => 1000,
         pipe   => 0,
@@ -673,8 +681,6 @@ begin
       port map(
         rst   => rstn,
         clk   => clkm,
-        haddr => ddr_haddr(this_ddr_index(0)),
-        hmask => ddr_hmask(this_ddr_index(0)),
         ahbsi => ddr_ahbsi(0),
         ahbso => ddr_ahbso(0)
         );
@@ -682,6 +688,8 @@ begin
     mig_ahbram1 : ahbram_sim
       generic map (
         hindex => 0,
+        haddr  => ddr_haddr(this_ddr_index(1)),
+        hmask  => ddr_hmask(this_ddr_index(1)),
         tech   => 0,
         kbytes => 1000,
         pipe   => 0,
@@ -691,8 +699,6 @@ begin
       port map(
         rst   => rstn,
         clk   => clkm,
-        haddr => ddr_haddr(this_ddr_index(1)),
-        hmask => ddr_hmask(this_ddr_index(1)),
         ahbsi => ddr_ahbsi(1),
         ahbso => ddr_ahbso(1)
         );
@@ -700,6 +706,8 @@ begin
     mig_ahbram2 : ahbram_sim
       generic map (
         hindex => 0,
+        haddr  => ddr_haddr(this_ddr_index(2)),
+        hmask  => ddr_hmask(this_ddr_index(2)),
         tech   => 0,
         kbytes => 1000,
         pipe   => 0,
@@ -709,8 +717,6 @@ begin
       port map(
         rst   => rstn,
         clk   => clkm,
-        haddr => ddr_haddr(this_ddr_index(2)),
-        hmask => ddr_hmask(this_ddr_index(2)),
         ahbsi => ddr_ahbsi(2),
         ahbso => ddr_ahbso(2)
         );
@@ -718,6 +724,8 @@ begin
     mig_ahbram3 : ahbram_sim
       generic map (
         hindex => 0,
+        haddr  => ddr_haddr(this_ddr_index(3)),
+        hmask  => ddr_hmask(this_ddr_index(3)),
         tech   => 0,
         kbytes => 1000,
         pipe   => 0,
@@ -727,8 +735,6 @@ begin
       port map(
         rst   => rstn,
         clk   => clkm,
-        haddr => ddr_haddr(this_ddr_index(3)),
-        hmask => ddr_hmask(this_ddr_index(3)),
         ahbsi => ddr_ahbsi(3),
         ahbso => ddr_ahbso(3)
         );
@@ -818,8 +824,9 @@ begin
         paddr       => 16#800#,
         pmask       => 16#f00#,
         pirq        => 12,
-        little_end  => GLOB_CPU_RISCV * CFG_L2_DISABLE,
-        memtech     => CFG_FABTECH,
+        little_end  => GLOB_CPU_AXI,
+        memtech     => CFG_MEMTECH,
+        mdcscaler   => CPU_FREQ/1000,
         enable_mdio => 1,
         fifosize    => CFG_ETH_FIFO,
         nsync       => 1,
@@ -835,7 +842,6 @@ begin
       port map(
         rst    => rstn,
         clk    => chip_refclk,
-        mdcscaler => CPU_FREQ/1000,
         ahbmi  => eth0_ahbmi,
         ahbmo  => eth0_ahbmo,
         eahbmo => edcl_ahbmo,
@@ -849,31 +855,31 @@ begin
 
   -- eth pads
   eth0_inpads : if (CFG_GRETH = 1) generate
-    etxc_pad : clkpad generic map (tech => CFG_FABTECH, level => cmos, voltage => x18v, arch => 2)
+    etxc_pad : clkpad generic map (tech => CFG_PADTECH, level => cmos, voltage => x18v, arch => 2)
       port map (etx_clk, ethi.tx_clk);
-    erxc_pad : clkpad generic map (tech => CFG_FABTECH, level => cmos, voltage => x18v, arch => 2)
+    erxc_pad : clkpad generic map (tech => CFG_PADTECH, level => cmos, voltage => x18v, arch => 2)
       port map (erx_clk, ethi.rx_clk);
-    erxd_pad : inpadv generic map (tech => CFG_FABTECH, level => cmos, voltage => x18v, width => 4)
+    erxd_pad : inpadv generic map (tech => CFG_PADTECH, level => cmos, voltage => x18v, width => 4)
       port map (erxd, ethi.rxd(3 downto 0));
-    erxdv_pad : inpad generic map (tech => CFG_FABTECH, level => cmos, voltage => x18v)
+    erxdv_pad : inpad generic map (tech => CFG_PADTECH, level => cmos, voltage => x18v)
       port map (erx_dv, ethi.rx_dv);
-    erxer_pad : inpad generic map (tech => CFG_FABTECH, level => cmos, voltage => x18v)
+    erxer_pad : inpad generic map (tech => CFG_PADTECH, level => cmos, voltage => x18v)
       port map (erx_er, ethi.rx_er);
-    erxco_pad : inpad generic map (tech => CFG_FABTECH, level => cmos, voltage => x18v)
+    erxco_pad : inpad generic map (tech => CFG_PADTECH, level => cmos, voltage => x18v)
       port map (erx_col, ethi.rx_col);
-    erxcr_pad : inpad generic map (tech => CFG_FABTECH, level => cmos, voltage => x18v)
+    erxcr_pad : inpad generic map (tech => CFG_PADTECH, level => cmos, voltage => x18v)
       port map (erx_crs, ethi.rx_crs);
   end generate eth0_inpads;
 
-  emdio_pad : iopad generic map (tech => CFG_FABTECH, level => cmos, voltage => x18v)
+  emdio_pad : iopad generic map (tech => CFG_PADTECH, level => cmos, voltage => x18v)
     port map (emdio, etho.mdio_o, etho.mdio_oe, ethi.mdio_i);
-  etxd_pad : outpadv generic map (tech => CFG_FABTECH, level => cmos, voltage => x18v, width => 4)
+  etxd_pad : outpadv generic map (tech => CFG_PADTECH, level => cmos, voltage => x18v, width => 4)
     port map (etxd, etho.txd(3 downto 0));
-  etxen_pad : outpad generic map (tech => CFG_FABTECH, level => cmos, voltage => x18v)
+  etxen_pad : outpad generic map (tech => CFG_PADTECH, level => cmos, voltage => x18v)
     port map (etx_en, etho.tx_en);
-  etxer_pad : outpad generic map (tech => CFG_FABTECH, level => cmos, voltage => x18v)
+  etxer_pad : outpad generic map (tech => CFG_PADTECH, level => cmos, voltage => x18v)
     port map (etx_er, etho.tx_er);
-  emdc_pad : outpad generic map (tech => CFG_FABTECH, level => cmos, voltage => x18v)
+  emdc_pad : outpad generic map (tech => CFG_PADTECH, level => cmos, voltage => x18v)
     port map (emdc, etho.mdc);
 
   no_eth0 : if SIMULATION = true or CFG_GRETH = 0 generate
@@ -896,7 +902,7 @@ begin
 
   svga : if CFG_SVGA_ENABLE /= 0 generate
     svga0 : svgactrl generic map(
-      memtech  => CFG_FABTECH,
+      memtech  => CFG_MEMTECH,
       pindex   => 13,
       paddr    => 6,
       hindex   => 0,
@@ -964,41 +970,41 @@ begin
     dvi_npd         <= '0';
   end generate;
 
-  tft_nhpd_pad : inpad generic map (tech => CFG_FABTECH, level => cmos, voltage => x18v)
+  tft_nhpd_pad : inpad generic map (tech => CFG_PADTECH, level => cmos, voltage => x18v)
     port map (tft_nhpd, dvi_nhpd);
 
-  tft_clkp_pad : outpad generic map (tech => CFG_FABTECH, level => cmos, voltage => x18v)
+  tft_clkp_pad : outpad generic map (tech => CFG_PADTECH, level => cmos, voltage => x18v)
     port map (tft_clk_p, clkvga_p);
-  tft_clkn_pad : outpad generic map (tech => CFG_FABTECH, level => cmos, voltage => x18v)
+  tft_clkn_pad : outpad generic map (tech => CFG_PADTECH, level => cmos, voltage => x18v)
     port map (tft_clk_n, clkvga_n);
 
-  tft_data_pad : outpadv generic map (width => 24, tech => CFG_FABTECH, level => cmos, voltage => x18v)
+  tft_data_pad : outpadv generic map (width => 24, tech => CFG_PADTECH, level => cmos, voltage => x18v)
     port map (tft_data, dvi_data);
-  tft_hsync_pad : outpad generic map (tech => CFG_FABTECH, level => cmos, voltage => x18v)
+  tft_hsync_pad : outpad generic map (tech => CFG_PADTECH, level => cmos, voltage => x18v)
     port map (tft_hsync, dvi_hsync);
-  tft_vsync_pad : outpad generic map (tech => CFG_FABTECH, level => cmos, voltage => x18v)
+  tft_vsync_pad : outpad generic map (tech => CFG_PADTECH, level => cmos, voltage => x18v)
     port map (tft_vsync, dvi_vsync);
-  tft_de_pad : outpad generic map (tech => CFG_FABTECH, level => cmos, voltage => x18v)
+  tft_de_pad : outpad generic map (tech => CFG_PADTECH, level => cmos, voltage => x18v)
     port map (tft_de, dvi_de);
 
-  tft_dken_pad : outpad generic map (tech => CFG_FABTECH, level => cmos, voltage => x18v)
+  tft_dken_pad : outpad generic map (tech => CFG_PADTECH, level => cmos, voltage => x18v)
     port map (tft_dken, dvi_dken);
-  tft_ctl1_a1_dk1_pad : outpad generic map (tech => CFG_FABTECH, level => cmos, voltage => x18v)
+  tft_ctl1_a1_dk1_pad : outpad generic map (tech => CFG_PADTECH, level => cmos, voltage => x18v)
     port map (tft_ctl1_a1_dk1, dvi_ctl1_a1_dk1);
-  tft_ctl2_a2_dk2_pad : outpad generic map (tech => CFG_FABTECH, level => cmos, voltage => x18v)
+  tft_ctl2_a2_dk2_pad : outpad generic map (tech => CFG_PADTECH, level => cmos, voltage => x18v)
     port map (tft_ctl2_a2_dk2, dvi_ctl2_a2_dk2);
-  tft_a3_dk3_pad : outpad generic map (tech => CFG_FABTECH, level => cmos, voltage => x18v)
+  tft_a3_dk3_pad : outpad generic map (tech => CFG_PADTECH, level => cmos, voltage => x18v)
     port map (tft_a3_dk3, dvi_a3_dk3);
 
-  tft_isel_pad : outpad generic map (tech => CFG_FABTECH, level => cmos, voltage => x18v)
+  tft_isel_pad : outpad generic map (tech => CFG_PADTECH, level => cmos, voltage => x18v)
     port map (tft_isel, dvi_isel);
-  tft_bsel_pad : outpad generic map (tech => CFG_FABTECH, level => cmos, voltage => x18v)
+  tft_bsel_pad : outpad generic map (tech => CFG_PADTECH, level => cmos, voltage => x18v)
     port map (tft_bsel, dvi_bsel);
-  tft_dsel_pad : outpad generic map (tech => CFG_FABTECH, level => cmos, voltage => x18v)
+  tft_dsel_pad : outpad generic map (tech => CFG_PADTECH, level => cmos, voltage => x18v)
     port map (tft_dsel, dvi_dsel);
-  tft_edge_pad : outpad generic map (tech => CFG_FABTECH, level => cmos, voltage => x18v)
+  tft_edge_pad : outpad generic map (tech => CFG_PADTECH, level => cmos, voltage => x18v)
     port map (tft_edge, dvi_edge);
-  tft_npd_pad : outpad generic map (tech => CFG_FABTECH, level => cmos, voltage => x18v)
+  tft_npd_pad : outpad generic map (tech => CFG_PADTECH, level => cmos, voltage => x18v)
     port map (tft_npd, dvi_npd);
 
   -----------------------------------------------------------------------------
@@ -1020,16 +1026,16 @@ begin
       SIMULATION => SIMULATION)
     port map (
       rst         => chip_rst,
-      sys_clk     => sys_clk(0 to MEM_ID_RANGE_MSB),
+      sys_clk     => sys_clk(0 to CFG_NMEM_TILE - 1),
       refclk      => chip_refclk,
       pllbypass   => chip_pllbypass,
-      uart_rxd    => uart_rxd_int,
-      uart_txd    => uart_txd_int,
-      uart_ctsn   => uart_ctsn_int,
-      uart_rtsn   => uart_rtsn_int,
+      uart_rxd    => uart_rxd,
+      uart_txd    => uart_txd,
+      uart_ctsn   => uart_ctsn,
+      uart_rtsn   => uart_rtsn,
       cpuerr      => cpuerr,
-      ddr_ahbsi   => ddr_ahbsi(0 to MEM_ID_RANGE_MSB),
-      ddr_ahbso   => ddr_ahbso(0 to MEM_ID_RANGE_MSB),
+      ddr_ahbsi   => ddr_ahbsi(0 to CFG_NMEM_TILE - 1),
+      ddr_ahbso   => ddr_ahbso(0 to CFG_NMEM_TILE - 1),
       eth0_apbi   => eth0_apbi,
       eth0_apbo   => eth0_apbo,
       edcl_ahbmo  => edcl_ahbmo,
@@ -1055,7 +1061,7 @@ begin
     -- MMI64
     user_rstn <= rstn;
     
-    gen_mon_ddr : for i in 0 to MEM_ID_RANGE_MSB generate
+    gen_mon_ddr : for i in 0 to CFG_NMEM_TILE - 1 generate
         mon_ddr(i).clk <= sys_clk(i);
         detect_ddr_access : process (ddr_ahbsi)
         begin  -- process detect_mem_access
@@ -1070,7 +1076,7 @@ begin
         end process detect_ddr_access;
     end generate gen_mon_ddr;
     
-    gen_mon_regs : for i in 0 to MEM_ID_RANGE_MSB generate
+    gen_mon_regs : for i in 0 to CFG_NMEM_TILE - 1 generate
         mon_mem_reg(i).clk <= mon_mem(i).clk;
         mon_mem_reg_gen : process(mon_mem(i).clk, rstn) 
         begin 
@@ -1117,7 +1123,7 @@ begin
 
     monitor_1 : monitor
       generic map (
-        memtech                => CFG_FABTECH,
+        memtech                => CFG_MEMTECH,
         mmi64_width            => 32,
         ddrs_num               => CFG_NMEM_TILE,
         slms_num               => CFG_NSLM_TILE,
