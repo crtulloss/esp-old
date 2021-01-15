@@ -42,6 +42,7 @@
 
 // useful macros for splitting up learning rate multiplications to preserve dynamic range
 #ifdef split_LR
+
 // define fractional powers of 2
 #define frac_4 ((TYPE)0.25)
 #define frac_64 ((TYPE)0.015625)
@@ -51,7 +52,13 @@
 #define frac_1024 ((TYPE)0.0009765625)
 #define frac_2048 ((TYPE)0.00048828125)
 #define frac_4096 ((TYPE)0.0002441406125)
+
 // choose which shifts to use
+#ifdef FP_16
+
+
+#else // FP_32
+
 #define shift_A frac_2048
 #define numerator_B 128
 #define shift_up_C ((TYPE)128)
@@ -59,6 +66,8 @@
 // actual bit shift versions
 #define bs_A 11
 #define bs_C 7
+
+#endif // FP_16 vs FP_32
 
 #endif
 

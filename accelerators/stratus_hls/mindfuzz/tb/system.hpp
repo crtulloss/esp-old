@@ -9,9 +9,15 @@
 
 #include "esp_templates.hpp"
 
-//const size_t MEM_SIZE = 69599232 / (DMA_WIDTH/8);
-// changed to reflect 32b data
-const size_t MEM_SIZE = 139198464 / (DMA_WIDTH/8);
+// determine mem size in bytes
+#ifdef FP_16
+const size_t MEM_SIZE = 1284480 / (DMA_WIDTH/8);
+#else // FP_32
+const size_t MEM_SIZE = 2568960 / (DMA_WIDTH/8);
+#endif
+
+// old 
+//const size_t MEM_SIZE = 139198464 / (DMA_WIDTH/8);
 
 #include "core/systems/esp_system.hpp"
 
