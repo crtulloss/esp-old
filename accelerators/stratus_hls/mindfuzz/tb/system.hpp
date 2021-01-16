@@ -10,11 +10,12 @@
 #include "esp_templates.hpp"
 
 // determine mem size in bytes
-#ifdef FP_16
-const size_t MEM_SIZE = 1284480 / (DMA_WIDTH/8);
-#else // FP_32
-const size_t MEM_SIZE = 2568960 / (DMA_WIDTH/8);
-#endif
+#if (FX_WIDTH == 16)
+// float still takes 4 bytes
+const size_t MEM_SIZE = 1284864 / (DMA_WIDTH/8);
+#else // 32
+const size_t MEM_SIZE = 2569728 / (DMA_WIDTH/8);
+#endif // 16 vs 32
 
 // old 
 //const size_t MEM_SIZE = 139198464 / (DMA_WIDTH/8);
@@ -67,11 +68,16 @@ public:
 // edited for mindfuzz unit testing
         num_windows = 1;
         iters_perbatch = 1;
-        num_loads = 223;
+        num_loads = 222;
 #ifdef split_LR
-        // version with split learning rate. shift_A = 1/128, shift_down_C = 1/512
+        // version with split learning rate.
         // learning_rate * shift_A * shift_down_C = non-split learning rate
+#if (FX_WIDTH == 16)
+        learning_rate = TYPE(((float)numerator_B) / ((float)225));
+#else // 32
         learning_rate = TYPE(((float)numerator_B) / ((float)703125));
+#endif // 16 vs 32
+
 #else
         // version with single learning rate.
         // note that calculus factor of 2 has been manually applied here

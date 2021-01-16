@@ -124,7 +124,11 @@ void system_t::load_memory()
 
 
     // read input data into 2D array from CSV file
+#if (FX_WIDTH == 16)
+    std::ifstream indata("../sw/m2/float16/data.csv");
+#else // 32
     std::ifstream indata("../sw/m2/data_32.csv");
+#endif
     std::string line;
     std::vector<std::vector<std::string> > parsedCSV;
     while (std::getline(indata, line)) {
@@ -175,7 +179,11 @@ void system_t::load_memory()
 
     // read output (weight) data from CSV file into 2D array
     // I concatenated all the data into one file
+#if (FX_WIDTH == 16)
+    std::ifstream wdata("../sw/m2/float16/h.csv");
+#else // 32
     std::ifstream wdata("../sw/m2/h.csv");
+#endif
     std::string wline;
     std::vector<std::vector<std::string> > parsed_weights;
     while (std::getline(wdata, wline)) {
@@ -202,9 +210,6 @@ void system_t::load_memory()
     // temporary float array to store the golden output data
     gold = new float[out_size];
 
-    // data for all loads, all batches will be in the parsed array
-    uint32_t total_loads = 223;
-
     for (uint32_t hidden = 0; hidden < hiddens_perwin; hidden++) {
 
         for (uint32_t electrode = 0; electrode < window_size; electrode++) {
@@ -213,7 +218,7 @@ void system_t::load_memory()
             // row to get from this hidden: num_loads - 1 + 1
             // -1 because 1 load would be load #0,
             // +1 because we skip the header row
-            std::string element = parsed_weights[hidden*(total_loads+1) + num_loads][electrode + 1];
+            std::string element = parsed_weights[hidden*(num_loads+1) + num_loads][electrode + 1];
         
             // convert string to float
             stringstream sselem(element);

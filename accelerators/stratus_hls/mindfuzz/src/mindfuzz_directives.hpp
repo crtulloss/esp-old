@@ -4,7 +4,21 @@
 #ifndef __MINDFUZZ_DIRECTIVES_HPP__
 #define __MINDFUZZ_DIRECTIVES_HPP__
 
-// auto generated stuff
+// added by CRT - related to datatypes
+// use fixed point data type
+#define FX_WIDTH 32
+#define FX64_IL 15
+#define FX32_IL 15
+#define FX16_IL 11 // TODO what is the correct length?
+
+// to test whether applying learning rate in stages gives same result
+// as single learning rate
+#define split_LR
+// testing beh using fixed point
+#define HLS_FP
+
+#if (FX_WIDTH == 32)
+
 #if (DMA_WIDTH == 32)
 #define DMA_BEAT_PER_WORD 1
 #define DMA_WORD_PER_BEAT 1
@@ -19,19 +33,23 @@
 
 #define PLM_ELEC_NAME "mindfuzz_plm_block_elec_32"
 
-// added by CRT - related to datatypes
-// use fixed point data type
-#define FX_WIDTH 32
-#define FX64_IL 15
-#define FX32_IL 15
-#define FX16_IL 8 // TODO what is the correct length?
+#else // 16
 
-// to test whether applying learning rate in stages gives same result
-// as single learning rate
-#define split_LR
+#if (DMA_WIDTH == 32)
+#define DMA_BEAT_PER_WORD 1
+#define DMA_WORD_PER_BEAT 2
+#define PLM_IN_NAME "mindfuzz_plm_block_in_16_dma32"
+#define PLM_OUT_NAME "mindfuzz_plm_block_out_16_dma32"
+#elif (DMA_WIDTH == 64)
+#define DMA_BEAT_PER_WORD 1
+#define DMA_WORD_PER_BEAT 4
+#define PLM_IN_NAME "mindfuzz_plm_block_in_16_dma64"
+#define PLM_OUT_NAME "mindfuzz_plm_block_out_16_dma64"
+#endif
 
-// testing beh using fixed point
-#define HLS_FP
+#define PLM_ELEC_NAME "mindfuzz_plm_block_elec_16"
+
+#endif
 
 #if defined(STRATUS_HLS)
 

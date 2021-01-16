@@ -21,7 +21,16 @@
 #define __round_mask(x, y) ((y)-1)
 #define round_up(x, y) ((((x)-1) | __round_mask(x, y))+1)
 /* <<--defines-->> */
+#if (FX_WIDTH == 16)
+
+#define DATA_WIDTH 16
+
+#else // 32
+
 #define DATA_WIDTH 32
+
+#endif // 16 vs 32
+
 #define DMA_SIZE SIZE_HWORD
 
 //#define PLM_OUT_WORD 2432
@@ -54,10 +63,17 @@
 #define frac_4096 ((TYPE)0.0002441406125)
 
 // choose which shifts to use
-#ifdef FP_16
+#if (FX_WIDTH == 16)
 
+#define shift_A frac_512
+#define shift_up_C ((TYPE)1)
+#define shift_down_C ((TYPE)1)
 
-#else // FP_32
+#define bs_A 9
+#define numerator_B 8
+#define bs_C 0
+
+#else // 32
 
 #define shift_A frac_2048
 #define numerator_B 128
@@ -67,7 +83,7 @@
 #define bs_A 11
 #define bs_C 7
 
-#endif // FP_16 vs FP_32
+#endif // 16 vs 32
 
 #endif
 
