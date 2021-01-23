@@ -169,6 +169,10 @@ void system_t::load_memory()
             stringstream sselem(element);
             float float_element = 0;
             sselem >> float_element;
+#if (FX_WIDTH == 16)
+            // pre-scale the input data to fit better in fixed-point type
+            float_element /= 16;
+#endif
 
             // put it in the array
             in[row_offset + col] = float_element;
@@ -210,6 +214,10 @@ void system_t::load_memory()
     // temporary float array to store the golden output data
     gold = new float[out_size];
 
+    // need this because still need to know the size of the csv array
+    // even if not using all loads in an experiment.
+    uint32_t total_loads = 223;
+
     for (uint32_t hidden = 0; hidden < hiddens_perwin; hidden++) {
 
         for (uint32_t electrode = 0; electrode < window_size; electrode++) {
@@ -218,7 +226,7 @@ void system_t::load_memory()
             // row to get from this hidden: num_loads - 1 + 1
             // -1 because 1 load would be load #0,
             // +1 because we skip the header row
-            std::string element = parsed_weights[hidden*(num_loads+1) + num_loads][electrode + 1];
+            std::string element = parsed_weights[hidden*(total_loads+1) + num_loads][electrode + 1];
         
             // convert string to float
             stringstream sselem(element);

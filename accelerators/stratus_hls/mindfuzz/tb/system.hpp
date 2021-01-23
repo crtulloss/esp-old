@@ -68,7 +68,7 @@ public:
 // edited for mindfuzz unit testing
         num_windows = 1;
         iters_perbatch = 1;
-        num_loads = 222;
+        num_loads = 1;
 #ifdef split_LR
         // version with split learning rate.
         // learning_rate * shift_A * shift_down_C = non-split learning rate

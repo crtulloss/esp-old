@@ -65,12 +65,12 @@
 // choose which shifts to use
 #if (FX_WIDTH == 16)
 
-#define shift_A frac_512
+#define shift_A frac_256
 #define shift_up_C ((TYPE)1)
 #define shift_down_C ((TYPE)1)
 
-#define bs_A 9
-#define numerator_B 8
+#define bs_A 8
+#define numerator_B 4
 #define bs_C 0
 
 #else // 32
