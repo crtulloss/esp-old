@@ -18,7 +18,7 @@ set TECH_PATH "$ESP_ROOT/tech/$TECH"
 # Setup technology and include behavioral models and/or libraries
 #
 set fpga_techs [list "virtex7" "zynq7000" "virtexu" "virtexup"]
-set asic_techs [list "cmos32soi"]
+set asic_techs [list "cmos32soi" "tsmc130"]
 
 if {[lsearch $fpga_techs $TECH] >= 0} {
     set VIVADO $::env(XILINX_VIVADO)
