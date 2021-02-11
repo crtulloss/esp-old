@@ -98,7 +98,17 @@ public:
     {
         // Signal binding
         cfg.bind_with(*this);
+#ifdef(ASIC_FLATTEN)
 
+        // flatten arrays to registers
+        HLS_FLATTEN_ARRAY(plm_out);
+        HLS_FLATTEN_ARRAY(plm_in_ping);
+        HLS_FLATTEN_ARRAY(plm_in_pong);
+
+        HLS_FLATTEN_ARRAY(plm_maxmin);
+        HLS_FLATTEN_ARRAY(plm_thresh);
+        HLS_FLATTEN_ARRAY(plm_mean);
+#else
         // Map arrays to memories
         // deleted output pingpong
         HLS_MAP_plm(plm_out, PLM_OUT_NAME);
@@ -110,6 +120,7 @@ public:
         HLS_MAP_plm(plm_maxmin, PLM_ELEC_NAME);
         HLS_MAP_plm(plm_mean, PLM_ELEC_NAME);
         HLS_MAP_plm(plm_thresh, PLM_ELEC_NAME);
+#endif
 
         // flatten the flag array into registers
         HLS_FLATTEN_ARRAY(flag);

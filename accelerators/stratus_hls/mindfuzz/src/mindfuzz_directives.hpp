@@ -17,6 +17,10 @@
 // testing beh using fixed point
 #define HLS_FP
 
+
+// for ASIC synth with no memory banks
+#define ASIC_FLATTEN
+
 #if (FX_WIDTH == 32)
 
 #if (DMA_WIDTH == 32)
