@@ -6,7 +6,7 @@
 
 // added by CRT - related to datatypes
 // use fixed point data type
-#define FX_WIDTH 16
+#define FX_WIDTH 32
 #define FX64_IL 15
 #define FX32_IL 15
 #define FX16_IL 8 // TODO what is the correct length?
@@ -20,6 +20,9 @@
 
 // for ASIC synth with no memory banks
 #define ASIC_FLATTEN
+
+
+
 
 #if (FX_WIDTH == 32)
 

@@ -98,7 +98,7 @@ public:
     {
         // Signal binding
         cfg.bind_with(*this);
-#ifdef(ASIC_FLATTEN)
+#ifdef ASIC_FLATTEN
 
         // flatten arrays to registers
         HLS_FLATTEN_ARRAY(plm_out);
