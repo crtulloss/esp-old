@@ -3,7 +3,6 @@ mindfuzz_plm_block_out_dma32 192 32 1w:0r 0w:1r
 mindfuzz_plm_block_in_dma64 2880 32 2w:0r 0w:1r
 mindfuzz_plm_block_out_dma64 192 32 1w:0r 0w:2r
 mindfuzz_plm_block_elec_32 192 32 1w:0r 0w:1r
-
 mindfuzz_plm_block_in_16_dma32 2880 16 2w:0r 0w:1r
 mindfuzz_plm_block_out_16_dma32 192 16 1w:0r 0w:2r
 mindfuzz_plm_block_in_16_dma64 2880 16 4w:0r 0w:1r
