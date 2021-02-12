@@ -19,7 +19,7 @@
 
 
 // for ASIC synth with no memory banks
-#define ASIC_FLATTEN
+//#define ASIC_FLATTEN
 
 
 

@@ -14,6 +14,7 @@ source ../../common/stratus/project.tcl
 #
 # Set the private memory library
 #
+use_hls_lib "./memlib"
 
 
 #
@@ -24,38 +25,29 @@ if {$TECH eq "virtex7"} {
     set CLOCK_PERIOD 12.5
     set SIM_CLOCK_PERIOD 10000.0
     set_attr default_input_delay      0.1
-    use_hls_lib "./memlib"
 }
 if {$TECH eq "zynq7000"} {
     # Library is in ns, but simulation uses ps!
     set CLOCK_PERIOD 10.0
     set SIM_CLOCK_PERIOD 10000.0
     set_attr default_input_delay      0.1
-    use_hls_lib "./memlib"
-
 }
 if {$TECH eq "virtexu"} {
     # Library is in ns, but simulation uses ps!
     set CLOCK_PERIOD 8.0
     set SIM_CLOCK_PERIOD 8000.0
     set_attr default_input_delay      0.1
-    use_hls_lib "./memlib"
-
 }
 if {$TECH eq "virtexup"} {
     # Library is in ns, but simulation uses ps!
     set CLOCK_PERIOD 6.4
     set SIM_CLOCK_PERIOD 6400.0
     set_attr default_input_delay      0.1
-    use_hls_lib "./memlib"
-
 }
 if {$TECH eq "cmos32soi"} {
     set CLOCK_PERIOD 1000.0
     set SIM_CLOCK_PERIOD 1000.0
     set_attr default_input_delay      100.0
-    use_hls_lib "./memlib"
-
 }
 if {$TECH eq "tsmc130"} {
     set CLOCK_PERIOD 1000.0
