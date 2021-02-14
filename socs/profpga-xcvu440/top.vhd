@@ -176,7 +176,10 @@ architecture rtl of top is
 
   component ahb2mig_ebddr4r5 is
     generic (
-      hindex : integer);
+      hindex : integer;
+      haddr  : integer;
+      hmask  : integer
+      );
     port (
       c0_sys_clk_p     : in    std_logic;
       c0_sys_clk_n     : in    std_logic;
@@ -204,6 +207,23 @@ architecture rtl of top is
       ui_clk_sync_rst  : out   std_logic);
   end component ahb2mig_ebddr4r5;
 
+  function set_ddr_index (
+    constant n : integer range 0 to 3)
+    return integer is
+  begin
+    if n > (CFG_NMEM_TILE - 1) then
+      return CFG_NMEM_TILE - 1;
+    else
+      return n;
+    end if;
+  end set_ddr_index;
+
+  constant this_ddr_index : attribute_vector(0 to 3) := (
+    0 => set_ddr_index(0),
+    1 => set_ddr_index(1),
+    2 => set_ddr_index(2),
+    3 => set_ddr_index(3)
+    );
 
 -- pragma translate_off
 -- Memory model for simulation purposes only
@@ -259,13 +279,6 @@ architecture rtl of top is
   signal etho : eth_out_type;
 
 -- Tiles
-
--- UART
-  signal uart_rxd_int  : std_logic;       -- UART1_RX (u1i.rxd)
-  signal uart_txd_int  : std_logic;       -- UART1_TX (u1o.txd)
-  signal uart_ctsn_int : std_logic;       -- UART1_RTSN (u1i.ctsn)
-  signal uart_rtsn_int : std_logic;       -- UART1_RTSN (u1o.rtsn)
-
 constant MAX_NMEM_TILES : integer := 4;
 -- Memory controller DDR4
   signal ddr_ahbsi : ahb_slv_in_vector_type(0 to MAX_NMEM_TILES - 1);
@@ -516,15 +529,6 @@ begin
     generic map (CFG_FABTECH, 8, 8, 0, 0, 0, 0, 0, CPU_FREQ)
     port map (esp_clk, esp_clk, chip_refclk, open, open, open, open, cgi, cgo, open, open, open);
 
------------------------------------------------------------------------------
--- UART pads
------------------------------------------------------------------------------
-
-  uart_rxd_pad   : inpad  generic map (level => cmos, voltage => x18v, tech => CFG_PADTECH) port map (uart_rxd, uart_rxd_int);
-  uart_txd_pad   : outpad generic map (level => cmos, voltage => x18v, tech => CFG_PADTECH) port map (uart_txd, uart_txd_int);
-  uart_ctsn_pad : inpad  generic map (level => cmos, voltage => x18v, tech => CFG_PADTECH) port map (uart_ctsn, uart_ctsn_int);
-  uart_rtsn_pad : outpad generic map (level => cmos, voltage => x18v, tech => CFG_PADTECH) port map (uart_rtsn, uart_rtsn_int);
-
 ----------------------------------------------------------------------
 ---  DDR4 memory controller ------------------------------------------
 ----------------------------------------------------------------------
@@ -532,7 +536,9 @@ begin
   gen_mig : if (SIMULATION /= true) generate
     ddrc0 : ahb2mig_ebddr4r5
       generic map (
-        hindex => 4)
+        hindex => 0,
+        haddr  => ddr_haddr(this_ddr_index(0)),
+        hmask  => ddr_hmask(this_ddr_index(0)))
       port map (
         c0_sys_clk_p     => c0_sys_clk_p,
         c0_sys_clk_n     => c0_sys_clk_n,
@@ -562,7 +568,9 @@ begin
     
     ddrc1 : ahb2mig_ebddr4r5
       generic map (
-        hindex => 5)
+        hindex => 0,
+        haddr  => ddr_haddr(this_ddr_index(1)),
+        hmask  => ddr_hmask(this_ddr_index(1)))
       port map (
         c0_sys_clk_p     => c1_sys_clk_p,
         c0_sys_clk_n     => c1_sys_clk_n,
@@ -592,7 +600,9 @@ begin
     
     ddrc2 : ahb2mig_ebddr4r5
       generic map (
-        hindex => 6)
+        hindex => 0,
+        haddr  => ddr_haddr(this_ddr_index(2)),
+        hmask  => ddr_hmask(this_ddr_index(2)))
       port map (
         c0_sys_clk_p     => c2_sys_clk_p,
         c0_sys_clk_n     => c2_sys_clk_n,
@@ -622,7 +632,9 @@ begin
     
     ddrc3 : ahb2mig_ebddr4r5
       generic map (
-        hindex => 7)
+        hindex => 0,
+        haddr  => ddr_haddr(this_ddr_index(3)),
+        hmask  => ddr_hmask(this_ddr_index(3)))
       port map (
         c0_sys_clk_p     => c3_sys_clk_p,
         c0_sys_clk_n     => c3_sys_clk_n,
@@ -657,9 +669,9 @@ begin
 
     mig_ahbram : ahbram_sim
       generic map (
-        hindex => 4,
-        haddr  => 16#400#,
-        hmask  => 16#F00#,
+        hindex => 0,
+        haddr  => ddr_haddr(this_ddr_index(0)),
+        hmask  => ddr_hmask(this_ddr_index(0)),
         tech   => 0,
         kbytes => 1000,
         pipe   => 0,
@@ -675,9 +687,9 @@ begin
     
     mig_ahbram1 : ahbram_sim
       generic map (
-        hindex => 5,
-        haddr  => 16#500#,
-        hmask  => 16#F00#,
+        hindex => 0,
+        haddr  => ddr_haddr(this_ddr_index(1)),
+        hmask  => ddr_hmask(this_ddr_index(1)),
         tech   => 0,
         kbytes => 1000,
         pipe   => 0,
@@ -693,9 +705,9 @@ begin
       
     mig_ahbram2 : ahbram_sim
       generic map (
-        hindex => 6,
-        haddr  => 16#600#,
-        hmask  => 16#F00#,
+        hindex => 0,
+        haddr  => ddr_haddr(this_ddr_index(2)),
+        hmask  => ddr_hmask(this_ddr_index(2)),
         tech   => 0,
         kbytes => 1000,
         pipe   => 0,
@@ -711,9 +723,9 @@ begin
     
     mig_ahbram3 : ahbram_sim
       generic map (
-        hindex => 7,
-        haddr  => 16#700#,
-        hmask  => 16#F00#,
+        hindex => 0,
+        haddr  => ddr_haddr(this_ddr_index(3)),
+        hmask  => ddr_hmask(this_ddr_index(3)),
         tech   => 0,
         kbytes => 1000,
         pipe   => 0,
@@ -1017,10 +1029,10 @@ begin
       sys_clk     => sys_clk(0 to CFG_NMEM_TILE - 1),
       refclk      => chip_refclk,
       pllbypass   => chip_pllbypass,
-      uart_rxd    => uart_rxd_int,
-      uart_txd    => uart_txd_int,
-      uart_ctsn   => uart_ctsn_int,
-      uart_rtsn   => uart_rtsn_int,
+      uart_rxd    => uart_rxd,
+      uart_txd    => uart_txd,
+      uart_ctsn   => uart_ctsn,
+      uart_rtsn   => uart_rtsn,
       cpuerr      => cpuerr,
       ddr_ahbsi   => ddr_ahbsi(0 to CFG_NMEM_TILE - 1),
       ddr_ahbso   => ddr_ahbso(0 to CFG_NMEM_TILE - 1),

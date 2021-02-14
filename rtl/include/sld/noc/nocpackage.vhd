@@ -7,7 +7,7 @@ use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
 
 use work.esp_global.all;
-
+use work.sldcommon.all;
 
 package nocpackage is
 
@@ -136,7 +136,6 @@ package nocpackage is
     );
 
   type tile_mem_info_vector is array (natural range <>) of tile_mem_info;
-  type attribute_vector is array (natural range <>) of integer;
 
   -- Components
   component fifo0
@@ -171,8 +170,6 @@ package nocpackage is
       data_out    : out std_logic_vector(width-1 downto 0));
   end component;
 
-
-  
   component inferred_async_fifo
     generic (
       g_data_width : natural := NOC_FLIT_SIZE;

@@ -34,13 +34,6 @@ entity esp is
     sys_clk         : in    std_logic_vector(0 to CFG_NMEM_TILE - 1);
     refclk          : in    std_logic;
     pllbypass       : in    std_logic_vector(CFG_TILES_NUM - 1 downto 0);
-
-    tdi             : in    std_logic;
-    tdo             : out   std_logic;
-    tms             : in    std_logic;
-    tclk            : in    std_logic;
-    next_in         : out   std_logic;
-    
     uart_rxd        : in    std_logic;  -- UART1_RX (u1i.rxd)
     uart_txd        : out   std_logic;  -- UART1_TX (u1o.txd)
     uart_ctsn       : in    std_logic;  -- UART1_RTSN (u1i.ctsn)
@@ -72,9 +65,6 @@ end;
 architecture rtl of esp is
 
 
-signal tdi_int,tms_int,tclk_int,tdo_int,next_in_int :std_logic;
-    
-  
 constant nocs_num : integer := 6;
 
 signal clk_tile : std_logic_vector(CFG_TILES_NUM-1 downto 0);
@@ -82,10 +72,13 @@ type noc_ctrl_matrix is array (1 to nocs_num) of std_logic_vector(CFG_TILES_NUM-
 type handshake_vec is array (CFG_TILES_NUM-1 downto 0) of std_logic_vector(3 downto 0);
 
 signal rst_int       : std_logic;
-signal srst          : std_logic;
 signal sys_clk_int   : std_logic_vector(0 to CFG_NMEM_TILE - 1);
 signal refclk_int    : std_logic_vector(CFG_TILES_NUM -1 downto 0);
 signal pllbypass_int : std_logic_vector(CFG_TILES_NUM - 1 downto 0);
+signal uart_rxd_int  : std_logic;       -- UART1_RX (u1i.rxd)
+signal uart_txd_int  : std_logic;       -- UART1_TX (u1o.txd)
+signal uart_ctsn_int : std_logic;       -- UART1_RTSN (u1i.ctsn)
+signal uart_rtsn_int : std_logic;       -- UART1_RTSN (u1o.rtsn)
 signal cpuerr_vec    : std_logic_vector(0 to CFG_NCPU_TILE-1);
 
 type monitor_noc_cast_vector is array (1 to nocs_num) of monitor_noc_vector(0 to CFG_TILES_NUM-1);
@@ -171,11 +164,6 @@ signal noc6_data_void_out   : handshake_vec;
 signal noc6_stop_out        : handshake_vec;
 
 
--- TODO: remove this; IRQ will flow through the NoC
-signal irq : std_logic_vector(CFG_NCPU_TILE * 2 - 1 downto 0);
-signal timer_irq : std_logic_vector(CFG_NCPU_TILE - 1 downto 0);
-signal ipi : std_logic_vector(CFG_NCPU_TILE - 1 downto 0);
-
 begin
 
   rst_int <= rst;
@@ -185,6 +173,15 @@ begin
   pllbypass_int <= pllbypass;
 
   cpuerr <= cpuerr_vec(0);
+
+  -----------------------------------------------------------------------------
+  -- UART pads
+  -----------------------------------------------------------------------------
+
+  uart_rxd_pad   : inpad  generic map (level => cmos, voltage => x18v, tech => CFG_PADTECH) port map (uart_rxd, uart_rxd_int);
+  uart_txd_pad   : outpad generic map (level => cmos, voltage => x18v, tech => CFG_PADTECH) port map (uart_txd, uart_txd_int);
+  uart_ctsn_pad : inpad  generic map (level => cmos, voltage => x18v, tech => CFG_PADTECH) port map (uart_ctsn, uart_ctsn_int);
+  uart_rtsn_pad : outpad generic map (level => cmos, voltage => x18v, tech => CFG_PADTECH) port map (uart_rtsn, uart_rtsn_int);
 
 
   -----------------------------------------------------------------------------
@@ -423,13 +420,6 @@ begin
   end generate meshgen_y;
 
 
-  tdi_int<=tdi;
-  tms_int<=tms;
-  tclk_int<=tclk;
-  tdo<=tdo_int;
-  next_in<=next_in_int;
-  
-
   -----------------------------------------------------------------------------
   -- TILES
   -----------------------------------------------------------------------------
@@ -438,9 +428,9 @@ begin
     empty_tile: if tile_type(i) = 0 generate
     tile_empty_i: tile_empty
       generic map (
-        SIMULATION => SIMULATION,
-        tile_id    => i,
-        HAS_SYNC   => CFG_HAS_SYNC)
+        SIMULATION   => SIMULATION,
+        ROUTER_PORTS => set_router_ports(CFG_XLEN, CFG_YLEN, tile_x(i), tile_y(i)),
+        HAS_SYNC     => CFG_HAS_SYNC)
       port map (
         rst                => rst,
 	sys_clk_int        => sys_clk_int(0),
@@ -528,34 +518,22 @@ begin
 
 
     cpu_tile: if tile_type(i) = 1 generate
--- pragma translate_off
       assert tile_cpu_id(i) /= -1 report "Undefined CPU ID for CPU tile" severity error;
--- pragma translate_on
       tile_cpu_i: tile_cpu
 
       generic map (
-        SIMULATION => SIMULATION,
-        tile_id    => i,
-        HAS_SYNC   => CFG_HAS_SYNC)
+        SIMULATION         => SIMULATION,
+        this_has_dvfs      => tile_has_dvfs(i),
+        this_has_pll       => tile_has_pll(i),
+        this_extra_clk_buf => extra_clk_buf(i),
+        ROUTER_PORTS       => set_router_ports(CFG_XLEN, CFG_YLEN, tile_x(i), tile_y(i)),
+        HAS_SYNC           => CFG_HAS_SYNC)
       port map (
         rst                => rst_int,
-        srst               => srst,
         refclk             => refclk_int(i),
         pllbypass          => pllbypass_int(i),
         pllclk             => clk_tile(i),
         cpuerr             => cpuerr_vec(tile_cpu_id(i)),
-        -- TODO: remove this; should use proxy
-        irq                => irq((tile_cpu_id(i) + 1) * 2 - 1 downto tile_cpu_id(i) * 2),
-        timer_irq          => timer_irq(tile_cpu_id(i)),
-        ipi                => ipi(tile_cpu_id(i)),
-
-        tdi                => tdi_int,
-        tdo                => tdo_int,
-        tms                => tms_int,
-        tclk               => tclk_int,
-        next_in            => next_in_int,
-
-
         -- NOC
         sys_clk_int        => sys_clk_int(0),
         noc1_data_n_in     => noc1_data_n_in(i),
@@ -643,13 +621,18 @@ begin
 
 
     accelerator_tile: if tile_type(i) = 2 generate
--- pragma translate_off
       assert tile_device(i) /= 0 report "Undefined device ID for accelerator tile" severity error;
--- pragma translate_on
       tile_acc_i: tile_acc
       generic map (
-        tile_id  => i,
-        HAS_SYNC => CFG_HAS_SYNC )
+        this_hls_conf      => tile_design_point(i),
+        this_device        => tile_device(i),
+        this_irq_type      => tile_irq_type(i),
+        this_has_l2        => tile_has_l2(i),
+        this_has_dvfs      => tile_has_dvfs(i),
+        this_has_pll       => tile_has_pll(i),
+        this_extra_clk_buf => extra_clk_buf(i),
+        ROUTER_PORTS       => set_router_ports(CFG_XLEN, CFG_YLEN, tile_x(i), tile_y(i)),
+        HAS_SYNC           => CFG_HAS_SYNC)
       port map (
         rst                => rst_int,
         refclk             => refclk_int(i),
@@ -747,12 +730,11 @@ begin
     io_tile: if tile_type(i) = 3 generate
       tile_io_i : tile_io
       generic map (
-        SIMULATION => SIMULATION,
-        tile_id    => i,
-        HAS_SYNC   => CFG_HAS_SYNC)
+        SIMULATION   => SIMULATION,
+        ROUTER_PORTS => set_router_ports(CFG_XLEN, CFG_YLEN, tile_x(i), tile_y(i)),
+        HAS_SYNC     => CFG_HAS_SYNC)
       port map (
 	rst                => rst_int,
-	srst               => srst,
 	clk                => refclk_int(i),
 	eth0_apbi          => eth0_apbi,
 	eth0_apbo          => eth0_apbo,
@@ -765,14 +747,10 @@ begin
 	dvi_apbo           => dvi_apbo,
 	dvi_ahbmi          => dvi_ahbmi,
 	dvi_ahbmo          => dvi_ahbmo,
-	uart_rxd           => uart_rxd,
-	uart_txd           => uart_txd,
-	uart_ctsn          => uart_ctsn,
-	uart_rtsn          => uart_rtsn,
-	--TODO: REMOVE THIS and use NoC proxies
-	irq                => irq,
-	timer_irq          => timer_irq,
-	ipi                => ipi,
+	uart_rxd           => uart_rxd_int,
+	uart_txd           => uart_txd_int,
+	uart_ctsn          => uart_ctsn_int,
+	uart_rtsn          => uart_rtsn_int,
 	-- NOC
 	sys_clk_int        => sys_clk_int(0),
 	noc1_data_n_in     => noc1_data_n_in(i),
@@ -861,11 +839,10 @@ begin
     mem_tile: if tile_type(i) = 4 generate
       tile_mem_i: tile_mem
       generic map (
-        tile_id  => i,
-        HAS_SYNC => CFG_HAS_SYNC)
+        ROUTER_PORTS => set_router_ports(CFG_XLEN, CFG_YLEN, tile_x(i), tile_y(i)),
+        HAS_SYNC     => CFG_HAS_SYNC)
       port map (
 	rst                => rst_int,
-	srst               => srst,
 	clk                => sys_clk_int(tile_mem_id(i)),
 	ddr_ahbsi          => ddr_ahbsi(tile_mem_id(i)),
 	ddr_ahbso          => ddr_ahbso(tile_mem_id(i)),
@@ -958,8 +935,8 @@ begin
     slm_tile: if tile_type(i) = 5 generate
       tile_slm_i: tile_slm
         generic map (
-          tile_id => i,
-          HAS_SYNC   => CFG_HAS_SYNC)
+          ROUTER_PORTS => set_router_ports(CFG_XLEN, CFG_YLEN, tile_x(i), tile_y(i)),
+          HAS_SYNC     => CFG_HAS_SYNC)
         port map (
           rst                => rst_int,
           clk                => refclk_int(i),

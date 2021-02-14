@@ -37,7 +37,7 @@ package gencomp is
 
 -- technologies and libraries
 
-constant NTECH : integer := 60;
+constant NTECH : integer := 59;
 type tech_ability_type is array (0 to NTECH) of integer;
 
 constant inferred    : integer := 0;
@@ -101,7 +101,6 @@ constant rhs65       : integer := 56;
 constant rtg4        : integer := 57;
 constant virtexup    : integer := 58;
 constant virtexu     : integer := 59;
-constant gf12        : integer := 60;
 
 constant DEFMEMTECH  : integer := inferred;
 constant DEFPADTECH  : integer := inferred;
@@ -197,7 +196,7 @@ constant has_sram64 : tech_ability_type :=
 	(inferred => 0, virtex2 => 1, spartan3 => 1, virtex4 => 1,
 	 spartan3e => 1, memartisan => 1, virtex5 => 1, smic013 => 1,
 	 spartan6 => 1, virtex6 => 1, easic45 => 1, virtex7 => 1, kintex7 => 1,
-	 artix7 => 1, zynq7000 => 1, virtexup => 1, virtexu => 1, gf12 => 1, others => 0);
+	 artix7 => 1, zynq7000 => 1, virtexup => 1, virtexu => 1, others => 0);
 
 constant has_sram128bw : tech_ability_type := (
 	virtex2 => 1, virtex4 => 1, virtex5 => 1, spartan3 => 1,
@@ -269,7 +268,7 @@ constant has_pads : tech_ability_type :=
 	 easic90 => 1, atc18rha => 1, spartan6 => 1, virtex6 => 1,
          actfus => 1, apa3e => 1, apa3l => 1, ut130 => 1, easic45 => 1,
          ut90 => 1, virtex7 => 1, kintex7 => 1, virtexup => 1, virtexu => 1,
-         artix7 => 1, zynq7000 => 1, igloo2 => 1, rtg4 => 1, gf12 => 1, others => 0);
+         artix7 => 1, zynq7000 => 1, igloo2 => 1, rtg4 => 1, others => 0);
 
 constant has_ds_pads : tech_ability_type :=
 	(inferred => 0, virtex => 1, virtex2 => 1, memvirage => 0,
@@ -438,11 +437,7 @@ constant has_transceivers : tech_ability_type := (
   );
 
 constant has_pll : tech_ability_type := (
-  virtex7 => 1, virtexup => 1, virtexu => 1,  others => 0
-  );
-
-constant has_dco : tech_ability_type := (
-  gf12 => 1, others => 0
+  virtex7 => 1, virtexup => 1, virtexu => 1, others => 0
   );
 
 -- pragma translate_off
@@ -481,8 +476,7 @@ constant has_dco : tech_ability_type := (
   zynq7000  => "zynq7000  ", rhlib13t  => "rhlib13t  ",
   saed32    => "saed32    ", dare      => "dare      ",
   igloo2    => "igloo2    ", rhs65     => "rhs65     ",
-  rtg4      => "rtg4      ", virtexu   => "virtexu   ",
-  gf12      => "gf12      ");
+  rtg4      => "rtg4      ", virtexu   => "virtexu   ");
 
 -- pragma translate_on
 
@@ -563,13 +557,6 @@ constant m010     : integer := 13;
       vergtune  : in  std_logic_vector(2 downto 0));
   end component;
 
-  component dco is
-    port (
-      rstn      : in  std_ulogic;
-      fsel_i    : in  std_logic_vector(12 downto 0);
-      clk_o     : out std_ulogic;
-      div_clk_o : out std_ulogic);
-  end component dco;
 
 ---------------------------------------------------------------------------
 -- MEMORY

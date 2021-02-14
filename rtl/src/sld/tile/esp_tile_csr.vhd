@@ -6,7 +6,7 @@ use ieee.numeric_std.all;
 use ieee.std_logic_misc.all;
 
 use work.amba.all;
-use work.stdlib.all; 
+use work.stdlib.all;
 use work.devices.all;
 use work.sld_devices.all;
 use work.gencomp.all;
@@ -17,11 +17,11 @@ use work.nocpackage.all;
 entity esp_tile_csr is
 
   generic (
-    pindex      : integer range 0 to NAPBSLV -1;
-    pconfig     : apb_config_type );
+    pindex      : integer range 0 to NAPBSLV -1 := 0);
   port (
     clk         : in std_logic;
     rstn        : in std_logic;
+    pconfig     : in apb_config_type;
     mon_ddr     : in monitor_ddr_type;
     mon_mem     : in monitor_mem_type;
     mon_noc     : in monitor_noc_vector(1 to 6);
@@ -29,6 +29,8 @@ entity esp_tile_csr is
     mon_llc     : in monitor_cache_type;
     mon_acc     : in monitor_acc_type;
     mon_dvfs    : in monitor_dvfs_type;
+    config      : out std_logic_vector(ESP_CSR_WIDTH - 1 downto 0);
+    srst        : out std_ulogic;
     apbi        : in apb_slv_in_type;
     apbo        : out apb_slv_out_type
   );
@@ -89,6 +91,11 @@ architecture rtl of esp_tile_csr is
     signal count : counter_type;
     signal count_value : counter_type;
 
+    -- CSRs
+    signal config_r : std_logic_vector(ESP_CSR_WIDTH - 1 downto 0);
+    constant DEFAULT_CONFIG : std_logic_vector(ESP_CSR_WIDTH - 1 downto 0) := (others => '0');
+
+    signal csr_addr : integer range 0 to 31;
 
  begin
 
@@ -97,7 +104,10 @@ architecture rtl of esp_tile_csr is
   apbo.pindex   <= pindex;
   apbo.pconfig  <= pconfig;
 
-  rd_registers : process(apbi, count_value, ctrl_rst, window_size, window_count) 
+  config <= config_r;
+  csr_addr <= conv_integer(apbi.paddr(6 downto 2));
+
+  rd_registers : process(apbi, count_value, ctrl_rst, window_size, window_count, config_r, csr_addr)
     --TODO 
     variable addr : integer range 0 to 127;
   begin 
@@ -115,16 +125,29 @@ architecture rtl of esp_tile_csr is
         ctrl_window_size_sample <= apbi.psel(pindex) and apbi.penable and apbi.pwrite;
     end if;
 
-    if addr = 0 then
-      readdata <= ctrl_rst;
-    elsif addr = 1 then
-      readdata <= window_size;
-    elsif addr = 2 then 
-      readdata <= window_count(REGISTER_WIDTH-1 downto 0);
-    elsif addr = 3 then
-      readdata <= window_count(2*REGISTER_WIDTH-1 downto REGISTER_WIDTH);
-    elsif addr < MONITOR_REG_COUNT + MONITOR_APB_OFFSET then 
-      readdata <= count_value(addr - MONITOR_APB_OFFSET);
+    if apbi.paddr(8 downto 7) = "11" then
+      -- Config read access
+      case csr_addr is
+        when ESP_CSR_VALID_ADDR =>
+          readdata(ESP_CSR_VALID_MSB - ESP_CSR_VALID_LSB downto 0) <= config_r(ESP_CSR_VALID_MSB downto ESP_CSR_VALID_LSB);
+        when ESP_CSR_TILE_ID_ADDR =>
+          readdata(ESP_CSR_TILE_ID_MSB - ESP_CSR_TILE_ID_LSB downto 0) <= config_r(ESP_CSR_TILE_ID_MSB downto ESP_CSR_TILE_ID_LSB);
+        when others =>
+          readdata <= (others => '0');
+      end case;
+    else
+      -- Monitors read access
+      if addr = 0 then
+        readdata <= ctrl_rst;
+      elsif addr = 1 then
+        readdata <= window_size;
+      elsif addr = 2 then 
+        readdata <= window_count(REGISTER_WIDTH-1 downto 0);
+      elsif addr = 3 then
+        readdata <= window_count(2*REGISTER_WIDTH-1 downto REGISTER_WIDTH);
+      elsif addr < MONITOR_REG_COUNT + MONITOR_APB_OFFSET then 
+        readdata <= count_value(addr - MONITOR_APB_OFFSET);
+      end if;
     end if;
   end process rd_registers;
   
@@ -134,7 +157,10 @@ architecture rtl of esp_tile_csr is
         ctrl_rst <= (others => '0');
         window_size <= DEFAULT_WINDOW;
         window_reset <= '0';
+        config_r <= DEFAULT_CONFIG;
+        srst <= '0';
     elsif clk'event and clk = '1' then 
+        -- Monitors
         window_reset <= '0';
         ctrl_rst <= (others => '0');
         if ctrl_rst_sample = '1' then
@@ -143,6 +169,18 @@ architecture rtl of esp_tile_csr is
         if ctrl_window_size_sample = '1' then 
             window_size  <= wdata;
             window_reset <= '1';
+        end if;
+        -- Config write
+        if apbi.paddr(8 downto 7) = "11" and (apbi.psel(pindex) and apbi.penable and apbi.pwrite) = '1' then
+          case csr_addr is
+            when ESP_CSR_VALID_ADDR =>
+              config_r(ESP_CSR_VALID_MSB downto ESP_CSR_VALID_LSB) <= apbi.pwdata(ESP_CSR_VALID_MSB - ESP_CSR_VALID_LSB downto 0);
+            when ESP_CSR_TILE_ID_ADDR =>
+              config_r(ESP_CSR_TILE_ID_MSB downto ESP_CSR_TILE_ID_LSB) <= apbi.pwdata(ESP_CSR_TILE_ID_MSB - ESP_CSR_TILE_ID_LSB downto 0);
+            when ESP_CSR_SRST_ADDR =>
+              srst <= wdata(0);
+            when others => null;
+          end case;
         end if;
     end if;
   end process wr_registers;
@@ -189,9 +227,9 @@ architecture rtl of esp_tile_csr is
   
 
   counters : process (clk, rstn)
-    variable accelerator_mem_count : std_logic_vector(2*REGISTER_WIDTH-1 downto 0);
-    variable accelerator_tot_count : std_logic_vector(2*REGISTER_WIDTH-1 downto 0);
-    variable accelerator_tlb_count : std_logic_vector(REGISTER_WIDTH-1 downto 0);
+    variable accelerator_mem_count : std_logic_vector(2*REGISTER_WIDTH-1 downto 0) := (others => '0');
+    variable accelerator_tot_count : std_logic_vector(2*REGISTER_WIDTH-1 downto 0) := (others => '0');
+    variable accelerator_tlb_count : std_logic_vector(REGISTER_WIDTH-1 downto 0) := (others => '0');
   begin
     if rstn = '0' then
       for R in 0 to MONITOR_REG_COUNT-1 loop

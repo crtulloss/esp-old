@@ -186,18 +186,17 @@ include $(ESP_ROOT)/utils/examples.mk
 .PHONY: all help
 
 ### SoC configuration for ESP ###
-ESP_DEFCONFIG ?= $(ESP_ROOT)/socs/defconfig/esp_$(BOARD)_defconfig
 
 .esp_config:
-	$(QUIET_CP)cp $(ESP_DEFCONFIG) $@
+	$(QUIET_CP)cp $(ESP_ROOT)/socs/defconfig/esp_$(BOARD)_defconfig $@
 
-esp-defconfig: $(ESP_DEFCONFIG)
+esp-defconfig: $(ESP_ROOT)/socs/defconfig/esp_$(BOARD)_defconfig
 	$(QUIET_CP)cp $< .esp_config
 	$(QUIET_MAKE)$(MAKE) esp-config
 
 socmap.vhd: .esp_config grlib_config.vhd top.vhd Makefile
 	$(QUIET_DIFF)echo "checking .esp_config..."
-	@/usr/bin/diff .esp_config $(ESP_DEFCONFIG) -q > /dev/null; \
+	@/usr/bin/diff .esp_config $(ESP_ROOT)/socs/defconfig/esp_$(BOARD)_defconfig -q > /dev/null; \
 	if test $$? = "0"; then \
 		echo $(SPACES)"INFO Using default configuration file for ESP"; \
 	else \
@@ -709,7 +708,6 @@ barec:
 
 
 ### GRLIB config targets ###
-GRLIB_DEFCONFIG ?= $(ESP_ROOT)/socs/defconfig/grlib_$(BOARD)_defconfig
 
 TKCONFIG_DEP   = $(TKCONFIG)/config.vhd
 TKCONFIG_DEP  += $(wildcard $(TKCONFIG)/in/*.in)
@@ -719,9 +717,9 @@ TKCONFIG_DEP  += $(wildcard $(TKCONFIG)/in/*.in.help)
 TKCONFIG_DEP  += grlib_config.in
 
 .grlib_config:
-	$(QUIET_CP)cp $(GRLIB_DEFCONFIG) $@
+	$(QUIET_CP)cp $(ESP_ROOT)/socs/defconfig/grlib_$(BOARD)_defconfig $@
 
-grlib-defconfig: $(GRLIB_DEFCONFIG)
+grlib-defconfig: $(ESP_ROOT)/socs/defconfig/grlib_$(BOARD)_defconfig
 	$(QUIET_CP)cp $< .grlib_config
 	$(QUIET_MAKE)$(MAKE) grlib_config.vhd
 
@@ -748,7 +746,7 @@ lconfig.tk: main.tk $(TKCONFIG_DEP) grlib_config.in
 
 grlib_config.vhd: lconfig.tk .grlib_config
 	$(QUIET_DIFF)echo "checking .grlib_config..."
-	@/usr/bin/diff .grlib_config $(GRLIB_DEFCONFIG) -q > /dev/null; \
+	@/usr/bin/diff .grlib_config $(ESP_ROOT)/socs/defconfig/grlib_$(BOARD)_defconfig -q > /dev/null; \
 	if test $$? = "0"; then \
 		echo $(SPACES)"INFO Using default configuration file for GRLIB"; \
 	else \
@@ -806,9 +804,6 @@ endif
 
 ARIANE ?= $(ESP_ROOT)/third-party/ariane
 VERILOG_ARIANE += $(shell strings $(ESP_ROOT)/utils/ariane_verilog.txt)
-ifneq ($(filter $(TECHLIB),$(FPGALIBS)),)
-VERILOG_ARIANE += $(shell strings $(ESP_ROOT)/utils/ariane_verilog_fpga.txt)
-endif
 
 PKG_LIST  = $(shell (find $(ESP_ROOT)/rtl -name "*.txt" ))
 PKG_LIST += $(shell (find $(ESP_ROOT)/sim -name "*.txt" ))
@@ -822,18 +817,14 @@ VHDL_RTL_SRCS  = $(shell (find $(ESP_ROOT)/rtl/src -name "*.vhd" ))
 else
 VHDL_RTL_SRCS  = $(shell (find $(ESP_ROOT)/rtl/src -name "*.vhd" | grep -v "sld/sldcommon/monitor.vhd"))
 endif
-VHDL_RTL_SRCS  += $(shell (find $(ESP_ROOT)/tech/$(TECHLIB)/ -name "*.vhd" ))
+VHDL_RTL_SRCS  += $(shell (find $(ESP_ROOT)/tech/$(TECHLIB) -name "*.vhd" ))
 
+VLOG_RTL_SRCS   = $(shell (find $(ESP_ROOT)/rtl/src -name "*.v" ))
+VLOG_RTL_SRCS  += $(shell (find $(ESP_ROOT)/tech/$(TECHLIB) -name "*.v" ))
 
-VLOG_RTL_SRCS      = $(shell (find $(ESP_ROOT)/rtl/src -name "*.v" ))
-VLOG_RTL_SRCS     += $(shell (find $(ESP_ROOT)/tech/$(TECHLIB)/ -name "*.v" ))
+SVLOG_RTL_SRCS  = $(shell (find $(ESP_ROOT)/rtl/src -name "*.sv" ))
 
-RTL_TECH_FOLDERS   = $(filter-out $(ESP_ROOT)/tech/$(TECHLIB)/verilog/, $(shell ls -d $(ESP_ROOT)/tech/$(TECHLIB)/*/))
-VLOG_SYN_RTL_SRCS  = $(shell (find $(ESP_ROOT)/rtl/src -name "*.v" ))
-VLOG_SYN_RTL_SRCS += $(foreach f, $(RTL_TECH_FOLDERS), $(shell (find $(f) -name "*.v")))
-
-SVLOG_RTL_SRCS   = $(shell (find $(ESP_ROOT)/rtl/src -name "*.sv" ))
-SVLOG_RTL_SRCS  += $(shell (find $(ESP_ROOT)/tech/$(TECHLIB)/ -name "*.sv" ))
+IP_XCI_SRCS  = $(shell (find $(ESP_ROOT)/tech/$(TECHLIB) -name "*.xci" ))
 
 VHDL_SIM_PKGS  = $(shell (find $(ESP_ROOT)/sim/include -name "*.vhd" ))
 VHDL_SIM_SRCS  = $(shell (find $(ESP_ROOT)/sim/src -name "*.vhd" ))
@@ -844,13 +835,7 @@ VHDL_SRCS = $(THIRDPARTY_VHDL) $(VHDL_RTL_SRCS) $(VHDL_SIM_SRCS) $(TOP_VHDL_RTL_
 VLOG_SRCS = $(THIRDPARTY_VLOG) $(VLOG_RTL_SRCS) $(VLOG_SIM_SRCS) $(TOP_VLOG_RTL_SRCS) $(TOP_VLOG_SIM_SRCS)
 SVLOG_SRCS = $(THIRDPARTY_SVLOG) $(SVLOG_RTL_SRCS)
 
-VHDL_SYN_PKGS = $(THIRDPARTY_VHDL_PKGS) $(VHDL_RTL_PKGS) $(TOP_VHDL_RTL_PKGS)
-VHDL_SYN_SRCS = $(THIRDPARTY_VHDL) $(VHDL_RTL_SRCS) $(TOP_VHDL_RTL_SRCS)
-VLOG_SYN_SRCS = $(THIRDPARTY_VLOG) $(VLOG_SYN_RTL_SRCS) $(TOP_VLOG_RTL_SRCS)
-SVLOG_SYN_SRCS = $(THIRDPARTY_SVLOG) $(SVLOG_RTL_SRCS)
-
-
-DAT_SRCS = $(shell (find $(ESP_ROOT)/tech/$(TECHLIB)/ -name "*.dat" ))
+DAT_SRCS = $(shell (find $(ESP_ROOT)/tech/$(TECHLIB) -name "*.dat" ))
 
 ALL_SRCS  = $(VHDL_PKGS) $(VHDL_SRCS) $(VLOG_SRCS) $(SVLOG_SRCS) $(DAT_SRCS)
 
@@ -905,7 +890,7 @@ check_all_rtl_srcs-distclean:
 
 $(ESP_ROOT)/.cache/modelsim/xilinx_lib:
 	$(QUIET_MKDIR)mkdir -p $@
-	@echo "compile_simlib -directory xilinx_lib -simulator modelsim -library unisim -no_ip_compile" > $@/simlib.tcl; \
+	@echo "compile_simlib -directory xilinx_lib -simulator modelsim -library all" > $@/simlib.tcl; \
 	cd $(ESP_ROOT)/.cache/modelsim; \
 	if ! vivado $(VIVADO_BATCH_OPT) -source xilinx_lib/simlib.tcl; then \
 		echo "$(SPACES)ERROR: Xilinx library compilation failed!"; rm -rf xilinx_lib modelsim.ini; exit 1; \
@@ -929,7 +914,7 @@ modelsim/modelsim.ini: $(ESP_ROOT)/.cache/modelsim/xilinx_lib
 
 $(ESP_ROOT)/.cache/xcelium/xilinx_lib:
 	$(QUIET_MKDIR)mkdir -p $@
-	@echo "compile_simlib -directory xilinx_lib -simulator xcelium -library unisim -no_ip_compile" > $@/simlib.tcl; \
+	@echo "compile_simlib -directory xilinx_lib -simulator xcelium -library all" > $@/simlib.tcl; \
 	cd $(ESP_ROOT)/.cache/xcelium; \
 	if ! vivado $(VIVADO_BATCH_OPT) -source xilinx_lib/simlib.tcl; then \
 		echo "$(SPACES)ERROR: Xilinx library compilation failed!"; rm -rf xilinx_lib cds.lib; exit 1; \
@@ -945,7 +930,7 @@ xcelium/hdl.var: xcelium/cds.lib
 
 $(ESP_ROOT)/.cache/incisive/xilinx_lib:
 	$(QUIET_MKDIR)mkdir -p $@
-	@echo "compile_simlib -directory xilinx_lib -simulator ies -library unisim -no_ip_compile" > $@/simlib.tcl; \
+	@echo "compile_simlib -directory xilinx_lib -simulator ies -library all" > $@/simlib.tcl; \
 	cd $(ESP_ROOT)/.cache/incisive; \
 	if ! vivado $(VIVADO_BATCH_OPT) -source xilinx_lib/simlib.tcl; then \
 		echo "$(SPACES)ERROR: Xilinx library compilation failed!"; rm -rf xilinx_lib cds.lib; exit 1; \
@@ -1419,10 +1404,16 @@ ifneq ($(findstring profpga, $(BOARD)),)
 else
 	@echo "set_property include_dirs {$(ESP_CACHES_INCDIR) $(THIRDPARTY_INCDIR) $(ARIANE)/src/common_cells/include} [get_filesets {sim_1 sources_1}]" >> $@
 endif
-	@echo "set_property verilog_define {WT_DCACHE=1} [get_filesets {sim_1 sources_1}]" >> $@
+	@echo "set_property verilog_define {XILINX_FPGA=1 WT_DCACHE=1} [get_filesets {sim_1 sources_1}]" >> $@
 	@echo "source ./srcs.tcl" >> $@
 ifneq ("$(PROTOBOARD)","")
 	@echo "set_property board_part $(PROTOBOARD) [current_project]"  >> $@
+endif
+ifneq ($(IP_XCI_SRCS),)
+	@for rtl in $(IP_XCI_SRCS); do \
+		echo "import_ip -files $$rtl" >> $@; \
+	done;
+	@echo "upgrade_ip [get_ips -all]" >> $@
 endif
 	@if test -r $(ESP_ROOT)/constraints/$(BOARD)/mig.xci; then \
 		echo $(SPACES)"INFO including MIG IP"; \
@@ -1617,79 +1608,6 @@ vivado-distclean: vivado-clean
 .PHONY: vivado-clean vivado-distclean vivado-syn vivado-prog-fpga vivado/$(DESIGN) vivado-setup vivado-gui
 
 
-
-
-### Genus Targets
-
-GENUS_VLOG = read_hdl -language v2001
-GENUS_SVLOG = read_hdl -language sv
-GENUS_VHDL = read_hdl -language vhdl
-GENUS_ARIANE_VLOGOPT = -define WT_DCACHE=1
-
-genus:
-	$(QUIET_MKDIR)mkdir -p genus
-
-
-genus/incdir.tcl: genus
-	$(QUIET_MAKE) \
-	echo "set log_syn(hdl_search_path) \"$(THIRDPARTY_INCDIR) $(ESP_CACHES_INCDIR) ${ARIANE}/src/common_cells/include\"" > $@
-
-genus/srcs.tcl: genus check_all_rtl_srcs.old
-	$(QUIET_MAKE)echo "### Compile Ariane source files ###" > $@; \
-	rtl=$(ESP_ROOT)/socs/common/ariane_soc_pkg.sv; \
-	echo "$(GENUS_SVLOG) $(GENUS_ARIANE_VLOGOPT) $$rtl" >> $@; \
-	for ver in $(VERILOG_ARIANE); do \
-		rtl=$(ARIANE)/$$ver; \
-		[[ $$rtl =~ .+trace  ]] || echo "$(GENUS_SVLOG) $(GENUS_ARIANE_VLOGOPT) $$rtl" >> $@; \
-	done; \
-	echo "### Compile VHDL packages ###" >> $@; \
-	for rtl in $(THIRDPARTY_VHDL_PKGS); do \
-		echo "$(GENUS_VHDL) $$rtl" >> $@; \
-	done; \
-	for vhd in $(SLDGEN_VHDL_RTL_PKGS); do \
-		rtl=$$vhd; \
-		echo "$(GENUS_VHDL) $$rtl" >> $@; \
-	done; \
-	for lib in $$(cat $(ESP_ROOT)/rtl/include/libs.txt); do \
-		for dir in $$(cat $(ESP_ROOT)/rtl/include/$$lib/dirs.txt); do \
-			for vhd in $$(cat $(ESP_ROOT)/rtl/include/$$lib/$$dir/pkgs.txt); do \
-				rtl=$(ESP_ROOT)/rtl/include/$$lib/$$dir/$$vhd; \
-				echo "$(GENUS_VHDL) $$rtl" >> $@; \
-			done; \
-		done; \
-	done; \
-	for vhd in $(TOP_VHDL_RTL_PKGS); do \
-		rtl=$$vhd; \
-		echo "$(GENUS_VHDL) $$rtl" >> $@; \
-	done; \
-	echo "### Compile VHDL source files ###" >> $@; \
-		for rtl in $(VHDL_SYN_SRCS); do \
-			[[ $$rtl =~ techmap/unisim  ]] || echo "$(GENUS_VHDL) $$rtl" >> $@; \
-		done; \
-	echo "### Compile Verilog source files ###" >> $@; \
-		for rtl in $(VLOG_SYN_SRCS); do \
-			[[ $$rtl =~ techmap/unisim  ]] || echo "$(GENUS_VLOG) $$rtl" >> $@; \
-		done; \
-	echo "### Compile SystemVerilog source files ###" >> $@; \
-		for rtl in $(SVLOG_SYN_SRCS); do \
-			echo "$(GENUS_SVLOG) $$rtl" >> $@; \
-		done; \
-
-genus/$(DESIGN): genus genus/srcs.tcl genus/incdir.tcl
-
-genus-setup: check_all_rtl_srcs genus/$(DESIGN)
-
-
-genus-clean:
-
-genus-distclean: genus-clean
-	$(QUIET_CLEAN)$(RM) \
-		genus
-
-#TODO rename genus/$(DESIGN) to actual Genus project name
-.PHONY: genus-clean genus-distclean genus-setup genus/$(DESIGN)
-
-
 ### PROFPGA targets ###
 
 boards:
@@ -1811,7 +1729,6 @@ clean: 		soft-clean		\
 		esp-config-clean	\
 		grlib-config-clean	\
 		vivado-clean		\
-		genus-clean		\
 		sldgen-clean		\
 		espmon-clean		\
 		mmi64-clean
@@ -1829,7 +1746,6 @@ distclean:	check_all_srcs-distclean 	\
 		esp-config-distclean		\
 		grlib-config-distclean		\
 		vivado-distclean		\
-		genus-distclean			\
 		sldgen-distclean		\
 		espmon-distclean		\
 		mmi64-distclean

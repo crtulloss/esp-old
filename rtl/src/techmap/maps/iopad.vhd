@@ -62,10 +62,6 @@ begin
 -- pragma translate_on
 	;
   end generate;
-  gf12p : if (tech = gf12) generate
-    x0 : gf12_iopad
-         port map (pad, i, oen, o);
-  end generate;
   xcv : if (is_unisim(tech) = 1) generate
     x0 : unisim_iopad generic map (level, slew, voltage, strength)
 	 port map (pad, i, oen, o);

@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 ### Supported technology libraries ###
-ASICLIBS = gf12
+ASICLIBS =
 FPGALIBS = virtex7 virtexu virtexup
 
 
@@ -94,6 +94,11 @@ XMSIMOPT  += -input xmsim.in
 NCCOMOPT  +=
 NCLOGOPT  +=
 NCSIMOPT  += -input ncsim.in
+ifneq ($(filter $(TECHLIB),$(FPGALIBS)),)
+VLOGOPT  += +define+XILINX_FPGA
+XMLOGOPT += -DEFINE XILINX_FPGA
+NCLOGOPT += -DEFINE XILINX_FPGA
+endif
 
 
 # Include unisim verilog librayr
